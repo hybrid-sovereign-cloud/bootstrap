@@ -89,7 +89,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: config
-          image: registry.redhat.io/openshift4/ose-cli:latest
+          image: docker.io/curlimages/curl:8.12.0
           env:
             - name: REGISTRY_NAME
               value: {{ .Values.name }}
@@ -99,31 +99,34 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-          command: ["/bin/bash"]
+          command: ["/bin/sh"]
           args:
             - -c
             - |
-              set -euo pipefail
+              set -eu
+              SA_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+              K8S="https://kubernetes.default.svc"
               OBC_NAME="${REGISTRY_NAME}-obc"
 
-              echo "Reading OBC bucket details from ConfigMap ${OBC_NAME}..."
-              BUCKET_NAME=$(oc get configmap "$OBC_NAME" -n "$NAMESPACE" \
-                -o jsonpath='{.data.BUCKET_NAME}')
-              S3_HOST=$(oc get configmap "$OBC_NAME" -n "$NAMESPACE" \
-                -o jsonpath='{.data.BUCKET_HOST}')
-              S3_PORT=$(oc get configmap "$OBC_NAME" -n "$NAMESPACE" \
-                -o jsonpath='{.data.BUCKET_PORT}')
+              echo "Reading OBC ConfigMap ${OBC_NAME}..."
+              OBC_CM=$(curl -sfk -H "Authorization: Bearer $SA_TOKEN" \
+                "$K8S/api/v1/namespaces/$NAMESPACE/configmaps/$OBC_NAME")
+              BUCKET_NAME=$(echo "$OBC_CM" | sed -n 's/.*"BUCKET_NAME"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+              S3_HOST=$(echo "$OBC_CM" | sed -n 's/.*"BUCKET_HOST"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+              S3_PORT=$(echo "$OBC_CM" | sed -n 's/.*"BUCKET_PORT"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
               [ -z "$S3_HOST" ] && S3_HOST="s3.openshift-storage.svc"
               [ -z "$S3_PORT" ] && S3_PORT="443"
-              [ -z "$BUCKET_NAME" ] && echo "ERROR: Empty BUCKET_NAME in OBC ConfigMap" && exit 1
+              [ -z "$BUCKET_NAME" ] && echo "ERROR: Empty BUCKET_NAME from OBC ConfigMap" && exit 1
               echo "Bucket: $BUCKET_NAME  Host: $S3_HOST:$S3_PORT"
 
               echo "Reading S3 credentials from OBC Secret ${OBC_NAME}..."
-              ACCESS_KEY=$(oc get secret "$OBC_NAME" -n "$NAMESPACE" \
-                -o jsonpath='{.data.AWS_ACCESS_KEY_ID}' | base64 -d)
-              SECRET_KEY=$(oc get secret "$OBC_NAME" -n "$NAMESPACE" \
-                -o jsonpath='{.data.AWS_SECRET_ACCESS_KEY}' | base64 -d)
-              [ -z "$ACCESS_KEY" ] && echo "ERROR: Empty ACCESS_KEY in OBC Secret" && exit 1
+              OBC_SECRET=$(curl -sfk -H "Authorization: Bearer $SA_TOKEN" \
+                "$K8S/api/v1/namespaces/$NAMESPACE/secrets/$OBC_NAME")
+              ACCESS_KEY_B64=$(echo "$OBC_SECRET" | sed -n 's/.*"AWS_ACCESS_KEY_ID"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+              SECRET_KEY_B64=$(echo "$OBC_SECRET" | sed -n 's/.*"AWS_SECRET_ACCESS_KEY"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+              ACCESS_KEY=$(printf '%s' "$ACCESS_KEY_B64" | base64 -d)
+              SECRET_KEY=$(printf '%s' "$SECRET_KEY_B64" | base64 -d)
+              [ -z "$ACCESS_KEY" ] && echo "ERROR: Empty ACCESS_KEY from OBC Secret" && exit 1
               echo "S3 credentials obtained."
 
               CONFIG_YAML="DISTRIBUTED_STORAGE_CONFIG:
@@ -143,12 +146,31 @@ spec:
               SUPER_USERS:
                 - initial-sovereign-admin"
 
-              # Use oc apply (idempotent) to create-or-replace the config bundle secret
-              oc create secret generic "${REGISTRY_NAME}-config-bundle" \
-                -n "$NAMESPACE" \
-                --from-literal="config.yaml=${CONFIG_YAML}" \
-                --dry-run=client -o yaml | oc apply -f -
+              CONFIG_B64=$(printf '%s' "$CONFIG_YAML" | base64 | tr -d '\n')
 
-              echo "=== Config bundle applied ==="
-              oc get secret "${REGISTRY_NAME}-config-bundle" -n "$NAMESPACE" \
-                -o jsonpath='{.data.config\.yaml}' | base64 -d | grep bucket_name
+              # Use server-side apply (PUT) which is idempotent: create-or-replace atomically
+              SECRET_JSON="{\"apiVersion\":\"v1\",\"kind\":\"Secret\",\"metadata\":{\"name\":\"${REGISTRY_NAME}-config-bundle\",\"namespace\":\"$NAMESPACE\"},\"type\":\"Opaque\",\"data\":{\"config.yaml\":\"$CONFIG_B64\"}}"
+
+              HTTP_CODE=$(curl -sk -o /tmp/resp.txt -w "%{http_code}" \
+                -H "Authorization: Bearer $SA_TOKEN" \
+                -H "Content-Type: application/json" \
+                -X PUT "$K8S/api/v1/namespaces/$NAMESPACE/secrets/${REGISTRY_NAME}-config-bundle" \
+                -d "$SECRET_JSON")
+
+              if [ "$HTTP_CODE" = "404" ]; then
+                echo "Secret not found, creating..."
+                HTTP_CODE=$(curl -sk -o /tmp/resp.txt -w "%{http_code}" \
+                  -H "Authorization: Bearer $SA_TOKEN" \
+                  -H "Content-Type: application/json" \
+                  -X POST "$K8S/api/v1/namespaces/$NAMESPACE/secrets" \
+                  -d "$SECRET_JSON")
+              fi
+
+              if echo "$HTTP_CODE" | grep -qE '^2'; then
+                echo "Config bundle secret applied (HTTP $HTTP_CODE)"
+                echo "bucket_name set to: $BUCKET_NAME"
+              else
+                echo "ERROR: HTTP $HTTP_CODE updating config bundle secret:"
+                cat /tmp/resp.txt
+                exit 1
+              fi
