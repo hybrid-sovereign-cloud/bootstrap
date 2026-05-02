@@ -64,3 +64,5 @@ externalSecrets:
         k8sKey: keycloak-url
       - vaultKey: realm
         k8sKey: realm
+      - vaultKey: vault-hostname
+        k8sKey: vault-hostname
