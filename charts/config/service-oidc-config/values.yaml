@@ -1,0 +1,25 @@
+keycloakUrl: ""
+
+vaultAddr: "http://central-vault.vault.svc:8200"
+vaultSecretName: vault-init-keys
+vaultSecretNamespace: vault
+
+curlImage: docker.io/curlimages/curl:8.12.0
+
+quay:
+  namespace: quay
+  registryName: central-registry
+  oidcSecretName: quay-oidc-secret
+  obcName: central-registry-obc
+
+openshift:
+  realm: sovereign-tenants
+  oidcSecretName: openshift-oidc-secret
+  oidcSecretNamespace: openshift-config
+
+vault:
+  namespace: vault
+  podName: central-vault-0
+  oidcSecretName: vault-oidc-secret
+  kvPath: central
+  realm: sovereign-tenants

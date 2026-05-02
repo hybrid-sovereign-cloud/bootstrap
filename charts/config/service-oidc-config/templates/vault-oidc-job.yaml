@@ -1,0 +1,129 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vault-oidc-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 10
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app: vault-oidc-config
+    spec:
+      serviceAccountName: service-oidc-sa
+      restartPolicy: OnFailure
+      containers:
+        - name: config
+          image: docker.io/curlimages/curl:8.12.0
+          env:
+            - name: VAULT_NS
+              value: {{ .Values.vault.namespace | quote }}
+            - name: VAULT_POD
+              value: {{ .Values.vault.podName | quote }}
+            - name: VAULT_ADDR
+              value: {{ .Values.vaultAddr | quote }}
+            - name: OIDC_SECRET_NAME
+              value: {{ .Values.vault.oidcSecretName | quote }}
+            - name: KV_PATH
+              value: {{ .Values.vault.kvPath | quote }}
+            - name: REALM
+              value: {{ .Values.vault.realm | quote }}
+            - name: VAULT_SECRET_NS
+              value: {{ .Values.vaultSecretNamespace | quote }}
+            - name: VAULT_SECRET_NAME
+              value: {{ .Values.vaultSecretName | quote }}
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - |
+              set -eu
+              SA_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+              K8S="https://kubernetes.default.svc"
+
+              kget() { curl -sfk -H "Authorization: Bearer $SA_TOKEN" "$K8S/api/v1/namespaces/$1/secrets/$2"; }
+
+              # ── Wait for vault-oidc-secret to be populated by ESO ────────────────────
+              echo "Waiting for $OIDC_SECRET_NAME in $VAULT_NS ..."
+              for i in $(seq 1 30); do
+                SEC=$(kget "$VAULT_NS" "$OIDC_SECRET_NAME" 2>/dev/null || echo '{}')
+                CLIENT_ID_B64=$(echo "$SEC" | sed -n 's/.*"client-id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+                [ -n "$CLIENT_ID_B64" ] && break
+                echo "  attempt $i – waiting 10s..."
+                sleep 10
+              done
+              [ -z "$CLIENT_ID_B64" ] && echo "ERROR: $OIDC_SECRET_NAME not ready" && exit 1
+
+              CLIENT_ID=$(printf '%s' "$CLIENT_ID_B64" | base64 -d)
+              CLIENT_SECRET=$(kget "$VAULT_NS" "$OIDC_SECRET_NAME" | \
+                sed -n 's/.*"client-secret"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 | base64 -d)
+              KC_URL=$(kget "$VAULT_NS" "$OIDC_SECRET_NAME" | \
+                sed -n 's/.*"keycloak-url"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 | base64 -d)
+              VAULT_HOST=$(kget "$VAULT_NS" "$OIDC_SECRET_NAME" | \
+                sed -n 's/.*"vault-hostname"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 | base64 -d)
+
+              echo "Client: $CLIENT_ID  KC: $KC_URL  VaultHost: $VAULT_HOST"
+
+              # ── Get Vault root token ──────────────────────────────────────────────────
+              VAULT_JSON=$(kget "$VAULT_SECRET_NS" "$VAULT_SECRET_NAME")
+              ROOT_TOKEN=$(echo "$VAULT_JSON" | sed -n 's/.*"root-token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 | base64 -d)
+              [ -z "$ROOT_TOKEN" ] && echo "ERROR: No Vault root token" && exit 1
+
+              OIDC_DISCOVERY="${KC_URL}/realms/${REALM}"
+              CALLBACK_UI="https://${VAULT_HOST}/ui/vault/auth/oidc/oidc/callback"
+              CALLBACK_CLI="http://localhost:8250/oidc/callback"
+
+              # ── Enable OIDC auth method if not already enabled ────────────────────────
+              AUTH_LIST=$(curl -sfk -H "X-Vault-Token: $ROOT_TOKEN" \
+                "$VAULT_ADDR/v1/sys/auth" 2>/dev/null || echo '{}')
+              if echo "$AUTH_LIST" | grep -q '"oidc/"'; then
+                echo "OIDC auth already enabled"
+              else
+                echo "Enabling OIDC auth method..."
+                curl -sfk -o /dev/null -X POST "$VAULT_ADDR/v1/sys/auth/oidc" \
+                  -H "X-Vault-Token: $ROOT_TOKEN" \
+                  -H "Content-Type: application/json" \
+                  -d '{"type":"oidc"}'
+                echo "OIDC auth method enabled"
+              fi
+
+              # ── Configure OIDC method ─────────────────────────────────────────────────
+              echo "Configuring Vault OIDC..."
+              HTTP=$(curl -sk -o /tmp/resp.txt -w "%{http_code}" \
+                -X POST "$VAULT_ADDR/v1/auth/oidc/config" \
+                -H "X-Vault-Token: $ROOT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"oidc_discovery_url\": \"${OIDC_DISCOVERY}\",
+                  \"oidc_client_id\": \"${CLIENT_ID}\",
+                  \"oidc_client_secret\": \"${CLIENT_SECRET}\",
+                  \"default_role\": \"default\",
+                  \"oidc_discovery_ca_pem\": \"\"
+                }")
+              echo "$HTTP" | grep -qE '^2' || { echo "ERROR configuring OIDC: HTTP $HTTP"; cat /tmp/resp.txt; exit 1; }
+
+              # ── Create default OIDC role ──────────────────────────────────────────────
+              echo "Creating default OIDC role..."
+              HTTP=$(curl -sk -o /tmp/resp.txt -w "%{http_code}" \
+                -X POST "$VAULT_ADDR/v1/auth/oidc/role/default" \
+                -H "X-Vault-Token: $ROOT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"bound_audiences\": [\"${CLIENT_ID}\"],
+                  \"allowed_redirect_uris\": [\"${CALLBACK_UI}\", \"${CALLBACK_CLI}\"],
+                  \"user_claim\": \"preferred_username\",
+                  \"groups_claim\": \"groups\",
+                  \"token_policies\": [\"default\"],
+                  \"token_ttl\": \"1h\"
+                }")
+              echo "$HTTP" | grep -qE '^2' || { echo "ERROR creating role: HTTP $HTTP"; cat /tmp/resp.txt; exit 1; }
+
+              echo "=== Vault OIDC config applied ==="
+              echo "  Discovery: $OIDC_DISCOVERY"
+              echo "  Callback UI: $CALLBACK_UI"
+              echo "  Callback CLI: $CALLBACK_CLI"

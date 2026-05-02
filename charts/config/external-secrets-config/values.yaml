@@ -25,3 +25,42 @@ externalSecrets:
         k8sKey: username
       - vaultKey: password
         k8sKey: password
+  # OIDC client secrets for per-service Keycloak integration
+  - name: quay-oidc-secret
+    namespace: quay
+    remoteKey: quay/oidc
+    keys:
+      - vaultKey: client-id
+        k8sKey: client-id
+      - vaultKey: client-secret
+        k8sKey: client-secret
+      - vaultKey: keycloak-url
+        k8sKey: keycloak-url
+      - vaultKey: realm
+        k8sKey: realm
+      - vaultKey: quay-hostname
+        k8sKey: quay-hostname
+  - name: openshift-oidc-secret
+    namespace: openshift-config
+    remoteKey: openshift/oidc
+    keys:
+      - vaultKey: client-id
+        k8sKey: client-id
+      - vaultKey: client-secret
+        k8sKey: clientSecret
+      - vaultKey: keycloak-url
+        k8sKey: keycloak-url
+      - vaultKey: realm
+        k8sKey: realm
+  - name: vault-oidc-secret
+    namespace: vault
+    remoteKey: vault/oidc
+    keys:
+      - vaultKey: client-id
+        k8sKey: client-id
+      - vaultKey: client-secret
+        k8sKey: client-secret
+      - vaultKey: keycloak-url
+        k8sKey: keycloak-url
+      - vaultKey: realm
+        k8sKey: realm

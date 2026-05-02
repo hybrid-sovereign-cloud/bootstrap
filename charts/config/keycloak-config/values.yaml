@@ -19,5 +19,21 @@ vaultSecretNamespace: vault
 
 sovereignNamespace: sovereign-cloud
 
+# Per-service OIDC clients created in Keycloak and stored in Vault
+serviceClients:
+  quay:
+    clientId: quay-oidc
+    routeNamespace: quay
+    vaultPath: quay/oidc
+  openshift:
+    clientId: openshift-oidc
+    routeNamespace: openshift-authentication
+    routeName: oauth-openshift
+    vaultPath: openshift/oidc
+  vault:
+    clientId: vault-oidc
+    routeNamespace: vault
+    vaultPath: vault/oidc
+
 curlImage: docker.io/curlimages/curl:8.12.0
 jobServiceAccount: keycloak-config-sa

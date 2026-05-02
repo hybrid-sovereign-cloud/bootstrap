@@ -76,6 +76,10 @@ applications:
     path: charts/config/external-secrets-config
     namespace: sovereign-cloud
     wave: "220"
+  - name: service-oidc-config
+    path: charts/config/service-oidc-config
+    namespace: sovereign-cloud
+    wave: "230"
   - name: argocd-init-job
     path: charts/gitops/argocd-init-job
     namespace: openshift-gitops

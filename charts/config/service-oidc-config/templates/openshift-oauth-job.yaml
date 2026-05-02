@@ -1,0 +1,107 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: openshift-oauth-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 10
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app: openshift-oauth-config
+    spec:
+      serviceAccountName: service-oidc-sa
+      restartPolicy: OnFailure
+      containers:
+        - name: config
+          image: docker.io/curlimages/curl:8.12.0
+          env:
+            - name: OIDC_SECRET_NS
+              value: {{ .Values.openshift.oidcSecretNamespace | quote }}
+            - name: OIDC_SECRET_NAME
+              value: {{ .Values.openshift.oidcSecretName | quote }}
+            - name: REALM
+              value: {{ .Values.openshift.realm | quote }}
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - |
+              set -eu
+              SA_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+              K8S="https://kubernetes.default.svc"
+
+              kget() { curl -sfk -H "Authorization: Bearer $SA_TOKEN" "$K8S/api/v1/namespaces/$1/secrets/$2"; }
+
+              # ── Wait for openshift-oidc-secret to be populated by ESO ────────────────
+              echo "Waiting for $OIDC_SECRET_NAME in $OIDC_SECRET_NS ..."
+              for i in $(seq 1 30); do
+                SEC=$(kget "$OIDC_SECRET_NS" "$OIDC_SECRET_NAME" 2>/dev/null || echo '{}')
+                CLIENT_ID_B64=$(echo "$SEC" | sed -n 's/.*"client-id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+                [ -n "$CLIENT_ID_B64" ] && break
+                echo "  attempt $i – waiting 10s..."
+                sleep 10
+              done
+              [ -z "$CLIENT_ID_B64" ] && echo "ERROR: $OIDC_SECRET_NAME not ready" && exit 1
+
+              CLIENT_ID=$(printf '%s' "$CLIENT_ID_B64" | base64 -d)
+              KC_URL=$(kget "$OIDC_SECRET_NS" "$OIDC_SECRET_NAME" | \
+                sed -n 's/.*"keycloak-url"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 | base64 -d)
+
+              echo "Client: $CLIENT_ID  KC: $KC_URL"
+              ISSUER="${KC_URL}/realms/${REALM}"
+              echo "Issuer: $ISSUER"
+
+              # ── Patch the cluster OAuth CR ────────────────────────────────────────────
+              # Read current OAuth spec to preserve existing identity providers
+              OAUTH_JSON=$(curl -sfk -H "Authorization: Bearer $SA_TOKEN" \
+                "$K8S/apis/config.openshift.io/v1/oauths/cluster")
+
+              # Check if Keycloak IDP already configured
+              if echo "$OAUTH_JSON" | grep -q '"Keycloak"'; then
+                echo "Keycloak IDP already present in OAuth cluster CR – skipping"
+              else
+                echo "Adding Keycloak OIDC IDP to cluster OAuth..."
+                PATCH=$(cat <<EOPATCH
+              {
+                "spec": {
+                  "identityProviders": [
+                    {
+                      "name": "Keycloak",
+                      "mappingMethod": "claim",
+                      "type": "OpenID",
+                      "openID": {
+                        "clientID": "${CLIENT_ID}",
+                        "clientSecret": {"name": "${OIDC_SECRET_NAME}"},
+                        "issuer": "${ISSUER}",
+                        "claims": {
+                          "preferredUsername": ["preferred_username", "email"],
+                          "name": ["name"],
+                          "email": ["email"],
+                          "groups": ["groups"]
+                        },
+                        "extraScopes": ["profile", "email"]
+                      }
+                    }
+                  ]
+                }
+              }
+              EOPATCH
+              )
+                HTTP_CODE=$(curl -sk -o /tmp/resp.txt -w "%{http_code}" \
+                  -H "Authorization: Bearer $SA_TOKEN" \
+                  -H "Content-Type: application/merge-patch+json" \
+                  -X PATCH "$K8S/apis/config.openshift.io/v1/oauths/cluster" \
+                  -d "$PATCH")
+                echo "$HTTP_CODE" | grep -qE '^2' || { echo "ERROR patching OAuth: HTTP $HTTP_CODE"; cat /tmp/resp.txt; exit 1; }
+                echo "OAuth cluster CR patched (HTTP $HTTP_CODE)"
+              fi
+
+              echo "=== OpenShift OAuth OIDC config applied ==="
+              echo "  Issuer: $ISSUER"
+              echo "  Client secret ref: $OIDC_SECRET_NS/$OIDC_SECRET_NAME"

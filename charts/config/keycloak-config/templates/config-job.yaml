@@ -6,6 +6,9 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
     app: keycloak-config
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
 spec:
   backoffLimit: 10
   ttlSecondsAfterFinished: 600
@@ -46,6 +49,26 @@ spec:
               value: {{ .Values.vaultSecretName }}
             - name: ADMIN_SECRET_NAME
               value: {{ .Values.adminSecretName }}
+            - name: QUAY_CLIENT_ID
+              value: {{ .Values.serviceClients.quay.clientId | quote }}
+            - name: QUAY_ROUTE_NS
+              value: {{ .Values.serviceClients.quay.routeNamespace | quote }}
+            - name: QUAY_VAULT_PATH
+              value: {{ .Values.serviceClients.quay.vaultPath | quote }}
+            - name: OCP_CLIENT_ID
+              value: {{ .Values.serviceClients.openshift.clientId | quote }}
+            - name: OCP_ROUTE_NS
+              value: {{ .Values.serviceClients.openshift.routeNamespace | quote }}
+            - name: OCP_ROUTE_NAME
+              value: {{ .Values.serviceClients.openshift.routeName | quote }}
+            - name: OCP_VAULT_PATH
+              value: {{ .Values.serviceClients.openshift.vaultPath | quote }}
+            - name: VAULT_CLIENT_ID
+              value: {{ .Values.serviceClients.vault.clientId | quote }}
+            - name: VAULT_ROUTE_NS
+              value: {{ .Values.serviceClients.vault.routeNamespace | quote }}
+            - name: VAULT_SVC_VAULT_PATH
+              value: {{ .Values.serviceClients.vault.vaultPath | quote }}
             - name: NAMESPACE
               valueFrom:
                 fieldRef:
@@ -162,3 +185,147 @@ spec:
               fi
 
               echo "=== Keycloak Config Complete ==="
+
+              # ─── Helper: create or refresh an OIDC client ────────────────────────────
+              # Usage: create_oidc_client <clientId> <redirectUri1> [<redirectUri2>]
+              # Sets OIDC_SECRET to the client secret on success.
+              create_oidc_client() {
+                local CID="$1"; shift
+                local REDIRECT_JSON=""
+                for URI in "$@"; do
+                  REDIRECT_JSON="${REDIRECT_JSON}\"${URI}\","
+                done
+                REDIRECT_JSON="[${REDIRECT_JSON%,}]"
+
+                local NEW_SECRET
+                NEW_SECRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 32)
+
+                local HTTP
+                HTTP=$(curl -sk -o /tmp/oc-resp -w "%{http_code}" -X POST "$KC_URL/admin/realms/$REALM/clients" \
+                  -H "$AUTH" -H "Content-Type: application/json" \
+                  -d "{
+                    \"clientId\":\"$CID\",
+                    \"enabled\":true,
+                    \"protocol\":\"openid-connect\",
+                    \"publicClient\":false,
+                    \"secret\":\"$NEW_SECRET\",
+                    \"redirectUris\":$REDIRECT_JSON,
+                    \"standardFlowEnabled\":true,
+                    \"directAccessGrantsEnabled\":true
+                  }")
+
+                if [ "$HTTP" = "201" ]; then
+                  OIDC_SECRET="$NEW_SECRET"
+                  echo "  Created client $CID (HTTP 201)"
+                elif [ "$HTTP" = "409" ]; then
+                  echo "  Client $CID exists – fetching current secret"
+                  local CLIENTS
+                  CLIENTS=$(curl -sk -H "$AUTH" "$KC_URL/admin/realms/$REALM/clients?clientId=$CID")
+                  local INTERNAL_ID
+                  INTERNAL_ID=$(echo "$CLIENTS" | sed -n 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+                  # Update redirect URIs on the existing client
+                  curl -sk -o /dev/null -X PUT "$KC_URL/admin/realms/$REALM/clients/$INTERNAL_ID" \
+                    -H "$AUTH" -H "Content-Type: application/json" \
+                    -d "{\"clientId\":\"$CID\",\"redirectUris\":$REDIRECT_JSON}"
+                  local SEC_JSON
+                  SEC_JSON=$(curl -sk -H "$AUTH" "$KC_URL/admin/realms/$REALM/clients/$INTERNAL_ID/client-secret")
+                  OIDC_SECRET=$(echo "$SEC_JSON" | sed -n 's/.*"value"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+                  echo "  Secret fetched for $CID"
+                else
+                  echo "  ERROR: HTTP $HTTP creating client $CID:"
+                  cat /tmp/oc-resp
+                  exit 1
+                fi
+              }
+
+              # ─── Discover service routes via OpenShift Routes API ────────────────────
+              # Returns the spec.host for the first matching route in namespace NS.
+              # If ROUTE_NAME is given, returns that specific route's host.
+              get_route_host() {
+                local NS="$1" ROUTE_NAME="$2"
+                local ROUTES
+                ROUTES=$(curl -sk -H "Authorization: Bearer $SA_TOKEN" \
+                  "$K8S/apis/route.openshift.io/v1/namespaces/$NS/routes")
+                if [ -n "$ROUTE_NAME" ]; then
+                  # Find section around the named route and extract host
+                  echo "$ROUTES" | tr ',' '\n' | tr '{' '\n' | \
+                    grep -A 20 "\"name\":\"$ROUTE_NAME\"" | \
+                    sed -n 's/.*"host"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1
+                else
+                  # Return first route host found
+                  echo "$ROUTES" | sed -n 's/.*"host"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1
+                fi
+              }
+
+              echo ""
+              echo "=== Creating per-service OIDC clients ==="
+
+              # ── Quay ──────────────────────────────────────────────────────────────────
+              echo "--- Quay OIDC ---"
+              QUAY_HOST=$(get_route_host "$QUAY_ROUTE_NS" "")
+              [ -z "$QUAY_HOST" ] && echo "WARN: Could not discover Quay route, using wildcard" && QUAY_HOST="quay.placeholder"
+              echo "  Quay host: $QUAY_HOST"
+              create_oidc_client "$QUAY_CLIENT_ID" \
+                "https://${QUAY_HOST}/*" \
+                "https://${QUAY_HOST}/oauth2/keycloak/callback"
+              QUAY_OIDC_SECRET="$OIDC_SECRET"
+
+              curl -sk -o /dev/null -X POST "$VAULT_ADDR/v1/$KV_PATH/data/$QUAY_VAULT_PATH" \
+                -H "X-Vault-Token: $VAULT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{\"data\":{
+                  \"client-id\":\"$QUAY_CLIENT_ID\",
+                  \"client-secret\":\"$QUAY_OIDC_SECRET\",
+                  \"realm\":\"$REALM\",
+                  \"keycloak-url\":\"$KC_URL\",
+                  \"quay-hostname\":\"$QUAY_HOST\"
+                }}"
+              echo "  Stored quay OIDC credentials in Vault at $KV_PATH/$QUAY_VAULT_PATH"
+
+              # ── OpenShift OAuth ───────────────────────────────────────────────────────
+              echo "--- OpenShift OAuth OIDC ---"
+              OCP_HOST=$(get_route_host "$OCP_ROUTE_NS" "$OCP_ROUTE_NAME")
+              [ -z "$OCP_HOST" ] && OCP_HOST="oauth-openshift.placeholder"
+              echo "  OAuth host: $OCP_HOST"
+              create_oidc_client "$OCP_CLIENT_ID" \
+                "https://${OCP_HOST}/*" \
+                "https://${OCP_HOST}/oauth2callback/Keycloak"
+              OCP_OIDC_SECRET="$OIDC_SECRET"
+
+              curl -sk -o /dev/null -X POST "$VAULT_ADDR/v1/$KV_PATH/data/$OCP_VAULT_PATH" \
+                -H "X-Vault-Token: $VAULT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{\"data\":{
+                  \"client-id\":\"$OCP_CLIENT_ID\",
+                  \"client-secret\":\"$OCP_OIDC_SECRET\",
+                  \"realm\":\"$REALM\",
+                  \"keycloak-url\":\"$KC_URL\",
+                  \"oauth-hostname\":\"$OCP_HOST\"
+                }}"
+              echo "  Stored OpenShift OIDC credentials in Vault at $KV_PATH/$OCP_VAULT_PATH"
+
+              # ── Vault ─────────────────────────────────────────────────────────────────
+              echo "--- Vault OIDC ---"
+              VAULT_SVC_HOST=$(get_route_host "$VAULT_ROUTE_NS" "")
+              [ -z "$VAULT_SVC_HOST" ] && VAULT_SVC_HOST="vault.placeholder"
+              echo "  Vault host: $VAULT_SVC_HOST"
+              create_oidc_client "$VAULT_CLIENT_ID" \
+                "https://${VAULT_SVC_HOST}/*" \
+                "https://${VAULT_SVC_HOST}/ui/vault/auth/oidc/oidc/callback" \
+                "http://localhost:8250/oidc/callback"
+              VAULT_OIDC_SECRET="$OIDC_SECRET"
+
+              curl -sk -o /dev/null -X POST "$VAULT_ADDR/v1/$KV_PATH/data/$VAULT_SVC_VAULT_PATH" \
+                -H "X-Vault-Token: $VAULT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{\"data\":{
+                  \"client-id\":\"$VAULT_CLIENT_ID\",
+                  \"client-secret\":\"$VAULT_OIDC_SECRET\",
+                  \"realm\":\"$REALM\",
+                  \"keycloak-url\":\"$KC_URL\",
+                  \"vault-hostname\":\"$VAULT_SVC_HOST\"
+                }}"
+              echo "  Stored Vault OIDC credentials in Vault at $KV_PATH/$VAULT_SVC_VAULT_PATH"
+
+              echo ""
+              echo "=== All per-service OIDC clients configured ==="

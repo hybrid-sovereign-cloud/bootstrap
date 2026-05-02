@@ -18,7 +18,7 @@ spec:
             namespace: {{ .namespace | quote }}
             wave: {{ .wave | quote }}
             param_hostname: {{ if eq .name "rhbk-instance" }}{{ printf "keycloak-rhbk.%s" $.Values.appsDomain | quote }}{{ else }}""{{ end }}
-            param_keycloakUrl: {{ if eq .name "keycloak-config" }}{{ printf "https://keycloak-rhbk.%s" $.Values.appsDomain | quote }}{{ else }}""{{ end }}
+            param_keycloakUrl: {{ if or (eq .name "keycloak-config") (eq .name "service-oidc-config") }}{{ printf "https://keycloak-rhbk.%s" $.Values.appsDomain | quote }}{{ else }}""{{ end }}
         {{- end }}
   template:
     metadata:
