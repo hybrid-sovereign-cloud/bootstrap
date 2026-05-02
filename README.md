@@ -55,6 +55,27 @@ make gitops-full-bootstrap
 
 Commit/push chart changes, then refresh/sync Applications in Argo (or wait for polling).
 
+### Post-bootstrap: seed Vault secrets
+
+After `phase1-gitops` + `phase2-applicationset`, Vault is unsealed and the KV engine is ready, but application secrets must be seeded before dependent apps (Gitea, Keycloak) start:
+
+```bash
+ROOT_TOKEN=$(oc get secret vault-init-keys -n vault -o jsonpath='{.data.root-token}' | base64 -d)
+oc exec -n vault central-vault-0 -- sh -c "
+  export VAULT_TOKEN='$ROOT_TOKEN'; export VAULT_ADDR=http://127.0.0.1:8200
+  vault kv put central/gitea/admin username='sovereign-admin' password='<rotate-me>'
+  vault kv put central/keycloak/sovereign-tenants-client \
+    client-id='sovereign-tenants' client-secret='<rotate-me>' \
+    realm='sovereign-cloud' keycloak-url='https://keycloak-rhbk.<apps-domain>'
+"
+```
+
+External Secrets Operator will pick up the secrets within `refreshInterval` (1 h) and create the Kubernetes Secrets.
+
+### ROSA / managed-OpenShift note
+
+On ROSA, `openshift-gitops-argocd-application-controller` needs an explicit `cluster-admin` `ClusterRoleBinding` to manage resources in workload namespaces. This is added by the **`gitops-instance`** chart (`templates/argocd-cluster-admin.yaml`). A restart of the application-controller StatefulSet may be required for the new binding to take effect (handled automatically on first install).
+
 ## Makefile reference
 
 | Target | Role |
