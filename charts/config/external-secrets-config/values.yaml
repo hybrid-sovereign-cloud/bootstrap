@@ -17,3 +17,11 @@ externalSecrets:
         k8sKey: realm
       - vaultKey: keycloak-url
         k8sKey: keycloak-url
+  - name: gitea-admin-secret
+    namespace: gitea
+    remoteKey: gitea/admin
+    keys:
+      - vaultKey: username
+        k8sKey: username
+      - vaultKey: password
+        k8sKey: password

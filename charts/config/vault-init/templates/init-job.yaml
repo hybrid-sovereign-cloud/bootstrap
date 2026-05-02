@@ -111,6 +111,10 @@ spec:
               echo "Logging in..."
               vault login "$ROOT_TOKEN"
               echo "Enabling KV v2 at ${KV_PATH}/..."
-              vault secrets enable -path="${KV_PATH}" -version=2 kv 2>/dev/null || echo "KV already enabled."
+              if ! vault secrets list -format=json 2>/dev/null | grep -q "\"${KV_PATH}/\""; then
+                vault secrets enable -path="${KV_PATH}" -version=2 kv && echo "KV engine enabled at ${KV_PATH}/"
+              else
+                echo "KV engine at ${KV_PATH}/ already present, skipping."
+              fi
               echo "=== Vault Init Complete ==="
               vault status
