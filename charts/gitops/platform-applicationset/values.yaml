@@ -1,0 +1,82 @@
+# Required at helm install: real cluster apps domain (make phase2 passes it).
+appsDomain: apps.REPLACE.example.com
+
+applicationSetName: platform-gitops
+
+git:
+  repoURL: https://github.com/hybrid-sovereign-cloud/bootstrap.git
+  revision: main
+
+applications:
+  - name: aap-operator
+    path: charts/operators/aap-operator
+    namespace: ansible-automation-platform
+    wave: "10"
+  - name: external-secrets-operator
+    path: charts/operators/external-secrets-operator
+    namespace: external-secrets-operator
+    wave: "20"
+  - name: odf-operator
+    path: charts/operators/odf-operator
+    namespace: openshift-storage
+    wave: "30"
+  - name: openshift-pipelines-operator
+    path: charts/operators/openshift-pipelines-operator
+    namespace: openshift-operators
+    wave: "40"
+  - name: quay-operator
+    path: charts/operators/quay-operator
+    namespace: quay
+    wave: "50"
+  - name: rhbk-operator
+    path: charts/operators/rhbk-operator
+    namespace: rhbk
+    wave: "60"
+  - name: sovereign-cloud
+    path: charts/instances/sovereign-cloud
+    namespace: sovereign-cloud
+    wave: "100"
+  - name: vault-instance
+    path: charts/instances/vault-instance
+    namespace: vault
+    wave: "110"
+  - name: aap-instance
+    path: charts/instances/aap-instance
+    namespace: aap
+    wave: "115"
+  - name: rhbk-instance
+    path: charts/instances/rhbk-instance
+    namespace: rhbk
+    wave: "120"
+  - name: gitea-instance
+    path: charts/instances/gitea-instance
+    namespace: gitea
+    wave: "125"
+  - name: odf-noobaa
+    path: charts/instances/odf-noobaa
+    namespace: openshift-storage
+    wave: "130"
+  - name: pipelines-bootstrap
+    path: charts/instances/pipelines-bootstrap
+    namespace: sovereign-cloud
+    wave: "135"
+  - name: quay-instance
+    path: charts/instances/quay-instance
+    namespace: quay
+    wave: "140"
+  - name: vault-init
+    path: charts/config/vault-init
+    namespace: vault
+    wave: "200"
+  - name: keycloak-config
+    path: charts/config/keycloak-config
+    namespace: rhbk
+    wave: "210"
+  - name: external-secrets-config
+    path: charts/config/external-secrets-config
+    namespace: sovereign-cloud
+    wave: "220"
+  - name: argocd-init-job
+    path: charts/gitops/argocd-init-job
+    namespace: openshift-gitops
+    wave: "250"

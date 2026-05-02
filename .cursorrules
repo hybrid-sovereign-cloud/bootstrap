@@ -14,24 +14,31 @@ rules:
   - math: "latex_standard"
   - respond_with: "fact_nodes_only"
 
+# Repository layout: do not add files to parent multi-repo root; use bootstrap/ and architecture/ only.
+
 # Environment Access
 env:
   OCP_SERVER: "${OCP_SERVER}"
   OCP_USERNAME: "${OCP_USERNAME}"
   OCP_PASSWORD: "${OCP_PASSWORD}"
-  login_cmd: 'oc login "$OCP_SERVER" -u "$OCP_USERNAME" -p "$OCP_PASSWORD" --insecure-skip-tls-verify'
+  login_cmd: 'make -C bootstrap login'
   namespace: "sovereign-cloud"
 
 # Deployment Constraints
 deployment:
-  - helm_only: true
-  - forbidden_in_makefile: ["oc create", "oc apply", "oc patch"]
-  - oc_allowed_for: "investigation only"
+  - helm_only_for_install: true
+  - makefile_forbidden: ["oc create", "oc apply"]
+  - makefile_exceptions: ["oc patch for RHBK InstallPlan approval", "oc delete namespace for CONFIRM_CLUSTER_RESET teardown"]
+  - oc_allowed_for: "investigation (get, describe, logs, exec)"
+  - openshift_pipelines: true
+  - imagestreams: true
+  - validate_before_commit: "make -C bootstrap validate-helm"
 
 # Architecture Documentation
 architecture:
   path: "design/architecture"
+  repo_decisions: "decisions/"
   agent_must_update:
-    - "docs/ — detailed install/uninstall/config docs per component"
-    - "decisions/ — ADRs for every significant decision"
-    - "specs/ — architecture specs and diagrams"
+    - "docs/ — operational guides (e.g. openshift-pipelines-bootstrap.md)"
+    - "decisions/ — ADRs (architecture repo root)"
+    - "specs/ — architecture specs"

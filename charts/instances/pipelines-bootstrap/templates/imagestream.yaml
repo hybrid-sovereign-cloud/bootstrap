@@ -1,0 +1,21 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: {{ .Values.imageStream.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.imageStream.lookupPolicy }}
+  lookupPolicy:
+    local: true
+  {{- end }}
+  tags:
+    - name: latest
+      from:
+        kind: DockerImage
+        name: registry.redhat.io/ubi9/ubi-minimal:latest
+      importPolicy:
+        scheduled: false
+      referencePolicy:
+        type: Local

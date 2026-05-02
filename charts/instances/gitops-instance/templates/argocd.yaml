@@ -1,0 +1,12 @@
+{{- if .Values.argocd.serverInsecure }}
+apiVersion: argoproj.io/v1beta1
+kind: ArgoCD
+metadata:
+  name: openshift-gitops
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  server:
+    insecure: true
+{{- end }}

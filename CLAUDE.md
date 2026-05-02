@@ -1,89 +1,45 @@
 # CLAUDE.md — Agent Rules for Hybrid Sovereign Cloud Bootstrap
 
-## Environment Access
+## Repository layout
 
-Environment variables for OpenShift cluster access:
-- `OCP_SERVER` — OpenShift API server URL
-- `OCP_USERNAME` — OpenShift admin username
-- `OCP_PASSWORD` — OpenShift admin password
+- Work only **`bootstrap/`** and **`architecture/`**; never add project files to a parent workspace root.
+- Run **`make validate-helm`** after chart or Makefile changes.
+- You may **`git commit` / `push`** as needed when work is coherent.
 
-Login: `oc login "$OCP_SERVER" -u "$OCP_USERNAME" -p "$OCP_PASSWORD" --insecure-skip-tls-verify`
+## Environment
 
-## Deployment Rules
+- OpenShift: `OCP_SERVER`, `OCP_USERNAME`, `OCP_PASSWORD`
+- GitOps: `GITHUB_URL` (HTTPS repo with this tree), `GITHUB_TOKEN`, `GITHUB_REVISION` (optional)
 
-- **All deployments MUST use Helm only** via Makefile targets.
-- `oc create`, `oc apply`, `oc patch` are **forbidden** in Makefile targets.
-- `oc` is permitted **only for investigation** (`oc get`, `oc describe`, `oc logs`, `oc exec`).
-- **All cluster interactions** must be exposed as `make` targets so the setup is portable across clusters.
-- Each operator/component gets its **own Helm chart** and **own namespace**.
-- Use `helm upgrade --install` with `--create-namespace` for idempotency.
+## Deployment model (GitOps-first)
 
-## Build Rules
+1. **`make phase1-gitops`** — Cluster-scoped OpenShift GitOps operator; **`install-gitops-instance-repos`** creates **`platform-git-repository`** with `insecure: "true"` for Git TLS when needed.
+2. **`make phase2-applicationset`** — Inst **`platform-applicationset`**; Argo CD owns all remaining charts with **prune** + **selfHeal** and **sync waves**.
+3. **`argocd-init-job`** — PostSync Job (cluster-admin SA) clones repo and runs **`make argocd-post-sync-waits`** (extend via chart values).
 
-- Use **podman** for all container builds (never docker).
-- Use **OpenShift ImageStreams** to upload/reference built images.
-- Always **deploy, test, and iterate** — fix failures before moving on.
+**Helm** for all chart installs; avoid **`oc apply`** / **`oc create`** in Makefile except documented teardown / OLM exceptions.
 
-## Namespace Convention
+**Portability**: cluster operations go through **`make`** (login, phases, waits, teardown).
 
-| Component | Namespace | Scope |
-|---|---|---|
-| AAP Operator | `ansible-automation-platform` | Namespace-scoped |
-| External Secrets Operator | `external-secrets-operator` | Namespace-scoped |
-| Vault | `vault` | Namespace-scoped |
-| RHBK Operator | `rhbk` | Namespace-scoped |
-| OpenShift GitOps | `openshift-gitops` | Cluster-scoped |
-| Quay | `quay` | Namespace-scoped |
-| AAP Instance | `aap` | — |
-| Keycloak Instance | `rhbk` | — |
-| Vault Instance | `vault` | — |
-| Gitea Instance | `gitea` | — |
-| Sovereign Control Plane | `sovereign-cloud` | — |
+## Operators
 
-## Chart Organisation
+All bootstrap **`installPlanApproval: Automatic`** (including RHBK). Legacy `make approve-rhbk-installplan` only if a CSV is still Manual.
 
-```
-charts/
-├── operators/          # OLM Subscription charts (one per operator)
-│   ├── aap-operator/
-│   ├── external-secrets-operator/
-│   ├── rhbk-operator/
-│   ├── gitops-operator/
-│   ├── quay-operator/
-│   └── odf-operator/
-├── instances/          # Operand/instance charts
-│   ├── aap-instance/
-│   ├── vault-instance/
-│   ├── rhbk-instance/
-│   ├── gitops-instance/
-│   ├── gitea-instance/
-│   ├── quay-instance/
-│   └── sovereign-cloud/
-└── config/             # Configuration/integration charts
-    ├── vault-init/
-    ├── keycloak-config/
-    ├── external-secrets-config/
-    └── ocp-oauth-config/
-```
+## Builds
 
-## Architecture Documentation Rules
+- **OpenShift Pipelines** — `charts/operators/openshift-pipelines-operator` + `pipelines-bootstrap`.
+- **ImageStreams** — `charts/instances/pipelines-bootstrap`.
+- **Podman** for local builds.
 
-The `design/architecture/` directory contains:
-- `specs/` — Architecture specifications and design documents
-- `decisions/` — Architecture Decision Records (ADRs)
-- `docs/` — Operational and reference documentation
+## Testing
 
-### Agent Responsibilities
+- **`make validate-helm`**
+- **`make phase1-gitops`** then **`phase2-applicationset`** on a cluster; debug with **`oc get applications -n openshift-gitops`**, Argo logs, and Makefile wait targets.
 
-For **every** change the agent MUST:
-1. Update `design/architecture/docs/` with detailed component docs.
-2. Record decisions in `design/architecture/decisions/` as ADRs.
-3. Keep `design/architecture/specs/` current.
-4. Commit and push changes to the architecture repo.
+## Documentation
 
-## Code Style
+- `bootstrap/README.md`, `architecture/docs/gitops-bootstrap.md`, **`architecture/decisions/`** for ADRs.
 
-- No preamble or postamble.
-- Technical dense style, minimal verbosity.
-- Markdown hierarchical format.
-- Ignore all `.git/` metadata.
+## Teardown
+
+- **`make teardown-bootstrap`** (uninstalls ApplicationSet release and Helm-managed operators/instances).

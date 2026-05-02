@@ -1,0 +1,13 @@
+git:
+  revision: main
+
+# Secret created by gitops-instance chart (Argo repository secrets use these keys).
+repositorySecretName: platform-git-repository
+repositorySecretNamespace: openshift-gitops
+
+# Space-separated make targets run from cloned repo (bootstrap/ if present else root).
+makeTargets: "argocd-post-sync-waits"
+
+job:
+  image: registry.access.redhat.com/ubi9/ubi:latest
+  activeDeadlineSeconds: 7200

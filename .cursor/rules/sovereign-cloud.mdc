@@ -6,60 +6,54 @@ alwaysApply: true
 
 # Sovereign Cloud Bootstrap — Agent Rules
 
+## Repository layout
+
+- **Do not** add or modify files in a parent multi-repo root (e.g. `sovereign/`). Limit changes to **`bootstrap/`** and **`architecture/`** (and paths they clone, e.g. `design/architecture` after `import-architecture`).
+- Before finishing bootstrap changes, run **`make validate-helm`** from `bootstrap/`.
+- You may **`git add` / `commit` / `push`** the `bootstrap` and `architecture` repos when changes are coherent.
+
 ## Environment Access
 
-Environment variables for OpenShift cluster access:
-- `OCP_SERVER` — OpenShift API server URL
-- `OCP_USERNAME` — OpenShift admin username
-- `OCP_PASSWORD` — OpenShift admin password
+- `OCP_SERVER`, `OCP_USERNAME`, `OCP_PASSWORD` — `make login`
+- **GitOps**: `GITHUB_URL`, `GITHUB_TOKEN`, optional `GITHUB_REVISION` — see `.env.example`
 
-Login: `oc login "$OCP_SERVER" -u "$OCP_USERNAME" -p "$OCP_PASSWORD" --insecure-skip-tls-verify`
+## Deployment model
 
-## Deployment Rules
+**Default path is GitOps-first:**
 
-- **All deployments MUST use Helm only** via Makefile targets.
-- `oc create`, `oc apply`, `oc patch` are **forbidden** in Makefile targets.
-- `oc` is permitted **only for investigation** (`oc get`, `oc describe`, `oc logs`, `oc exec`).
-- **All cluster interactions** must be exposed as `make` targets so the setup is portable across clusters.
-- Each operator/component gets its **own Helm chart** and **own namespace**.
-- Use `helm upgrade --install` with `--create-namespace` for idempotency.
+1. **`make phase1-gitops`** — Cluster-scoped OpenShift GitOps operator + Argo repository Secret (`platform-git-repository`, optional TLS `insecure`).
+2. **`make phase2-applicationset`** — Helm-installs **`platform-applicationset`**; Argo **Applications** manage operators (except GitOps), instances, and config with **prune** + **selfHeal** and **sync waves**.
 
-## Build Rules
+**Helm only** for chart-driven installs (including ApplicationSet and the post-sync **`argocd-init-job`** chart). **`oc create` / `oc apply`** are not added to Makefile for routine provisioning.
 
-- Use **podman** for all container builds (never docker).
-- Use **OpenShift ImageStreams** to upload/reference built images.
-- Always **deploy, test, and iterate** — fix failures before moving on.
+**Exceptions**: `approve-rhbk-installplan` (`oc patch`); `delete-bootstrap-namespaces` (`oc delete` with `CONFIRM_CLUSTER_RESET=1`); read-only **`oc`** for investigation and **wait** targets.
 
-## Namespace Convention
+All supported cluster workflows must be exposed as **`make`** targets for portability.
 
-| Component | Namespace | Scope |
-|---|---|---|
-| AAP Operator | `ansible-automation-platform` | Namespace-scoped |
-| External Secrets Operator | `external-secrets-operator` | Namespace-scoped |
-| Vault | `vault` | Namespace-scoped |
-| RHBK Operator | `rhbk` | Namespace-scoped |
-| OpenShift GitOps | `openshift-gitops` | Cluster-scoped |
-| Quay | `quay` | Namespace-scoped |
-| Sovereign Control Plane | `sovereign-cloud` | Foundation namespace |
+## Testing and iteration
 
-## Architecture Documentation Rules
+- Run **`make validate-helm`** after chart/Makefile edits.
+- On a live cluster: run **`phase1-gitops`**, then **`phase2-applicationset`**, then **`argocd-post-sync-waits`** as needed; fix failures before moving on.
+- Use **OpenShift Pipelines** for cluster builds; **ImageStreams** for in-cluster image references; **podman** locally.
 
-The `design/architecture/` directory contains:
-- `specs/` — Architecture specifications and design documents
-- `decisions/` — Architecture Decision Records (ADRs)
-- `docs/` — Operational and reference documentation
+## Namespace map
 
-### Agent Responsibilities
+| Component | Namespace |
+|---|---|
+| GitOps / Argo / ApplicationSet | `openshift-gitops` |
+| AAP Operator | `ansible-automation-platform` |
+| External Secrets Operator | `external-secrets-operator` |
+| RHBK | `rhbk` |
+| Quay | `quay` |
+| ODF | `openshift-storage` |
+| Sovereign / pipelines bootstrap | `sovereign-cloud` |
+| Pipelines subscription | `openshift-operators` |
+| Vault | `vault` |
 
-For **every** change the agent MUST:
-1. Update `design/architecture/docs/` with detailed component docs.
-2. Record decisions in `design/architecture/decisions/` as ADRs.
-3. Keep `design/architecture/specs/` current.
-4. Commit and push changes to the architecture repo.
+## Architecture documentation
 
-## Code Style
+Update **`architecture`** (`docs/`, `decisions/`, `specs/`) for GitOps and bootstrap changes. ADRs live in **`architecture/decisions/`**.
 
-- No preamble or postamble.
-- Technical dense style, minimal verbosity.
-- Markdown hierarchical format.
-- Ignore all `.git/` metadata.
+## Code style
+
+- Technical, dense markdown; ignore `.git/` metadata.

@@ -1,1 +1,13 @@
-verified: true
+# Git repository for Argo CD (same URL as GitHub/GitLab remote used for sync).
+# Env: GITHUB_URL, GITHUB_TOKEN (passed via Makefile / helm --set*)
+github:
+  repositoryUrl: ""
+  token: ""
+  # Skip TLS verification when cloning / repo server (string "true" for Argo secret)
+  insecure: "true"
+  username: "git"
+
+# Optional: tighten Argo CD server behavior when using self-signed Git endpoints.
+argocd:
+  # When true, merge server.insecure: true on the openshift-gitops ArgoCD CR (if chart deploys it).
+  serverInsecure: false

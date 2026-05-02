@@ -1,0 +1,6 @@
+apiVersion: v2
+name: platform-applicationset
+description: Argo CD ApplicationSet — platform operators, instances, config (GitOps phase)
+type: application
+version: 0.1.0
+appVersion: "1.0"

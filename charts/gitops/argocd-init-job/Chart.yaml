@@ -1,0 +1,6 @@
+apiVersion: v2
+name: argocd-init-job
+description: Post-sync Job (cluster-admin) — clone Git repo and run make targets for init/waits
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

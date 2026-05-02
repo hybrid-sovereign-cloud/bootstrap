@@ -1,111 +1,97 @@
 # Hybrid Sovereign Cloud Bootstrap
 
-Bootstraps a sovereign cloud control plane on OpenShift via Helm-only deployments.
+Bootstraps the platform on OpenShift using **Helm** and **make**. The default production path is **GitOps-first**: Phase 1 seeds **OpenShift GitOps** (cluster-scoped), Phase 2 installs an **ApplicationSet** so **Argo CD** owns operators, instances, and config with **selfHeal** and **prune**. **OpenShift Pipelines** and **ImageStreams** cover builds and images.
 
 ## Prerequisites
 
-- OpenShift cluster access (ROSA/OCP)
-- `oc`, `helm`, `git`, `make` CLIs
-- Environment variables:
+- OpenShift CLI (`oc`), Helm 3, `make`, `git`, `bash`
+- Variables — see `.env.example` (copy to `.env`):
+
+| Variable | Purpose |
+|----------|---------|
+| `OCP_SERVER`, `OCP_USERNAME`, `OCP_PASSWORD` | `make login` |
+| `GITHUB_URL` | HTTPS URL of the Git repo that contains this `bootstrap/` tree |
+| `GITHUB_TOKEN` | PAT (or token) for Argo to clone / for the post-sync Job |
+| `GITHUB_REVISION` | Branch or tag (default `main`) |
+
+### Cursor / agents
+
+- Open the **`bootstrap/`** folder as the workspace so `.cursor/rules/` apply.
+- Agents: `CLAUDE.md`, `AGENTS.md`.
+
+### Validate locally (no cluster)
 
 ```bash
-export OCP_SERVER=https://api.xxxxxxxxxxxxxx:6443
-export OCP_USERNAME=xxxxxxxxxxxxx
-export OCP_PASSWORD=xxxxxxxxxxxxxxxxxxxxxxxxxxx
+make validate-helm
 ```
 
-## Quick Start
+## GitOps flow (recommended)
+
+### Phase 1 — GitOps operator + Argo repo
+
+Loads `~/.bashrc` when present, then:
 
 ```bash
-# Login
-make login
-
-# Import repos
-make import-architecture
-make import-initrepos
-
-# Install operators (OLM subscriptions)
-make install-all-operators
-make approve-rhbk-installplan
-
-# Install instances
-make install-all-instances
-
-# Configure Vault
-make vault-init
-
-# Configure Keycloak
-make keycloak-config
-
-# Configure External Secrets
-make external-secrets-config
-
-# Install ODF + object storage
-make install-odf-operator
-make install-odf-noobaa
-
-# Install Quay
-make install-quay-instance
-
-# Check status
-make status
+make phase1-gitops
 ```
 
-## Repository Layout
+Installs the **cluster-scoped** OpenShift GitOps operator, waits for CSV, creates **`platform-git-repository`** (Git credential + `insecure` for TLS), waits for **`ArgoCD/openshift-gitops`**.
+
+### Phase 2 — ApplicationSet (all other charts via Argo)
+
+```bash
+make phase2-applicationset
+```
+
+Installs Helm release **`platform-applicationset`**, which creates **Applications** for (in sync waves): operators (**not** GitOps — already in phase 1), instances, config charts, and **`argocd-init-job`** (PostSync Job: clone repo + `make argocd-post-sync-waits`).
+
+### One-shot
+
+```bash
+make gitops-full-bootstrap
+```
+
+### After Git push
+
+Commit/push chart changes, then refresh/sync Applications in Argo (or wait for polling).
+
+## Makefile reference
+
+| Target | Role |
+|--------|------|
+| `phase1-gitops` | Seed GitOps + repo secret |
+| `phase2-applicationset` | Install ApplicationSet |
+| `gitops-full-bootstrap` | Phase 1 + 2 |
+| `wait-openshift-gitops-csv` | Retry until GitOps CSV succeeds |
+| `wait-argocd-ready` | Retry until ArgoCD CR is ready |
+| `argocd-post-sync-waits` | Retry until key Applications are Healthy |
+| `install-gitops-instance-repos` | Only repo Secret (+ chart metadata) |
+| `teardown-bootstrap` | Uninstall ApplicationSet + Helm releases |
+
+Run `make help` for the full list including legacy direct-install targets.
+
+## Repository layout (high level)
 
 ```
 bootstrap/
 ├── charts/
-│   ├── operators/              # OLM Subscription charts
-│   │   ├── aap-operator/
-│   │   ├── external-secrets-operator/
-│   │   ├── rhbk-operator/
-│   │   ├── gitops-operator/
-│   │   ├── quay-operator/
-│   │   └── odf-operator/
-│   ├── instances/              # Operand/instance charts
-│   │   ├── aap-instance/
-│   │   ├── vault-instance/
-│   │   ├── rhbk-instance/
-│   │   ├── gitops-instance/
-│   │   ├── gitea-instance/
-│   │   ├── sovereign-cloud/
-│   │   ├── quay-instance/
-│   │   └── odf-noobaa/
-│   └── config/                 # Configuration charts
-│       ├── vault-init/
-│       ├── keycloak-config/
-│       └── external-secrets-config/
-├── design/architecture/        # Architecture docs (imported)
-├── init/base_chart/            # Legacy base chart (imported)
+│   ├── operators/          # OLM charts (also synced by Argo from phase 2)
+│   ├── instances/
+│   ├── config/
+│   └── gitops/
+│       ├── platform-applicationset/   # ApplicationSet (Helm)
+│       └── argocd-init-job/          # Post-sync Job chart
 ├── Makefile
+├── .env.example
+├── AGENTS.md
 ├── CLAUDE.md
-├── .cursor/rules/
-└── .cursorrules
+└── .cursor/rules/
 ```
 
-## Namespace Map
+## Policy
 
-| Component | Namespace | Type |
-|---|---|---|
-| AAP Operator | `ansible-automation-platform` | OLM Subscription |
-| ESO Operator | `external-secrets-operator` | OLM Subscription |
-| RHBK Operator + Instance | `rhbk` | OLM + Keycloak CR |
-| GitOps Operator | `openshift-gitops` | OLM Subscription |
-| Quay Operator + Instance | `quay` | OLM + QuayRegistry CR |
-| ODF Operator + NooBaa | `openshift-storage` | OLM + NooBaa CR |
-| Vault Instance + Init | `vault` | Helm chart |
-| AAP Instance | `aap` | AnsibleAutomationPlatform CR |
-| Sovereign Cloud | `sovereign-cloud` | Foundation namespace |
+- **Portable cluster access**: use `make` targets (login, phases, waits, teardown).
+- **Pipelines** for cluster builds; **ImageStreams** for images; **podman** locally.
+- **Parent folder** (e.g. multi-repo root) — do not add project files there; work in `bootstrap/` and `architecture/`.
 
-## Makefile Targets
-
-Run `make help` for all targets.
-
-## Rules
-
-- All deployments use **Helm only** (no `oc create/apply/patch` in Makefile)
-- `oc` commands for **investigation only**
-- Use **podman** for container builds
-- Use **ImageStreams** for image uploads
-- Every change must update `design/architecture/`
+Architecture specs and ADRs live in the **`architecture`** repository (`docs/`, `decisions/`, `specs/`).

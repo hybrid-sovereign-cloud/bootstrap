@@ -1,6 +1,8 @@
+# Local cluster credentials (never commit)
+.env
+
 # Imported repos (cloned via Makefile)
 design/architecture/
-init/base_chart/
 
 # Helm dependencies
 charts/instances/vault-instance/charts/

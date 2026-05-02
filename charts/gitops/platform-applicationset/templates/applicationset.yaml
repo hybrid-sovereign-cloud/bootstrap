@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: {{ .Values.applicationSetName }}
+  namespace: openshift-gitops
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=default
+  generators:
+    - list:
+        elements:
+        {{- range .Values.applications }}
+          - name: {{ .name | quote }}
+            path: {{ .path | quote }}
+            namespace: {{ .namespace | quote }}
+            wave: {{ .wave | quote }}
+            param_hostname: {{ if eq .name "rhbk-instance" }}{{ printf "keycloak-rhbk.%s" $.Values.appsDomain | quote }}{{ else }}""{{ end }}
+            param_keycloakUrl: {{ if eq .name "keycloak-config" }}{{ printf "https://keycloak-rhbk.%s" $.Values.appsDomain | quote }}{{ else }}""{{ end }}
+        {{- end }}
+  template:
+    metadata:
+      name: '{{ "{{ .name }}" }}'
+      annotations:
+        argocd.argoproj.io/sync-wave: '{{ "{{ .wave }}" }}'
+      labels:
+        argocd.argoproj.io/application-set: {{ .Values.applicationSetName | quote }}
+    spec:
+      project: default
+      source:
+        repoURL: {{ .Values.git.repoURL | quote }}
+        targetRevision: {{ .Values.git.revision | quote }}
+        path: '{{ "{{ .path }}" }}'
+        helm:
+          releaseName: '{{ "{{ .name }}" }}'
+          parameters:
+            - name: hostname
+              value: '{{ "{{ .param_hostname }}" }}'
+            - name: keycloakUrl
+              value: '{{ "{{ .param_keycloakUrl }}" }}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{ "{{ .namespace }}" }}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

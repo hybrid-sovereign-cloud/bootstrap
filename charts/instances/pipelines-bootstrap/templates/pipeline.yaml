@@ -1,0 +1,19 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: {{ .Values.pipeline.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  description: Smoke pipeline to validate Tekton after OpenShift Pipelines install. Replace with real build tasks that push to ImageStream {{ .Values.imageStream.name }}.
+  tasks:
+    - name: verify-toolchain
+      taskSpec:
+        steps:
+          - name: hello
+            image: registry.redhat.io/ubi9/ubi-minimal:latest
+            script: |
+              set -euo pipefail
+              echo "OpenShift Pipelines bootstrap: OK"
+              echo "Target ImageStream: {{ .Values.imageStream.name }}"

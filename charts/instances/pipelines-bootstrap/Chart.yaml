@@ -1,0 +1,6 @@
+apiVersion: v2
+name: pipelines-bootstrap
+description: ImageStreams and sample Tekton Pipeline for sovereign builds
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

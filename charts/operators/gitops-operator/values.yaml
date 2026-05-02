@@ -1,3 +1,4 @@
+# Cluster-scoped: OperatorGroup.spec.targetNamespaces is empty (all namespaces).
 operatorNamespace: openshift-gitops
 createNamespace: true
 

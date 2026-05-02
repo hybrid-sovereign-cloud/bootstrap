@@ -1,0 +1,3 @@
+# Keep real credentials out of indexing/context; use .env.example as the template.
+.env
+

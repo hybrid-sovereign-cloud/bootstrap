@@ -1,0 +1,8 @@
+namespace: sovereign-cloud
+
+imageStream:
+  name: sovereign-app
+  lookupPolicy: true
+
+pipeline:
+  name: bootstrap-verify
