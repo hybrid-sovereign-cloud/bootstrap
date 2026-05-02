@@ -6,6 +6,9 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
     app: vault-init
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
 spec:
   backoffLimit: 30
   ttlSecondsAfterFinished: 600
