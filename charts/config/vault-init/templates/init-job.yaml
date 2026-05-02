@@ -55,11 +55,12 @@ spec:
                 echo "Initializing Vault..."
                 INIT_OUT=$(vault operator init -key-shares=$SECRET_SHARES -key-threshold=$SECRET_THRESHOLD -format=json)
                 ROOT_TOKEN=$(echo "$INIT_OUT" | grep '"root_token"' | sed 's/.*": *"\(.*\)".*/\1/')
+                # Extract only the key values inside the unseal_keys_b64 array (skip the field name line)
                 KEYS=""
-                for key in $(echo "$INIT_OUT" | sed -n '/unseal_keys_b64/,/]/p' | grep '"' | sed 's/.*"\(.*\)".*/\1/'); do
+                for key in $(echo "$INIT_OUT" | sed -n '/"unseal_keys_b64"/,/\]/p' | grep -v 'unseal_keys_b64' | grep -oE '"[A-Za-z0-9+/=]+"' | tr -d '"'); do
                   KEYS="${KEYS}${KEYS:+,}${key}"
                 done
-                echo "Got $SECRET_SHARES unseal keys."
+                echo "Got $(echo "$KEYS" | tr ',' '\n' | grep -c .) unseal keys."
 
                 KEYS_B64=$(printf '%s' "$KEYS" | base64 | tr -d '\n')
                 TOKEN_B64=$(printf '%s' "$ROOT_TOKEN" | base64 | tr -d '\n')
@@ -88,12 +89,12 @@ spec:
                     -O- "$K8S/api/v1/namespaces/$NAMESPACE/secrets/vault-init-keys" 2>/dev/null || echo '{}')
                   KEYS_B64=$(echo "$SECRET_JSON" | sed -n 's/.*"unseal-keys"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
                   TOKEN_B64=$(echo "$SECRET_JSON" | sed -n 's/.*"root-token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
-                  KEYS=$(printf '%s' "$KEYS_B64" | base64 -d)
+                  KEYS=$(printf '%s' "$KEYS_B64" | base64 -d | sed 's/^unseal_keys_b64,//')
                   ROOT_TOKEN=$(printf '%s' "$TOKEN_B64" | base64 -d)
 
                   [ -z "$KEYS" ] && echo "ERROR: No unseal keys in secret!" && exit 1
 
-                  echo "Unsealing..."
+                  echo "Unsealing with $(echo "$KEYS" | tr ',' '\n' | grep -c .) keys..."
                   I=0
                   for key in $(echo "$KEYS" | tr ',' '\n'); do
                     [ $I -ge $SECRET_THRESHOLD ] && break

@@ -17,7 +17,7 @@
 SHELL := /bin/bash
 
 # Source user shell profile (PATH, aliases) — optional for automation.
-SOURCE_BASHRC := source $${HOME}/.bashrc 2>/dev/null || true
+SOURCE_BASHRC := { set +eu; . $${HOME}/.bashrc 2>/dev/null; set -eu; } 2>/dev/null || true
 WAIT_INTERVAL ?= 15
 WAIT_ATTEMPTS ?= 120
 
@@ -25,6 +25,7 @@ WAIT_ATTEMPTS ?= 120
 GITHUB_URL ?=
 GITHUB_TOKEN ?=
 GITHUB_REVISION ?= main
+export GITHUB_REVISION
 
 # Directories
 DESIGN_DIR    := design
@@ -94,7 +95,7 @@ phase2-applicationset: ## Phase 2: install platform ApplicationSet into openshif
 		--namespace openshift-gitops --create-namespace \
 		--set-string appsDomain="$$APPS_DOMAIN" \
 		--set-string git.repoURL="$$GITHUB_URL" \
-		--set-string git.revision="$$GITHUB_REVISION"
+		--set-string git.revision="$${GITHUB_REVISION:-main}"
 
 gitops-full-bootstrap: phase1-gitops phase2-applicationset ## Run phase1 then phase2
 

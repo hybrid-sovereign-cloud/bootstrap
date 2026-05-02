@@ -43,9 +43,33 @@ spec:
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{ "{{ .namespace }}" }}'
+      ignoreDifferences:
+        # ImageStreams are updated by OpenShift when images are imported
+        - group: image.openshift.io
+          kind: ImageStream
+          jsonPointers:
+            - /spec/tags
+            - /status
+        # Operator-managed CRs drift as operators reconcile their own fields
+        - group: quay.redhat.com
+          kind: QuayRegistry
+          jsonPointers:
+            - /status
+            - /spec/components
+        - group: noobaa.io
+          kind: NooBaa
+          jsonPointers:
+            - /status
+            - /spec
+        - group: argoproj.io
+          kind: ArgoCD
+          jsonPointers:
+            - /status
+            - /spec
       syncPolicy:
         automated:
           prune: true
           selfHeal: true
         syncOptions:
           - CreateNamespace=true
+          - RespectIgnoreDifferences=true
