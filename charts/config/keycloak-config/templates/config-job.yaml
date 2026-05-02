@@ -1,0 +1,164 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: keycloak-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app: keycloak-config
+spec:
+  backoffLimit: 10
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app: keycloak-config
+    spec:
+      serviceAccountName: {{ .Values.jobServiceAccount }}
+      restartPolicy: OnFailure
+      containers:
+        - name: config
+          image: {{ .Values.curlImage }}
+          env:
+            - name: KC_URL
+              value: {{ .Values.keycloakUrl | quote }}
+            - name: REALM
+              value: {{ .Values.realm }}
+            - name: GROUP_NAME
+              value: {{ .Values.group }}
+            - name: CLIENT_ID
+              value: {{ .Values.clientId }}
+            - name: USERNAME
+              value: {{ .Values.user.username }}
+            - name: FIRST_NAME
+              value: {{ .Values.user.firstName }}
+            - name: LAST_NAME
+              value: {{ .Values.user.lastName }}
+            - name: EMAIL
+              value: {{ .Values.user.email }}
+            - name: VAULT_ADDR
+              value: {{ .Values.vaultAddr }}
+            - name: KV_PATH
+              value: {{ .Values.vaultKvPath }}
+            - name: VAULT_SECRET_NS
+              value: {{ .Values.vaultSecretNamespace }}
+            - name: VAULT_SECRET_NAME
+              value: {{ .Values.vaultSecretName }}
+            - name: ADMIN_SECRET_NAME
+              value: {{ .Values.adminSecretName }}
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - |
+              set -e
+              SA_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+              K8S="https://kubernetes.default.svc"
+
+              kget() {
+                curl -sk -H "Authorization: Bearer $SA_TOKEN" "$K8S/api/v1/namespaces/$1/secrets/$2"
+              }
+
+              echo "=== Reading Keycloak admin credentials ==="
+              ADMIN_JSON=$(kget "$NAMESPACE" "$ADMIN_SECRET_NAME")
+              KC_USER=$(echo "$ADMIN_JSON" | sed -n 's/.*"username"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+              KC_PASS=$(echo "$ADMIN_JSON" | sed -n 's/.*"password"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+              KC_USER=$(printf '%s' "$KC_USER" | base64 -d)
+              KC_PASS=$(printf '%s' "$KC_PASS" | base64 -d)
+
+              echo "=== Reading Vault root token ==="
+              VAULT_JSON=$(kget "$VAULT_SECRET_NS" "$VAULT_SECRET_NAME")
+              VAULT_TOKEN=$(echo "$VAULT_JSON" | sed -n 's/.*"root-token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+              VAULT_TOKEN=$(printf '%s' "$VAULT_TOKEN" | base64 -d)
+
+              echo "=== Getting Keycloak admin token ==="
+              KC_TOKEN=$(curl -sk -X POST "$KC_URL/realms/master/protocol/openid-connect/token" \
+                -d "grant_type=password&client_id=admin-cli&username=$KC_USER&password=$KC_PASS" \
+                | sed -n 's/.*"access_token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+              [ -z "$KC_TOKEN" ] && echo "ERROR: Failed to get KC token" && exit 1
+              echo "Got Keycloak admin token."
+
+              AUTH="Authorization: Bearer $KC_TOKEN"
+
+              echo "=== Creating realm: $REALM ==="
+              curl -sk -o /dev/null -w "%{http_code}" -X POST "$KC_URL/admin/realms" \
+                -H "$AUTH" -H "Content-Type: application/json" \
+                -d "{\"realm\":\"$REALM\",\"enabled\":true}" || true
+              echo ""
+
+              echo "=== Creating group: $GROUP_NAME ==="
+              curl -sk -o /dev/null -w "%{http_code}" -X POST "$KC_URL/admin/realms/$REALM/groups" \
+                -H "$AUTH" -H "Content-Type: application/json" \
+                -d "{\"name\":\"$GROUP_NAME\"}" || true
+              echo ""
+
+              echo "=== Creating client: $CLIENT_ID ==="
+              CLIENT_SECRET=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 32)
+              HTTP_CODE=$(curl -sk -o /tmp/client-resp -w "%{http_code}" -X POST "$KC_URL/admin/realms/$REALM/clients" \
+                -H "$AUTH" -H "Content-Type: application/json" \
+                -d "{
+                  \"clientId\":\"$CLIENT_ID\",
+                  \"enabled\":true,
+                  \"protocol\":\"openid-connect\",
+                  \"publicClient\":false,
+                  \"secret\":\"$CLIENT_SECRET\",
+                  \"redirectUris\":[\"*\"],
+                  \"standardFlowEnabled\":true,
+                  \"directAccessGrantsEnabled\":true,
+                  \"serviceAccountsEnabled\":true
+                }")
+
+              if [ "$HTTP_CODE" = "409" ]; then
+                echo "Client exists. Fetching existing secret..."
+                CLIENTS_JSON=$(curl -sk -H "$AUTH" "$KC_URL/admin/realms/$REALM/clients?clientId=$CLIENT_ID")
+                CID=$(echo "$CLIENTS_JSON" | sed -n 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+                SECRET_JSON=$(curl -sk -H "$AUTH" "$KC_URL/admin/realms/$REALM/clients/$CID/client-secret")
+                CLIENT_SECRET=$(echo "$SECRET_JSON" | sed -n 's/.*"value"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+              fi
+              echo "Client secret obtained."
+
+              echo "=== Storing client secret in Vault ==="
+              curl -sk -X POST "$VAULT_ADDR/v1/$KV_PATH/data/keycloak/$CLIENT_ID" \
+                -H "X-Vault-Token: $VAULT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{\"data\":{\"client-id\":\"$CLIENT_ID\",\"client-secret\":\"$CLIENT_SECRET\",\"realm\":\"$REALM\",\"keycloak-url\":\"$KC_URL\"}}"
+              echo ""
+
+              echo "=== Creating user: $USERNAME ==="
+              USER_PASSWORD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9!@#' | head -c 24)
+              HTTP_CODE=$(curl -sk -o /dev/null -w "%{http_code}" -X POST "$KC_URL/admin/realms/$REALM/users" \
+                -H "$AUTH" -H "Content-Type: application/json" \
+                -d "{
+                  \"username\":\"$USERNAME\",
+                  \"enabled\":true,
+                  \"firstName\":\"$FIRST_NAME\",
+                  \"lastName\":\"$LAST_NAME\",
+                  \"email\":\"$EMAIL\",
+                  \"credentials\":[{\"type\":\"password\",\"value\":\"$USER_PASSWORD\",\"temporary\":false}]
+                }")
+              echo "User create HTTP: $HTTP_CODE"
+
+              echo "=== Storing user credentials in Vault ==="
+              curl -sk -X POST "$VAULT_ADDR/v1/$KV_PATH/data/keycloak/$USERNAME" \
+                -H "X-Vault-Token: $VAULT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{\"data\":{\"username\":\"$USERNAME\",\"password\":\"$USER_PASSWORD\",\"realm\":\"$REALM\"}}"
+              echo ""
+
+              echo "=== Adding user to group ==="
+              USERS_JSON=$(curl -sk -H "$AUTH" "$KC_URL/admin/realms/$REALM/users?username=$USERNAME")
+              USER_ID=$(echo "$USERS_JSON" | sed -n 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+              GROUPS_JSON=$(curl -sk -H "$AUTH" "$KC_URL/admin/realms/$REALM/groups?search=$GROUP_NAME")
+              GROUP_ID=$(echo "$GROUPS_JSON" | sed -n 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+              if [ -n "$USER_ID" ] && [ -n "$GROUP_ID" ]; then
+                curl -sk -o /dev/null -X PUT "$KC_URL/admin/realms/$REALM/users/$USER_ID/groups/$GROUP_ID" \
+                  -H "$AUTH" -H "Content-Type: application/json" -d '{}'
+                echo "User added to group."
+              else
+                echo "WARN: Could not find user ($USER_ID) or group ($GROUP_ID)."
+              fi
+
+              echo "=== Keycloak Config Complete ==="

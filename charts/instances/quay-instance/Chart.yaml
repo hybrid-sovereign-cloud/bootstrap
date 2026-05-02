@@ -1,0 +1,6 @@
+apiVersion: v2
+name: quay-instance
+description: Red Hat Quay registry with NooBaa object storage
+type: application
+version: 0.1.0
+appVersion: "3.17"

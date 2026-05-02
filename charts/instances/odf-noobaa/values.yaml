@@ -1,0 +1,3 @@
+name: noobaa
+dbStorageClass: gp3
+dbVolumeSize: 50Gi

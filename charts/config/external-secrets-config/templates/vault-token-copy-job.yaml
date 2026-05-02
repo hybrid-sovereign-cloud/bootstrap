@@ -1,0 +1,116 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: eso-vault-token-copier
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: eso-vault-token-writer
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create", "update", "patch", "get", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eso-vault-token-writer
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: eso-vault-token-writer
+subjects:
+  - kind: ServiceAccount
+    name: eso-vault-token-copier
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: eso-vault-token-reader
+  namespace: {{ .Values.vaultInitKeysSecretNamespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: [{{ .Values.vaultInitKeysSecretName | quote }}]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eso-vault-token-reader
+  namespace: {{ .Values.vaultInitKeysSecretNamespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: eso-vault-token-reader
+subjects:
+  - kind: ServiceAccount
+    name: eso-vault-token-copier
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: copy-vault-token
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  backoffLimit: 10
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      serviceAccountName: eso-vault-token-copier
+      restartPolicy: OnFailure
+      containers:
+        - name: copy
+          image: docker.io/curlimages/curl:8.12.0
+          env:
+            - name: SRC_NS
+              value: {{ .Values.vaultInitKeysSecretNamespace }}
+            - name: SRC_NAME
+              value: {{ .Values.vaultInitKeysSecretName }}
+            - name: DST_NAME
+              value: {{ .Values.vaultTokenSecretName }}
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - |
+              SA_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+              K8S="https://kubernetes.default.svc"
+
+              SRC=$(curl -sk -H "Authorization: Bearer $SA_TOKEN" \
+                "$K8S/api/v1/namespaces/$SRC_NS/secrets/$SRC_NAME")
+              TOKEN_B64=$(echo "$SRC" | sed -n 's/.*"root-token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+
+              [ -z "$TOKEN_B64" ] && echo "ERROR: Could not read root-token" && exit 1
+
+              curl -sk -H "Authorization: Bearer $SA_TOKEN" \
+                --method DELETE \
+                "$K8S/api/v1/namespaces/$NAMESPACE/secrets/$DST_NAME" 2>/dev/null || true
+
+              curl -sk -H "Authorization: Bearer $SA_TOKEN" \
+                -H "Content-Type: application/json" \
+                -X POST "$K8S/api/v1/namespaces/$NAMESPACE/secrets" \
+                -d "{\"apiVersion\":\"v1\",\"kind\":\"Secret\",\"metadata\":{\"name\":\"$DST_NAME\",\"namespace\":\"$NAMESPACE\"},\"type\":\"Opaque\",\"data\":{\"token\":\"$TOKEN_B64\"}}"
+
+              echo "Vault token copied to $NAMESPACE/$DST_NAME"

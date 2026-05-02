@@ -1,0 +1,8 @@
+name: central-aap
+spec:
+  controller:
+    disabled: false
+  eda:
+    disabled: false
+  hub:
+    disabled: true

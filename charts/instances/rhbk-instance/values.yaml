@@ -1,0 +1,6 @@
+name: central-keycloak
+instances: 1
+hostname: "keycloak-rhbk.apps.REPLACE"
+proxyHeaders: xforwarded
+http:
+  enabled: true

@@ -1,0 +1,5 @@
+name: central-registry
+
+objectStorage:
+  bucketClassName: openshift-storage.noobaa.io
+  storageNamespace: openshift-storage

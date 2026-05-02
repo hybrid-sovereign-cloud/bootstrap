@@ -1,0 +1,65 @@
+---
+description: Sovereign Cloud Bootstrap — Agent Rules
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Sovereign Cloud Bootstrap — Agent Rules
+
+## Environment Access
+
+Environment variables for OpenShift cluster access:
+- `OCP_SERVER` — OpenShift API server URL
+- `OCP_USERNAME` — OpenShift admin username
+- `OCP_PASSWORD` — OpenShift admin password
+
+Login: `oc login "$OCP_SERVER" -u "$OCP_USERNAME" -p "$OCP_PASSWORD" --insecure-skip-tls-verify`
+
+## Deployment Rules
+
+- **All deployments MUST use Helm only** via Makefile targets.
+- `oc create`, `oc apply`, `oc patch` are **forbidden** in Makefile targets.
+- `oc` is permitted **only for investigation** (`oc get`, `oc describe`, `oc logs`, `oc exec`).
+- **All cluster interactions** must be exposed as `make` targets so the setup is portable across clusters.
+- Each operator/component gets its **own Helm chart** and **own namespace**.
+- Use `helm upgrade --install` with `--create-namespace` for idempotency.
+
+## Build Rules
+
+- Use **podman** for all container builds (never docker).
+- Use **OpenShift ImageStreams** to upload/reference built images.
+- Always **deploy, test, and iterate** — fix failures before moving on.
+
+## Namespace Convention
+
+| Component | Namespace | Scope |
+|---|---|---|
+| AAP Operator | `ansible-automation-platform` | Namespace-scoped |
+| External Secrets Operator | `external-secrets-operator` | Namespace-scoped |
+| Vault | `vault` | Namespace-scoped |
+| RHBK Operator | `rhbk` | Namespace-scoped |
+| OpenShift GitOps | `openshift-gitops` | Cluster-scoped |
+| Quay | `quay` | Namespace-scoped |
+| Sovereign Control Plane | `sovereign-cloud` | Foundation namespace |
+
+## Architecture Documentation Rules
+
+The `design/architecture/` directory contains:
+- `specs/` — Architecture specifications and design documents
+- `decisions/` — Architecture Decision Records (ADRs)
+- `docs/` — Operational and reference documentation
+
+### Agent Responsibilities
+
+For **every** change the agent MUST:
+1. Update `design/architecture/docs/` with detailed component docs.
+2. Record decisions in `design/architecture/decisions/` as ADRs.
+3. Keep `design/architecture/specs/` current.
+4. Commit and push changes to the architecture repo.
+
+## Code Style
+
+- No preamble or postamble.
+- Technical dense style, minimal verbosity.
+- Markdown hierarchical format.
+- Ignore all `.git/` metadata.

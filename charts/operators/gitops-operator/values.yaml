@@ -1,0 +1,13 @@
+operatorNamespace: openshift-gitops
+createNamespace: true
+
+subscription:
+  name: openshift-gitops-operator
+  channel: latest
+  installPlanApproval: Automatic
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+
+operatorGroup:
+  create: true
+  targetNamespaces: []

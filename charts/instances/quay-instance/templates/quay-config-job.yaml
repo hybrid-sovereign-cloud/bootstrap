@@ -1,0 +1,146 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: quay-config-sa
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: quay-config-secrets
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: quay-config-secrets
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: quay-config-secrets
+subjects:
+  - kind: ServiceAccount
+    name: quay-config-sa
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: quay-noobaa-reader
+  namespace: {{ .Values.objectStorage.storageNamespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["noobaa-admin"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: quay-noobaa-reader
+  namespace: {{ .Values.objectStorage.storageNamespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: quay-noobaa-reader
+subjects:
+  - kind: ServiceAccount
+    name: quay-config-sa
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: quay-config-bundle
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app: quay-config
+spec:
+  backoffLimit: 30
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app: quay-config
+    spec:
+      serviceAccountName: quay-config-sa
+      restartPolicy: OnFailure
+      containers:
+        - name: config
+          image: docker.io/curlimages/curl:8.12.0
+          env:
+            - name: REGISTRY_NAME
+              value: {{ .Values.name }}
+            - name: NOOBAA_NS
+              value: {{ .Values.objectStorage.storageNamespace }}
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - |
+              SA_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+              K8S="https://kubernetes.default.svc"
+
+              echo "Reading NooBaa admin credentials..."
+              NB_SECRET=$(curl -sk -H "Authorization: Bearer $SA_TOKEN" \
+                "$K8S/api/v1/namespaces/$NOOBAA_NS/secrets/noobaa-admin")
+              ACCESS_KEY=$(echo "$NB_SECRET" | sed -n 's/.*"AWS_ACCESS_KEY_ID"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+              SECRET_KEY=$(echo "$NB_SECRET" | sed -n 's/.*"AWS_SECRET_ACCESS_KEY"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+              ACCESS_KEY=$(printf '%s' "$ACCESS_KEY" | base64 -d)
+              SECRET_KEY=$(printf '%s' "$SECRET_KEY" | base64 -d)
+
+              [ -z "$ACCESS_KEY" ] && echo "ERROR: No NooBaa credentials" && exit 1
+              echo "NooBaa credentials obtained."
+
+              S3_HOST="s3.openshift-storage.svc"
+              S3_PORT="443"
+              BUCKET_NAME="quay-registry"
+
+              CONFIG_YAML="DISTRIBUTED_STORAGE_CONFIG:
+                default:
+                  - RadosGWStorage
+                  - access_key: ${ACCESS_KEY}
+                    secret_key: ${SECRET_KEY}
+                    bucket_name: ${BUCKET_NAME}
+                    hostname: ${S3_HOST}
+                    port: ${S3_PORT}
+                    is_secure: true
+                    storage_path: /datastorage/registry
+              DISTRIBUTED_STORAGE_DEFAULT_LOCATIONS: []
+              DISTRIBUTED_STORAGE_PREFERENCE:
+                - default
+              FEATURE_USER_INITIALIZE: true
+              SUPER_USERS:
+                - initial-sovereign-admin"
+
+              CONFIG_B64=$(printf '%s' "$CONFIG_YAML" | base64 | tr -d '\n')
+
+              curl -sk -H "Authorization: Bearer $SA_TOKEN" \
+                --method DELETE \
+                "$K8S/api/v1/namespaces/$NAMESPACE/secrets/${REGISTRY_NAME}-config-bundle" 2>/dev/null || true
+
+              curl -sk -H "Authorization: Bearer $SA_TOKEN" \
+                -H "Content-Type: application/json" \
+                -X POST "$K8S/api/v1/namespaces/$NAMESPACE/secrets" \
+                -d "{\"apiVersion\":\"v1\",\"kind\":\"Secret\",\"metadata\":{\"name\":\"${REGISTRY_NAME}-config-bundle\",\"namespace\":\"$NAMESPACE\"},\"type\":\"Opaque\",\"data\":{\"config.yaml\":\"$CONFIG_B64\"}}"
+
+              echo "Config bundle secret created."

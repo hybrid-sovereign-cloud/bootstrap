@@ -1,0 +1,13 @@
+operatorNamespace: openshift-storage
+
+subscription:
+  name: odf-operator
+  channel: stable-4.21
+  installPlanApproval: Automatic
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+
+operatorGroup:
+  create: true
+  targetNamespaces:
+    - openshift-storage

@@ -1,0 +1,32 @@
+vault:
+  fullnameOverride: central-vault
+  global:
+    openshift: true
+  injector:
+    enabled: false
+  server:
+    image:
+      repository: docker.io/hashicorp/vault
+      tag: "1.21.2"
+    dev:
+      enabled: false
+    standalone:
+      enabled: true
+      config: |
+        ui = true
+        listener "tcp" {
+          tls_disable = 1
+          address = "[::]:8200"
+          cluster_address = "[::]:8201"
+        }
+        storage "file" {
+          path = "/vault/data"
+        }
+    dataStorage:
+      enabled: true
+      size: 1Gi
+    route:
+      enabled: true
+      host: ""
+      tls:
+        termination: edge

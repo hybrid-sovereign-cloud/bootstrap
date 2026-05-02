@@ -1,0 +1,6 @@
+apiVersion: v2
+name: odf-noobaa
+description: NooBaa standalone instance for object storage
+type: application
+version: 0.1.0
+appVersion: "4.21"

@@ -1,0 +1,9 @@
+# Imported repos (cloned via Makefile)
+design/architecture/
+init/base_chart/
+
+# Helm dependencies
+charts/instances/vault-instance/charts/
+charts/instances/vault-instance/Chart.lock
+charts/instances/gitea-instance/charts/
+charts/instances/gitea-instance/Chart.lock

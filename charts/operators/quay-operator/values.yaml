@@ -1,0 +1,13 @@
+operatorNamespace: quay
+
+subscription:
+  name: quay-operator
+  channel: stable-3.17
+  installPlanApproval: Automatic
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+
+operatorGroup:
+  create: true
+  targetNamespaces:
+    - quay

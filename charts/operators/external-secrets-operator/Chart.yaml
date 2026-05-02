@@ -1,0 +1,6 @@
+apiVersion: v2
+name: external-secrets-operator
+description: OLM Subscription for External Secrets Operator (namespace-scoped)
+type: application
+version: 0.1.0
+appVersion: "1.1"

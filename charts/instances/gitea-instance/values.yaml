@@ -1,0 +1,34 @@
+gitea:
+  fullnameOverride: gitea
+  global:
+    storageClass: ""
+  persistence:
+    enabled: true
+    size: 5Gi
+  gitea:
+    admin:
+      username: sovereign-admin
+      password: ""
+      existingSecret: gitea-admin-secret
+    config:
+      server:
+        DOMAIN: gitea.apps.REPLACE
+        ROOT_URL: https://gitea.apps.REPLACE
+      database:
+        DB_TYPE: sqlite3
+      service:
+        DISABLE_REGISTRATION: true
+  postgresql:
+    enabled: false
+  postgresql-ha:
+    enabled: false
+  redis-cluster:
+    enabled: false
+  valkey:
+    enabled: false
+  service:
+    http:
+      type: ClusterIP
+      port: 3000
+  ingress:
+    enabled: false

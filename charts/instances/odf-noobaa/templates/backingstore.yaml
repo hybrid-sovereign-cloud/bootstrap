@@ -1,0 +1,17 @@
+apiVersion: noobaa.io/v1alpha1
+kind: BackingStore
+metadata:
+  name: noobaa-pv-backing-store
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+  finalizers:
+    - noobaa.io/finalizer
+spec:
+  type: pv-pool
+  pvPool:
+    numVolumes: 1
+    storageClass: {{ .Values.dbStorageClass }}
+    resources:
+      requests:
+        storage: 50Gi

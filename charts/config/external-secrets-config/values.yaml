@@ -1,0 +1,19 @@
+vaultAddr: "http://central-vault.vault.svc:8200"
+vaultKvPath: central
+vaultTokenSecretName: vault-token
+vaultInitKeysSecretName: vault-init-keys
+vaultInitKeysSecretNamespace: vault
+secretStoreName: vault-backend
+
+externalSecrets:
+  - name: keycloak-client-secret
+    remoteKey: keycloak/sovereign-tenants-client
+    keys:
+      - vaultKey: client-id
+        k8sKey: client-id
+      - vaultKey: client-secret
+        k8sKey: client-secret
+      - vaultKey: realm
+        k8sKey: realm
+      - vaultKey: keycloak-url
+        k8sKey: keycloak-url

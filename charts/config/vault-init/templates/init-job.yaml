@@ -1,0 +1,115 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vault-init
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app: vault-init
+spec:
+  backoffLimit: 30
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app: vault-init
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount }}
+      restartPolicy: OnFailure
+      containers:
+        - name: vault-init
+          image: {{ .Values.image }}
+          env:
+            - name: VAULT_ADDR
+              value: {{ .Values.vaultAddr }}
+            - name: SECRET_SHARES
+              value: {{ .Values.secretShares | quote }}
+            - name: SECRET_THRESHOLD
+              value: {{ .Values.secretThreshold | quote }}
+            - name: KV_PATH
+              value: {{ .Values.kvPath }}
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - |
+              SA_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+              K8S="https://kubernetes.default.svc"
+
+              echo "Waiting for Vault at $VAULT_ADDR ..."
+              while ! wget -q --spider "$VAULT_ADDR/v1/sys/health" 2>/dev/null && \
+                    ! wget -q --spider -S "$VAULT_ADDR/v1/sys/seal-status" 2>/dev/null; do
+                vault status 2>/dev/null && break
+                vault status 2>&1 | grep -q "Initialized" && break
+                sleep 3
+              done
+              echo "Vault is reachable."
+
+              STAT=$(vault status -format=json 2>/dev/null || echo '{}')
+              IS_INIT=$(echo "$STAT" | grep -c '"initialized": true' || true)
+
+              if [ "$IS_INIT" = "0" ]; then
+                echo "Initializing Vault..."
+                INIT_OUT=$(vault operator init -key-shares=$SECRET_SHARES -key-threshold=$SECRET_THRESHOLD -format=json)
+                ROOT_TOKEN=$(echo "$INIT_OUT" | grep '"root_token"' | sed 's/.*": *"\(.*\)".*/\1/')
+                KEYS=""
+                for key in $(echo "$INIT_OUT" | sed -n '/unseal_keys_b64/,/]/p' | grep '"' | sed 's/.*"\(.*\)".*/\1/'); do
+                  KEYS="${KEYS}${KEYS:+,}${key}"
+                done
+                echo "Got $SECRET_SHARES unseal keys."
+
+                KEYS_B64=$(printf '%s' "$KEYS" | base64 | tr -d '\n')
+                TOKEN_B64=$(printf '%s' "$ROOT_TOKEN" | base64 | tr -d '\n')
+
+                wget -q --no-check-certificate --header="Authorization: Bearer $SA_TOKEN" \
+                  --method=DELETE -O /dev/null \
+                  "$K8S/api/v1/namespaces/$NAMESPACE/secrets/vault-init-keys" 2>/dev/null || true
+                wget -q --no-check-certificate --header="Authorization: Bearer $SA_TOKEN" \
+                  --header="Content-Type: application/json" \
+                  --post-data="{\"apiVersion\":\"v1\",\"kind\":\"Secret\",\"metadata\":{\"name\":\"vault-init-keys\",\"namespace\":\"$NAMESPACE\"},\"type\":\"Opaque\",\"data\":{\"unseal-keys\":\"$KEYS_B64\",\"root-token\":\"$TOKEN_B64\"}}" \
+                  -O- "$K8S/api/v1/namespaces/$NAMESPACE/secrets" 2>&1
+                echo "Stored keys in vault-init-keys secret."
+
+                echo "Unsealing..."
+                I=0
+                for key in $(echo "$KEYS" | tr ',' '\n'); do
+                  [ $I -ge $SECRET_THRESHOLD ] && break
+                  vault operator unseal "$key" || true
+                  I=$((I+1))
+                done
+              else
+                IS_SEALED=$(echo "$STAT" | grep -c '"sealed": true' || true)
+                if [ "$IS_SEALED" = "1" ]; then
+                  echo "Vault sealed. Reading keys from secret..."
+                  SECRET_JSON=$(wget -q --no-check-certificate --header="Authorization: Bearer $SA_TOKEN" \
+                    -O- "$K8S/api/v1/namespaces/$NAMESPACE/secrets/vault-init-keys" 2>/dev/null || echo '{}')
+                  KEYS_B64=$(echo "$SECRET_JSON" | sed -n 's/.*"unseal-keys"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+                  TOKEN_B64=$(echo "$SECRET_JSON" | sed -n 's/.*"root-token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+                  KEYS=$(printf '%s' "$KEYS_B64" | base64 -d)
+                  ROOT_TOKEN=$(printf '%s' "$TOKEN_B64" | base64 -d)
+
+                  [ -z "$KEYS" ] && echo "ERROR: No unseal keys in secret!" && exit 1
+
+                  echo "Unsealing..."
+                  I=0
+                  for key in $(echo "$KEYS" | tr ',' '\n'); do
+                    [ $I -ge $SECRET_THRESHOLD ] && break
+                    vault operator unseal "$key" || true
+                    I=$((I+1))
+                  done
+                fi
+                SECRET_JSON=$(wget -q --no-check-certificate --header="Authorization: Bearer $SA_TOKEN" \
+                  -O- "$K8S/api/v1/namespaces/$NAMESPACE/secrets/vault-init-keys" 2>/dev/null || echo '{}')
+                TOKEN_B64=$(echo "$SECRET_JSON" | sed -n 's/.*"root-token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+                ROOT_TOKEN=$(printf '%s' "$TOKEN_B64" | base64 -d)
+              fi
+
+              echo "Logging in..."
+              vault login "$ROOT_TOKEN"
+              echo "Enabling KV v2 at ${KV_PATH}/..."
+              vault secrets enable -path="${KV_PATH}" -version=2 kv 2>/dev/null || echo "KV already enabled."
+              echo "=== Vault Init Complete ==="
+              vault status

@@ -1,0 +1,37 @@
+# .cursorrules
+# Explicitly ignore all git metadata
+.git/
+**/.git/
+
+# Global Spec: Token Minification
+rules:
+  - no_preamble: true
+  - no_postamble: true
+  - style: "technical_dense"
+  - verbosity: 0
+  - format: "markdown_hierarchical"
+  - code: "snip_only_if_possible"
+  - math: "latex_standard"
+  - respond_with: "fact_nodes_only"
+
+# Environment Access
+env:
+  OCP_SERVER: "${OCP_SERVER}"
+  OCP_USERNAME: "${OCP_USERNAME}"
+  OCP_PASSWORD: "${OCP_PASSWORD}"
+  login_cmd: 'oc login "$OCP_SERVER" -u "$OCP_USERNAME" -p "$OCP_PASSWORD" --insecure-skip-tls-verify'
+  namespace: "sovereign-cloud"
+
+# Deployment Constraints
+deployment:
+  - helm_only: true
+  - forbidden_in_makefile: ["oc create", "oc apply", "oc patch"]
+  - oc_allowed_for: "investigation only"
+
+# Architecture Documentation
+architecture:
+  path: "design/architecture"
+  agent_must_update:
+    - "docs/ — detailed install/uninstall/config docs per component"
+    - "decisions/ — ADRs for every significant decision"
+    - "specs/ — architecture specs and diagrams"

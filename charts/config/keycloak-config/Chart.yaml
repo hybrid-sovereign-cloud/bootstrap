@@ -1,0 +1,6 @@
+apiVersion: v2
+name: keycloak-config
+description: Configure Keycloak realm, groups, clients, users and store secrets in Vault
+type: application
+version: 0.1.0
+appVersion: "26.4"

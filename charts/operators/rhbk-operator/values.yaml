@@ -1,0 +1,13 @@
+operatorNamespace: rhbk
+
+subscription:
+  name: rhbk-operator
+  channel: stable-v26.4
+  installPlanApproval: Manual
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+
+operatorGroup:
+  create: true
+  targetNamespaces:
+    - rhbk

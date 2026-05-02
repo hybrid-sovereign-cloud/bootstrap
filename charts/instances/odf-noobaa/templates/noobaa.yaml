@@ -1,0 +1,18 @@
+apiVersion: noobaa.io/v1alpha1
+kind: NooBaa
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  dbStorageClass: {{ .Values.dbStorageClass }}
+  dbResources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  coreResources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  manualDefaultBackingStore: true

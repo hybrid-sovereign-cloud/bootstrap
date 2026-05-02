@@ -1,0 +1,23 @@
+keycloakUrl: ""
+adminSecretName: central-keycloak-initial-admin
+adminSecretNamespace: rhbk
+
+realm: sovereign-tenants
+group: sovereign-admins
+clientId: sovereign-tenants-client
+
+user:
+  username: initial-sovereign-admin
+  firstName: Sovereign
+  lastName: Admin
+  email: admin@sovereign.local
+
+vaultAddr: "http://central-vault.vault.svc:8200"
+vaultKvPath: "central"
+vaultSecretName: vault-init-keys
+vaultSecretNamespace: vault
+
+sovereignNamespace: sovereign-cloud
+
+curlImage: docker.io/curlimages/curl:8.12.0
+jobServiceAccount: keycloak-config-sa
