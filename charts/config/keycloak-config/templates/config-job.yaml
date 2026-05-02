@@ -239,21 +239,18 @@ spec:
               }
 
               # ─── Discover service routes via OpenShift Routes API ────────────────────
-              # Returns the spec.host for the first matching route in namespace NS.
-              # If ROUTE_NAME is given, returns that specific route's host.
+              # Returns spec.host for a route.  If ROUTE_NAME is set, fetch that
+              # specific route object; otherwise return the first host from the list.
               get_route_host() {
                 local NS="$1" ROUTE_NAME="$2"
-                local ROUTES
-                ROUTES=$(curl -sk -H "Authorization: Bearer $SA_TOKEN" \
-                  "$K8S/apis/route.openshift.io/v1/namespaces/$NS/routes")
+                local API="$K8S/apis/route.openshift.io/v1/namespaces/$NS/routes"
+                local RESP
                 if [ -n "$ROUTE_NAME" ]; then
-                  # Find section around the named route and extract host
-                  echo "$ROUTES" | tr ',' '\n' | tr '{' '\n' | \
-                    grep -A 20 "\"name\":\"$ROUTE_NAME\"" | \
-                    sed -n 's/.*"host"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1
+                  RESP=$(curl -sk -H "Authorization: Bearer $SA_TOKEN" "$API/$ROUTE_NAME")
+                  echo "$RESP" | sed -n 's/.*"host"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1
                 else
-                  # Return first route host found
-                  echo "$ROUTES" | sed -n 's/.*"host"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1
+                  RESP=$(curl -sk -H "Authorization: Bearer $SA_TOKEN" "$API")
+                  echo "$RESP" | sed -n 's/.*"host"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1
                 fi
               }
 

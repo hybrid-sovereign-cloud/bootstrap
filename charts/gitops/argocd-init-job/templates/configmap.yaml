@@ -8,7 +8,7 @@ data:
     #!/bin/bash
     set -euo pipefail
     export HOME=/tmp
-    microdnf install -y git-core make tar gzip ca-certificates curl 1>/dev/null
+    dnf install -y git-core make tar gzip ca-certificates curl 1>/dev/null || microdnf install -y git-core make tar gzip ca-certificates curl 1>/dev/null
     ARCH=$(uname -m)
     case "$ARCH" in x86_64) HARCH=amd64 ;; aarch64) HARCH=arm64 ;; *) echo "unsupported arch $ARCH"; exit 1 ;; esac
     curl -fsSL "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux-${HARCH}.tar.gz" | tar xz -C /usr/local/bin kubectl oc
