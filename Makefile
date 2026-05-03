@@ -8,7 +8,7 @@
 	install-all-instances install-pipelines-bootstrap \
 	wait-openshift-gitops-csv wait-argocd-ready wait-csv-succeeded \
 	argocd-post-sync-waits verify-argocd-app-health \
-	vault-init vault-enable-kv vault-store-gitea-admin vault-store-keycloak-auth keycloak-config external-secrets-config \
+	vault-init vault-enable-kv vault-store-gitea-admin vault-store-github-token vault-store-keycloak-auth keycloak-config external-secrets-config \
 	install-odf-operator install-odf-noobaa install-quay-instance \
 	install-rhacm-operator install-rhacs-operator \
 	install-rhacm-instance install-rhacs-instance \
@@ -129,6 +129,7 @@ rebuild-all: ## Full platform rebuild on a brand new cluster (Phase 1→2→vaul
 	@sleep 60
 	$(MAKE) vault-enable-kv
 	$(MAKE) vault-store-gitea-admin
+	$(MAKE) vault-store-github-token
 	$(MAKE) keycloak-config
 	$(MAKE) vault-store-keycloak-auth
 	$(MAKE) external-secrets-config
@@ -311,15 +312,15 @@ vault-init: ## Initialize Vault, create unseal secret, central KV
 	oc wait --for=condition=complete job/vault-init -n vault --timeout=120s 2>/dev/null || \
 	  oc logs -n vault job/vault-init --tail=20 2>/dev/null | tail -10
 
-vault-store-keycloak-auth: ## Store keycloak-auth-config in Vault for plugin_rbac and other operators
+vault-store-keycloak-auth: ## Store keycloak-auth-config in Vault using master realm admin (temp-admin)
 	@ROOT_TOKEN=$$(oc get secret vault-init-keys -n vault -o jsonpath='{.data.root-token}' | base64 -d); \
-	KC_PASS=$$(oc exec -n vault central-vault-0 -- sh -c "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=$$ROOT_TOKEN vault kv get -field=password central/keycloak/initial-sovereign-admin 2>/dev/null"); \
-	KC_USER=$$(oc exec -n vault central-vault-0 -- sh -c "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=$$ROOT_TOKEN vault kv get -field=username central/keycloak/initial-sovereign-admin 2>/dev/null"); \
-	KC_URL=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}' | xargs -I{} echo "https://keycloak-rhbk.{}"); \
+	KC_USER=$$(oc get secret central-keycloak-initial-admin -n rhbk -o jsonpath='{.data.username}' | base64 -d); \
+	KC_PASS=$$(oc get secret central-keycloak-initial-admin -n rhbk -o jsonpath='{.data.password}' | base64 -d); \
+	KC_URL=$$(oc get route keycloak -n rhbk -o jsonpath='{.spec.host}' | xargs -I{} echo "https://{}"); \
 	oc exec -n vault central-vault-0 -- sh -c \
 	  "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=$$ROOT_TOKEN vault kv put central/keycloak/auth-config \
-	   KC_USERNAME='$$KC_USER' KC_PASSWORD='$$KC_PASS' KC_REALM=sovereign-tenants KC_URL='$$KC_URL'" && \
-	echo "Stored keycloak-auth-config in Vault"
+	   KC_USERNAME='$$KC_USER' KC_PASSWORD='$$KC_PASS' KC_REALM=sovereign-tenants KC_AUTH_REALM=master KC_URL='$$KC_URL'" && \
+	echo "Stored keycloak-auth-config in Vault (master realm admin: $$KC_USER)"
 
 vault-store-gitea-admin: ## Store Gitea admin credentials in Vault (generates random password if not set)
 	@ROOT_TOKEN=$$(oc get secret vault-init-keys -n vault -o jsonpath='{.data.root-token}' | base64 -d); \
@@ -329,6 +330,13 @@ vault-store-gitea-admin: ## Store Gitea admin credentials in Vault (generates ra
 	  "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=$$ROOT_TOKEN vault kv get central/gitea/admin > /dev/null 2>&1 \
 	   || (VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=$$ROOT_TOKEN vault kv put central/gitea/admin username=gitea-admin password=$$GITEA_PASS \
 	   && echo 'Gitea admin secret stored in Vault')"
+
+vault-store-github-token: ## Store GitHub PAT in Vault at central/github/token (requires GITHUB_TOKEN env var)
+	@test -n "$${GITHUB_TOKEN:-}" || { echo "ERROR: GITHUB_TOKEN not set"; exit 1; }; \
+	ROOT_TOKEN=$$(oc get secret vault-init-keys -n vault -o jsonpath='{.data.root-token}' | base64 -d); \
+	oc exec -n vault central-vault-0 -- sh -c \
+	  "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=$$ROOT_TOKEN vault kv put central/github token='$${GITHUB_TOKEN}'" && \
+	echo "Stored GitHub token in Vault"
 
 vault-enable-kv: ## Enable central KV engine in Vault (idempotent)
 	@ROOT_TOKEN=$$(oc get secret vault-init-keys -n vault -o jsonpath='{.data.root-token}' | base64 -d); \
