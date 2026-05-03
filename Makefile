@@ -124,6 +124,8 @@ rebuild-all: ## Full platform rebuild on a brand new cluster (Phase 1→2→vaul
 	@echo "  HYBRID SOVEREIGN CLOUD — Full Platform Rebuild"
 	@echo "================================================================"
 	$(MAKE) phase1-gitops
+	# phase1-gitops applies gitops-instance chart; apply again to ensure resourceExclusions are current
+	$(MAKE) install-gitops-instance
 	$(MAKE) phase2-applicationset
 	@echo "==> Waiting for ArgoCD to reconcile operators (60s)..."
 	@sleep 60
@@ -276,9 +278,11 @@ install-rhbk-instance: ## Install Keycloak instance in rhbk namespace
 		--namespace rhbk --create-namespace \
 		--set "hostname=keycloak-rhbk.$$APPS_DOMAIN"
 
-install-gitops-instance: ## Install GitOps metadata chart only (legacy; prefer install-gitops-instance-repos)
+install-gitops-instance: ## Apply gitops-instance chart (ArgoCD CR with resourceExclusions, controller resources)
+	@APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}' 2>/dev/null || echo ""); \
 	helm upgrade --install gitops-instance $(GITOPS_INST_CHART) \
-		--namespace openshift-gitops --create-namespace
+		--namespace openshift-gitops --create-namespace \
+		$${APPS_DOMAIN:+--set argocd.appsDomain="$$APPS_DOMAIN"}
 
 install-gitops-instance-repos: ## Configure Argo CD repository secret + optional server flags (GITHUB_URL, GITHUB_TOKEN)
 	@set -euo pipefail; \
@@ -318,11 +322,13 @@ vault-store-keycloak-auth: ## Store keycloak-auth-config in Vault using master r
 	@ROOT_TOKEN=$$(oc get secret vault-init-keys -n vault -o jsonpath='{.data.root-token}' | base64 -d); \
 	KC_USER=$$(oc get secret central-keycloak-initial-admin -n rhbk -o jsonpath='{.data.username}' | base64 -d); \
 	KC_PASS=$$(oc get secret central-keycloak-initial-admin -n rhbk -o jsonpath='{.data.password}' | base64 -d); \
-	KC_URL=$$(oc get route keycloak -n rhbk -o jsonpath='{.spec.host}' | xargs -I{} echo "https://{}"); \
+	KC_HOST=$$(oc get route -n rhbk -l app=keycloak -o jsonpath='{.items[0].spec.host}'); \
+	KC_URL="https://$$KC_HOST"; \
+	if [ -z "$$KC_HOST" ]; then echo "ERROR: Keycloak route not found in rhbk namespace"; exit 1; fi; \
 	oc exec -n vault central-vault-0 -- sh -c \
 	  "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=$$ROOT_TOKEN vault kv put central/keycloak/auth-config \
 	   KC_USERNAME='$$KC_USER' KC_PASSWORD='$$KC_PASS' KC_REALM=sovereign-tenants KC_AUTH_REALM=master KC_URL='$$KC_URL'" && \
-	echo "Stored keycloak-auth-config in Vault (master realm admin: $$KC_USER)"
+	echo "Stored keycloak-auth-config in Vault (master realm admin: $$KC_USER, url: $$KC_URL)"
 
 vault-store-gitea-admin: ## Store Gitea admin credentials in Vault (generates random password if not set)
 	@ROOT_TOKEN=$$(oc get secret vault-init-keys -n vault -o jsonpath='{.data.root-token}' | base64 -d); \
