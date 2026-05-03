@@ -13,7 +13,10 @@ data:
     true
     ARCH=$(uname -m)
     case "$ARCH" in x86_64) HARCH=amd64 ;; aarch64) HARCH=arm64 ;; *) echo "unsupported arch $ARCH"; exit 1 ;; esac
-    curl -fsSL "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux-${HARCH}.tar.gz" | tar xz -C /usr/local/bin kubectl oc
+    # Download oc from stable channel (file name changed — no arch suffix in stable path)
+    OC_URL="https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz"
+    curl -fsSL "$OC_URL" | tar xz -C /usr/local/bin kubectl oc 2>/dev/null || \
+      curl -fsSL "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux-${HARCH}.tar.gz" | tar xz -C /usr/local/bin kubectl oc
     chmod +x /usr/local/bin/oc /usr/local/bin/kubectl
     curl -fsSL "https://get.helm.sh/helm-v3.14.4-linux-${HARCH}.tar.gz" | tar xz -C /usr/local/bin --strip-components=1 "linux-${HARCH}/helm"
     chmod +x /usr/local/bin/helm
