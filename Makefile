@@ -404,5 +404,8 @@ delete-bootstrap-namespaces: ## Delete bootstrap namespaces (destructive; set CO
 ##@ Status
 status: ## Show status of all helm releases and key resources
 	@echo "=== Helm Releases ==="; helm list -A 2>&1
+	@echo "=== Argo CD Applications ==="; oc get application.argoproj.io -n openshift-gitops 2>&1 | head -35
 	@echo "=== Operator CSVs ==="; oc get csv -A 2>&1 | grep -E "(Succeeded|Failed|Installing|Pending)" | head -30
-	@echo "=== Key Pods ==="; oc get pods -n vault 2>&1; oc get pods -n aap 2>&1; oc get pods -n rhbk 2>&1
+	@echo "=== Key Pods ==="; oc get pods -n vault 2>&1; oc get pods -n rhbk 2>&1
+	@echo "=== RHACM Status ==="; oc get multiclusterhub -n open-cluster-management 2>&1 | head -5
+	@echo "=== RHACS Status ==="; oc get central -n stackrox 2>&1 | head -5
