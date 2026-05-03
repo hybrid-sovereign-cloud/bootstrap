@@ -286,7 +286,7 @@ spec:
               echo "  OAuth host: $OCP_HOST"
               create_oidc_client "$OCP_CLIENT_ID" \
                 "https://${OCP_HOST}/*" \
-                "https://${OCP_HOST}/oauth2callback/Keycloak"
+                "https://${OCP_HOST}/oauth2callback/keycloak"
               OCP_OIDC_SECRET="$OIDC_SECRET"
 
               curl -sk -o /dev/null -X POST "$VAULT_ADDR/v1/$KV_PATH/data/$OCP_VAULT_PATH" \

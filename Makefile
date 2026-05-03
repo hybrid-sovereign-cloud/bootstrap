@@ -297,9 +297,16 @@ install-gitops-instance-repos: ## Configure Argo CD repository secret (requires 
 	test -n "$${GITHUB_URL:-}" && test -n "$${GITHUB_TOKEN:-}" || { echo "Set GITHUB_URL and GITHUB_TOKEN (e.g. in .env)."; exit 1; }; \
 	$(MAKE) install-gitops-instance
 
-install-gitea-instance: ## Install Gitea in gitea namespace
+install-gitea-instance: ## Install Gitea in gitea namespace (DOMAIN/ROOT_URL from cluster ingress domain)
+	@APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}'); \
+	test -n "$$APPS_DOMAIN" || { echo "Could not read cluster apps domain."; exit 1; }; \
 	helm upgrade --install gitea-instance $(GITEA_INST_CHART) \
-		--namespace gitea --create-namespace
+		--namespace gitea --create-namespace \
+		--set-string gitea.gitea.config.server.DOMAIN=gitea.$$APPS_DOMAIN \
+		--set-string gitea.gitea.config.server.ROOT_URL=https://gitea.$$APPS_DOMAIN \
+		--set gitea.route.enabled=true \
+		--set-string gitea.route.host=gitea.$$APPS_DOMAIN \
+		--set-string gitea.route.tls.termination=edge
 
 install-pipelines-bootstrap: ## Install ImageStream + sample Tekton pipeline in sovereign-cloud (requires OpenShift Pipelines)
 	helm upgrade --install pipelines-bootstrap $(PIPELINES_BOOT_CHART) \

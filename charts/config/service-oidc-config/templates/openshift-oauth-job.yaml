@@ -63,8 +63,8 @@ spec:
                 "$K8S/apis/config.openshift.io/v1/oauths/cluster")
 
               # Check if Keycloak IDP already configured
-              if echo "$OAUTH_JSON" | grep -q '"Keycloak"'; then
-                echo "Keycloak IDP already present in OAuth cluster CR – skipping"
+              if echo "$OAUTH_JSON" | grep -q '"keycloak"'; then
+                echo "Keycloak OIDC IDP already present in OAuth cluster CR – skipping"
               else
                 echo "Adding Keycloak OIDC IDP to cluster OAuth (JSON Patch append preserves htpasswd)..."
                 # Use json-patch+json with op=add and path /spec/identityProviders/-
@@ -75,7 +75,7 @@ spec:
                   "op": "add",
                   "path": "/spec/identityProviders/-",
                   "value": {
-                    "name": "Keycloak",
+                    "name": "keycloak",
                     "mappingMethod": "claim",
                     "type": "OpenID",
                     "openID": {
@@ -107,7 +107,7 @@ spec:
                 VERIFY=$(curl -sfk -H "Authorization: Bearer $SA_TOKEN" \
                   "$K8S/apis/config.openshift.io/v1/oauths/cluster")
                 echo "$VERIFY" | grep -q '"htpasswd"' && echo "  ✓ htpasswd IDP preserved" || echo "  WARNING: htpasswd IDP not found after patch!"
-                echo "$VERIFY" | grep -q '"Keycloak"' && echo "  ✓ Keycloak IDP added" || echo "  WARNING: Keycloak IDP not found after patch!"
+                echo "$VERIFY" | grep -q '"keycloak"' && echo "  ✓ keycloak IDP added" || echo "  WARNING: keycloak IDP not found after patch!"
               fi
 
               echo "=== OpenShift OAuth OIDC config applied ==="

@@ -5,6 +5,8 @@ gitea:
   persistence:
     enabled: true
     size: 5Gi
+    # Distinct claim name avoids collisions with Terminating/orphan PVCs named gitea-shared-storage
+    claimName: gitea-repo-data
   # OpenShift: use anyuid SCC (see templates/scc-rolebinding.yaml) so the
   # init-directories container can chmod /data/git/.ssh. Run as UID 1000 (git user).
   # NOTE: No seccompProfile - anyuid SCC doesn't allow old-style seccomp annotations.
@@ -38,6 +40,9 @@ gitea:
   redis-cluster:
     enabled: false
   valkey:
+    enabled: false
+  # Upstream Gitea chart defaults valkey-cluster.enabled=true; disable for SQLite-only installs.
+  valkey-cluster:
     enabled: false
   service:
     http:

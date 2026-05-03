@@ -73,3 +73,9 @@ spec:
       kinds:
       - ManagedClusterAddOn
       - ClusterManagementAddOn
+    - apiGroups:
+      - search.open-cluster-management.io
+      clusters:
+      - '*'
+      kinds:
+      - '*'
