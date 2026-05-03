@@ -76,5 +76,7 @@ externalSecrets:
         k8sKey: KC_PASSWORD
       - vaultKey: KC_REALM
         k8sKey: KC_REALM
+      - vaultKey: KC_AUTH_REALM
+        k8sKey: KC_AUTH_REALM
       - vaultKey: KC_URL
         k8sKey: KC_URL
