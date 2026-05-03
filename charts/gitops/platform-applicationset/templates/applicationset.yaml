@@ -44,6 +44,12 @@ spec:
         server: https://kubernetes.default.svc
         namespace: '{{ "{{ .namespace }}" }}'
       ignoreDifferences:
+        # OLM adds upgradeStrategy and status to OperatorGroups after creation
+        - group: operators.coreos.com
+          kind: OperatorGroup
+          jsonPointers:
+            - /spec/upgradeStrategy
+            - /status
         # ImageStreams are updated by OpenShift when images are imported
         - group: image.openshift.io
           kind: ImageStream
