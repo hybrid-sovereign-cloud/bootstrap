@@ -126,30 +126,49 @@ What it does:
 
 ---
 
-## Post-bootstrap: seed Vault secrets
+## One-Command Full Rebuild (brand new cluster)
 
-After `vault-init` completes (wave 200), seed the initial secrets that drive downstream configuration:
+The entire platform can be deployed with a single command:
 
 ```bash
-# 1. Get the Vault root token
-VAULT_TOKEN=$(oc get secret vault-init-keys -n vault \
-  -o jsonpath='{.data.root-token}' | base64 -d)
+cd bootstrap/
+source .env
 
-# 2. Forward Vault port
-oc port-forward svc/central-vault -n vault 8200:8200 &
+make rebuild-all \
+  GITHUB_URL="$GITHUB_URL" \
+  GITHUB_TOKEN="$GITHUB_TOKEN"
+```
 
-export VAULT_ADDR="http://localhost:8200"
-export VAULT_TOKEN
+This runs the following sequence automatically:
+1. `phase1-gitops` — install ArgoCD, configure repo
+2. `phase2-applicationset` — deploy all operators + instances via ArgoCD ApplicationSet
+3. `vault-enable-kv` — ensure Vault `central/` KV engine is enabled
+4. `vault-store-gitea-admin` — seed Gitea admin credentials in Vault
+5. `keycloak-config` — create `sovereign-tenants` realm, OIDC clients, store in Vault
+6. `vault-store-keycloak-auth` — store master-realm admin creds for `plugin_rbac` operator
+7. `external-secrets-config` — sync all ExternalSecrets from Vault
+8. `deploy-custom-operators` — install custom operator pipelines, git-creds, ApplicationSet
 
-# 3. Seed Keycloak admin credentials (used by keycloak-config job)
-vault kv put central/keycloak/admin \
-  username="<keycloak-admin-user>" \
-  password="<keycloak-admin-password>"
+After rebuild, build all 8 custom operator images and deploy:
+```bash
+make trigger-build-all          # Start 8 parallel Tekton PipelineRuns
+make wait-custom-operators      # Wait for all operator pods to be Ready
+make sample-crs-apply           # Apply sample CRs to test all operators
+make status-custom-operators    # Show full status
+```
 
-# 4. Seed Gitea admin credentials
-vault kv put central/gitea/admin \
-  username="<gitea-admin-user>" \
-  password="<gitea-admin-password>"
+---
+
+## Post-bootstrap: seed Vault secrets (manual / individual steps)
+
+For individual deployments or troubleshooting, the vault seeding steps can be run independently:
+
+```bash
+make vault-enable-kv              # Enable central/ KV engine in Vault
+make vault-store-gitea-admin      # Generate and store Gitea admin password
+make keycloak-config              # Configure Keycloak realm and OIDC clients
+make vault-store-keycloak-auth    # Store KC admin creds for plugin_rbac
+make external-secrets-config      # Sync ExternalSecrets
 ```
 
 ---
@@ -192,7 +211,42 @@ After `service-oidc-config` (wave 230) runs, all three services authenticate via
 
 ---
 
-## Secret flow
+
+---
+
+## Useful make targets
+
+```bash
+# Cluster setup
+make help                         # list all targets
+make login                        # oc login with env vars
+make validate-helm                # lint all charts (no cluster needed)
+make rebuild-all                  # FULL platform rebuild (Phase 1+2+vault+custom ops)
+
+# Status and verification
+make status                       # show ArgoCD + Helm release health
+make verify-argocd-app-health     # check all apps are Synced+Healthy
+make status-custom-operators      # custom operator pods, CRDs, sample CRs
+
+# Vault / Keycloak
+make vault-enable-kv              # enable central/ KV engine (idempotent)
+make vault-store-gitea-admin      # seed Gitea admin credentials
+make vault-store-keycloak-auth    # store KC master-realm creds for plugin_rbac
+make keycloak-config              # create realm + OIDC clients
+
+# Custom operators
+make trigger-build-all            # build all 8 operator images via Tekton
+make trigger-build OPERATOR=cloudaws-operator REPO=CloudAWS  # single build
+make wait-custom-operators        # wait for all operator pods
+make restart-custom-operators     # rolling restart (picks up new images)
+make sample-crs-apply             # apply sample CRs for testing
+
+# Teardown
+make teardown-bootstrap           # Helm uninstall all releases
+make delete-bootstrap-namespaces  # delete all managed namespaces
+```
+
+### Secret flow
 
 ```
 Vault KV (central/<path>)
@@ -202,32 +256,16 @@ Vault KV (central/<path>)
                     └─▶ Application (env var / volume)
 ```
 
-Vault paths:
-
-| Path | Contents |
-|------|----------|
-| `central/keycloak/sovereign-tenants-client` | Shared OIDC client |
-| `central/quay/oidc` | Quay OIDC client |
-| `central/openshift/oidc` | OpenShift OAuth OIDC client |
-| `central/vault/oidc` | Vault OIDC client |
-| `central/gitea/admin` | Gitea admin credentials |
-| `central/rhacs/admin` | ACS Central admin password + URL |
-
----
-
-## Useful make targets
-
-```bash
-make help                    # list all targets with descriptions
-make login                   # oc login with env vars
-make validate-helm           # lint all charts (no cluster needed)
-make status                  # show Argo CD application health
-make verify-argocd-app-health # check all apps are Synced+Healthy
-make wait-rhacm-ready        # wait for MultiClusterHub Running
-make wait-rhacs-ready        # wait for ACS Central Deployed
-make teardown-bootstrap      # Helm uninstall all releases
-make delete-bootstrap-namespaces  # delete all managed namespaces
-```
+| Vault Path | Contents | Used By |
+|-----------|----------|---------|
+| `central/keycloak/sovereign-tenants-client` | Shared OIDC client | sovereign-cloud |
+| `central/keycloak/auth-config` | Admin creds for plugin_rbac | sovereign-cloud |
+| `central/quay/oidc` | Quay OIDC client | quay |
+| `central/openshift/oidc` | OpenShift OAuth OIDC | openshift-config |
+| `central/vault/oidc` | Vault OIDC client | vault |
+| `central/gitea/admin` | Gitea admin credentials | gitea |
+| `central/rhacs/admin` | ACS Central admin + URL | stackrox |
+| `central/github/token` | GitHub PAT for Tekton | sovereign-cloud |
 
 ---
 
