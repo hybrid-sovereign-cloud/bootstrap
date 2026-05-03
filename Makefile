@@ -285,14 +285,56 @@ install-all-instances: install-sovereign-cloud install-aap-instance install-vaul
 
 ##@ Configuration
 vault-init: ## Initialize Vault, create unseal secret, central KV
-	helm upgrade --install vault-init $(VAULT_INIT_CHART) \
-		--namespace vault --create-namespace
+	@echo "==> Running vault-init via ArgoCD-managed chart (render + apply job directly)"
+	@APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}'); \
+	helm template vault-init $(VAULT_INIT_CHART) \
+		--namespace vault \
+		--set "vaultAddr=http://central-vault.vault.svc:8200" | \
+		oc apply -n vault -f - 2>&1 || true; \
+	echo "==> Waiting for vault-init job..."; \
+	oc wait --for=condition=complete job/vault-init -n vault --timeout=120s 2>/dev/null || \
+	  oc logs -n vault job/vault-init --tail=20 2>/dev/null | tail -10
+
+vault-store-keycloak-auth: ## Store keycloak-auth-config in Vault for plugin_rbac and other operators
+	@ROOT_TOKEN=$$(oc get secret vault-init-keys -n vault -o jsonpath='{.data.root-token}' | base64 -d); \
+	KC_PASS=$$(oc exec -n vault central-vault-0 -- sh -c "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=$$ROOT_TOKEN vault kv get -field=password central/keycloak/initial-sovereign-admin 2>/dev/null"); \
+	KC_USER=$$(oc exec -n vault central-vault-0 -- sh -c "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=$$ROOT_TOKEN vault kv get -field=username central/keycloak/initial-sovereign-admin 2>/dev/null"); \
+	KC_URL=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}' | xargs -I{} echo "https://keycloak-rhbk.{}"); \
+	oc exec -n vault central-vault-0 -- sh -c \
+	  "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=$$ROOT_TOKEN vault kv put central/keycloak/auth-config \
+	   KC_USERNAME='$$KC_USER' KC_PASSWORD='$$KC_PASS' KC_REALM=sovereign-tenants KC_URL='$$KC_URL'" && \
+	echo "Stored keycloak-auth-config in Vault"
+
+vault-store-gitea-admin: ## Store Gitea admin credentials in Vault (generates random password if not set)
+	@ROOT_TOKEN=$$(oc get secret vault-init-keys -n vault -o jsonpath='{.data.root-token}' | base64 -d); \
+	VAULT_ADDR="http://central-vault.vault.svc:8200"; \
+	GITEA_PASS=$$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 24 2>/dev/null || openssl rand -hex 12); \
+	oc exec -n vault central-vault-0 -- sh -c \
+	  "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=$$ROOT_TOKEN vault kv get central/gitea/admin > /dev/null 2>&1 \
+	   || (VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=$$ROOT_TOKEN vault kv put central/gitea/admin username=gitea-admin password=$$GITEA_PASS \
+	   && echo 'Gitea admin secret stored in Vault')"
+
+vault-enable-kv: ## Enable central KV engine in Vault (idempotent)
+	@ROOT_TOKEN=$$(oc get secret vault-init-keys -n vault -o jsonpath='{.data.root-token}' | base64 -d); \
+	oc exec -n vault central-vault-0 -- sh -c \
+	  "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=$$ROOT_TOKEN vault secrets list -format=json 2>/dev/null | grep -q '\"central/\"' \
+	   || (VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=$$ROOT_TOKEN vault secrets enable -path=central -version=2 kv && echo 'KV enabled') \
+	   && echo 'central KV ready'"
 
 keycloak-config: ## Configure Keycloak realm, users, clients, store secrets in Vault
 	@APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}'); \
-	helm upgrade --install keycloak-config $(KC_CONFIG_CHART) \
-		--namespace rhbk --create-namespace \
-		--set "keycloakUrl=https://keycloak-rhbk.$$APPS_DOMAIN"
+	helm template keycloak-config $(KC_CONFIG_CHART) \
+		--namespace rhbk \
+		--set "keycloakUrl=https://keycloak-rhbk.$$APPS_DOMAIN" | \
+		oc apply -n rhbk -f - 2>&1 | grep -v 'unchanged\|configured' || true; \
+	echo "==> Waiting for keycloak-config job..."; \
+	sleep 5; \
+	for i in 1 2 3 4 5 6 7 8 9 10 11 12; do \
+	  PHASE=$$(oc get job keycloak-config -n rhbk -o jsonpath='{.status.conditions[0].type}' 2>/dev/null); \
+	  [ "$$PHASE" = "Complete" ] && echo "keycloak-config job completed." && break; \
+	  echo "  Waiting ($$i/12)..."; sleep 10; \
+	done; \
+	oc logs -n rhbk job/keycloak-config --tail=20 2>/dev/null | tail -15
 
 external-secrets-config: ## Configure ExternalSecrets + SecretStore
 	helm upgrade --install eso-config $(ESO_CONFIG_CHART) \

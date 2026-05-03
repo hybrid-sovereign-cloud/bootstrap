@@ -66,3 +66,15 @@ externalSecrets:
         k8sKey: realm
       - vaultKey: vault-hostname
         k8sKey: vault-hostname
+  # Keycloak auth config for plugin_rbac and other operators
+  - name: keycloak-auth-config
+    remoteKey: keycloak/auth-config
+    keys:
+      - vaultKey: KC_USERNAME
+        k8sKey: KC_USERNAME
+      - vaultKey: KC_PASSWORD
+        k8sKey: KC_PASSWORD
+      - vaultKey: KC_REALM
+        k8sKey: KC_REALM
+      - vaultKey: KC_URL
+        k8sKey: KC_URL

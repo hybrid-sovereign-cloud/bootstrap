@@ -117,6 +117,11 @@ What it does:
 | 10–70 | Operators: AAP, ESO, ODF, Pipelines, Quay, RHBK, RHACM, RHACS |
 | 100–155 | Instances: sovereign-cloud, Vault, AAP, RHBK, Gitea, ODF-NooBaa, Pipelines, Quay, RHACM, RHACS |
 | 200–245 | Config: vault-init, keycloak-config, eso-config, service-oidc-config, rhacs-config, rhacm-config |
+| 250 | ArgoCD init job |
+| 275 | custom-operators-git-creds (ArgoCD org credential template) |
+| 280 | custom-operators-pipelines (Tekton pipelines + ImageStreams for 8 custom operators) |
+| 285 | custom-operators-applicationset (ArgoCD ApplicationSet for 8 custom operators) |
+| 300–340 | Custom operators via custom-operators-appset: plugin-rbac, entity-operator, cloudaws-operator, cloudoso-operator, platformopenshift-operator, team-operator, projects-operator, assignment-operator |
 | 250 | argocd-init-job |
 
 ---
@@ -164,6 +169,14 @@ vault kv put central/gitea/admin \
 | OpenShift Pipelines (Tekton) | `openshift-operators` | CI/CD builds |
 | **RHACM** | `open-cluster-management` | Multi-cluster management |
 | **RHACS** | `stackrox` | Container security |
+| **plugin_rbac** (custom) | `sovereign-cloud-plugins` | Keycloak group RBAC operator |
+| **entity-operator** (custom) | `sovereign-cloud` | Entity + Container composition operator |
+| **cloudaws-operator** (custom) | `sovereign-cloud` | AWS cloud resource operator |
+| **cloudoso-operator** (custom) | `sovereign-cloud` | OpenStack cloud resource operator |
+| **platformopenshift-operator** (custom) | `sovereign-cloud` | OCP platform instance operator |
+| **team-operator** (custom) | `sovereign-cloud` | Team namespace + RBAC operator |
+| **projects-operator** (custom) | `sovereign-cloud` | Project namespace operator |
+| **assignment-operator** (custom) | `sovereign-cloud` | App-to-Infra bridge operator |
 
 ---
 
