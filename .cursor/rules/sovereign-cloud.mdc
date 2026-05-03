@@ -31,7 +31,27 @@ Agent guide: `bootstrap/AGENTS.md`
 100-155 → instances (sovereign-cloud, vault, aap, rhbk, gitea, odf, pipelines, quay, rhacm, rhacs)
 200-245 → config   (vault-init, keycloak, eso-config, oidc, rhacs-config, rhacm-config)
 250     → argocd-init-job
+275     → custom-operators-git-creds
+280     → custom-operators-pipelines
+285     → custom-operators-applicationset
+300     → plugin_rbac
+310     → sovereign_tenancy (entity-operator)
+320     → cloudaws-operator, cloudoso-operator
+330     → platformopenshift-operator, team-operator
+340     → projects-operator, assignment-operator
 ```
+
+## Custom Operator Repos
+| Repo | CRD | API group | Wave |
+|------|-----|-----------|------|
+| sovereign_tenancy | Entity, Container | hybridsovereign.redhat | 310 |
+| CloudAWS | CloudAWS | hybridsovereign.redhat | 320 |
+| CloudOSO | CloudOSO | hybridsovereign.redhat | 320 |
+| PlatformOpenshift | PlatformOpenshift | hybridsovereign.redhat | 330 |
+| Team | Team | hybridsovereign.redhat | 330 |
+| Projects | Projects | hybridsovereign.redhat | 340 |
+| Assignment | Assignment | hybridsovereign.redhat | 340 |
+| plugin_rbac | RbacConfig, Rbac | rbacplugins.hybridsovereign.redhat | 300 |
 
 ## Teardown command
 
