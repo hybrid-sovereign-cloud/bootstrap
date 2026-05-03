@@ -97,15 +97,15 @@ spec:
                   -H "Content-Type: application/json" \
                   -d "{\"name\":\"${CLUSTER_NAME}-bundle\"}")
                 echo "Bundle response code check..."
-                echo "$BUNDLE_RESP" | grep -q '"helmValuesBundle"' || { echo "ERROR: init bundle generation failed: $BUNDLE_RESP"; exit 1; }
+                echo "$BUNDLE_RESP" | grep -q '"kubectlBundle"' || { echo "ERROR: init bundle generation failed: $BUNDLE_RESP"; exit 1; }
 
-                BUNDLE_B64=$(echo "$BUNDLE_RESP" | sed -n 's/.*"helmValuesBundle"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+                # kubectlBundle contains Kubernetes Secret manifests (sensor-tls, collector-tls, admission-control-tls)
+                BUNDLE_B64=$(echo "$BUNDLE_RESP" | sed -n 's/.*"kubectlBundle"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
                 BUNDLE_YAML=$(printf '%s' "$BUNDLE_B64" | base64 -d)
 
-                echo "=== Creating init bundle Kubernetes secret ==="
-                # The bundle YAML contains TLS secrets - apply them
+                echo "=== Creating init bundle Kubernetes secrets ==="
                 echo "$BUNDLE_YAML" | oc apply -n "$NAMESPACE" -f -
-                echo "Init bundle applied from helmValuesBundle."
+                echo "Init bundle TLS secrets applied from kubectlBundle."
               fi
 
               echo "=== Updating SecuredCluster with Central endpoint ==="
