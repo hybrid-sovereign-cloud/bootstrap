@@ -446,61 +446,22 @@ trigger-build-all: ## Trigger Tekton PipelineRuns to build all 8 custom operator
 	$(SOURCE_BASHRC); \
 	set -a; [ -f .env ] && . ./.env; set +a; \
 	$(MAKE) login; \
-	for op in plugin-rbac entity-operator cloudaws-operator cloudoso-operator \
-	           platformopenshift-operator team-operator projects-operator assignment-operator; do \
-		echo "Triggering build for $$op ..."; \
-		oc create -f - -n sovereign-cloud <<EOF 2>/dev/null || echo "  (already running or failed, check: oc get pipelinerun -n sovereign-cloud)"; \
-	apiVersion: tekton.dev/v1\
-	kind: PipelineRun\
-	metadata:\
-	  generateName: $${op}-build-\
-	  labels:\
-	    operator: $${op}\
-	spec:\
-	  pipelineRef:\
-	    name: ansible-operator-image-build\
-	  params:\
-	    - name: git-url\
-	      value: "https://github.com/hybrid-sovereign-cloud/$${op//-operator/}.git"\
-	    - name: image-name\
-	      value: $${op}\
-	    - name: image-tag\
-	      value: latest\
-	  workspaces:\
-	    - name: source\
-	      persistentVolumeClaim:\
-	        claimName: ansible-operator-build-workspace\
-	EOF\
-	done
+	echo "Creating PipelineRuns from $(CUSTOM_OPS_PIPELINES_CHART)/samples/pipelineruns/all-operators.yaml ..."; \
+	oc create -f $(CUSTOM_OPS_PIPELINES_CHART)/samples/pipelineruns/all-operators.yaml -n sovereign-cloud 2>&1 && \
+	  echo "All PipelineRuns created. Monitor with: oc get pipelinerun -n sovereign-cloud" || \
+	  echo "Note: error above may be expected if runs already exist."
 
-trigger-build: ## Trigger a PipelineRun for a single operator (OPERATOR=<name>)
+trigger-build: ## Trigger a PipelineRun for a single operator; requires OPERATOR=<name> and REPO=<github-repo-name>
 	@set -euo pipefail; \
 	$(SOURCE_BASHRC); \
 	set -a; [ -f .env ] && . ./.env; set +a; \
 	$(MAKE) login; \
-	test -n "$${OPERATOR:-}" || { echo "Usage: make trigger-build OPERATOR=<name> e.g. entity-operator"; exit 1; }; \
-	oc create -f - -n sovereign-cloud <<EOF; \
-	apiVersion: tekton.dev/v1\
-	kind: PipelineRun\
-	metadata:\
-	  generateName: $${OPERATOR}-build-\
-	  labels:\
-	    operator: $${OPERATOR}\
-	spec:\
-	  pipelineRef:\
-	    name: ansible-operator-image-build\
-	  params:\
-	    - name: git-url\
-	      value: "https://github.com/hybrid-sovereign-cloud/$${OPERATOR}.git"\
-	    - name: image-name\
-	      value: $${OPERATOR}\
-	    - name: image-tag\
-	      value: latest\
-	  workspaces:\
-	    - name: source\
-	      persistentVolumeClaim:\
-	        claimName: ansible-operator-build-workspace\
-	EOF
+	test -n "$${OPERATOR:-}" || { echo "Usage: make trigger-build OPERATOR=<name> REPO=<github-repo>"; exit 1; }; \
+	REPO_NAME=$${REPO:-$$OPERATOR}; \
+	YAML=$$(printf 'apiVersion: tekton.dev/v1\nkind: PipelineRun\nmetadata:\n  generateName: %s-build-\n  labels:\n    operator: %s\nspec:\n  pipelineRef:\n    name: ansible-operator-image-build\n  params:\n  - name: git-url\n    value: https://github.com/hybrid-sovereign-cloud/%s.git\n  - name: image-name\n    value: %s\n  - name: image-tag\n    value: latest\n  workspaces:\n  - name: source\n    persistentVolumeClaim:\n      claimName: ansible-operator-build-workspace\n' \
+	  "$$OPERATOR" "$$OPERATOR" "$$REPO_NAME" "$$OPERATOR"); \
+	echo "$$YAML" | oc create -f - -n sovereign-cloud && \
+	  echo "PipelineRun created. Monitor: oc get pipelinerun -n sovereign-cloud -l operator=$$OPERATOR"
 
 wait-custom-operators: ## Wait for all custom operator pods to be ready
 	@set -euo pipefail; \

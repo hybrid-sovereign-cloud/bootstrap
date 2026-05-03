@@ -26,6 +26,9 @@ spec:
     - name: source
       persistentVolumeClaim:
         claimName: ansible-operator-build-workspace
+    - name: git-credentials
+      secret:
+        secretName: github-basic-auth
 ---
 # sovereign_tenancy (entity-operator)
 apiVersion: tekton.dev/v1
@@ -49,6 +52,9 @@ spec:
     - name: source
       persistentVolumeClaim:
         claimName: ansible-operator-build-workspace
+    - name: git-credentials
+      secret:
+        secretName: github-basic-auth
 ---
 # cloudaws-operator
 apiVersion: tekton.dev/v1
@@ -72,6 +78,9 @@ spec:
     - name: source
       persistentVolumeClaim:
         claimName: ansible-operator-build-workspace
+    - name: git-credentials
+      secret:
+        secretName: github-basic-auth
 ---
 # cloudoso-operator
 apiVersion: tekton.dev/v1
@@ -95,6 +104,9 @@ spec:
     - name: source
       persistentVolumeClaim:
         claimName: ansible-operator-build-workspace
+    - name: git-credentials
+      secret:
+        secretName: github-basic-auth
 ---
 # platformopenshift-operator
 apiVersion: tekton.dev/v1
@@ -118,6 +130,9 @@ spec:
     - name: source
       persistentVolumeClaim:
         claimName: ansible-operator-build-workspace
+    - name: git-credentials
+      secret:
+        secretName: github-basic-auth
 ---
 # team-operator
 apiVersion: tekton.dev/v1
@@ -141,6 +156,9 @@ spec:
     - name: source
       persistentVolumeClaim:
         claimName: ansible-operator-build-workspace
+    - name: git-credentials
+      secret:
+        secretName: github-basic-auth
 ---
 # projects-operator
 apiVersion: tekton.dev/v1
@@ -164,6 +182,9 @@ spec:
     - name: source
       persistentVolumeClaim:
         claimName: ansible-operator-build-workspace
+    - name: git-credentials
+      secret:
+        secretName: github-basic-auth
 ---
 # assignment-operator
 apiVersion: tekton.dev/v1
@@ -187,3 +208,6 @@ spec:
     - name: source
       persistentVolumeClaim:
         claimName: ansible-operator-build-workspace
+    - name: git-credentials
+      secret:
+        secretName: github-basic-auth

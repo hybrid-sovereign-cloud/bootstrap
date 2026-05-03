@@ -44,6 +44,9 @@ spec:
   workspaces:
     - name: source
       description: Workspace where the source code is cloned and built
+    - name: git-credentials
+      description: kubernetes.io/basic-auth Secret with username and password for GitHub HTTPS auth
+      optional: true
   tasks:
     - name: git-clone
       taskRef:
@@ -67,6 +70,8 @@ spec:
       workspaces:
         - name: output
           workspace: source
+        - name: basic-auth
+          workspace: git-credentials
 
     - name: build-and-push
       runAfter: [git-clone]
