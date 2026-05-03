@@ -7,7 +7,8 @@ subscription:
   source: redhat-operators
   sourceNamespace: openshift-marketplace
 
-# RHACM requires a cluster-scoped OperatorGroup (no targetNamespaces = all namespaces)
+# RHACM requires a namespace-scoped OperatorGroup targeting its own namespace
 operatorGroup:
   create: true
-  targetNamespaces: []
+  targetNamespaces:
+    - open-cluster-management

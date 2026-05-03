@@ -6,5 +6,9 @@ metadata:
   namespace: {{ .Values.operatorNamespace }}
   labels:
     {{- include "chart.labels" . | nindent 4 }}
-spec: {}
+spec:
+  {{- if .Values.operatorGroup.targetNamespaces }}
+  targetNamespaces:
+{{ toYaml .Values.operatorGroup.targetNamespaces | indent 4 }}
+  {{- end }}
 {{- end }}
