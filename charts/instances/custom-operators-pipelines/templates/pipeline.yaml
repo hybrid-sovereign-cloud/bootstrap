@@ -1,5 +1,7 @@
 ---
-# Shared Pipeline: clone an Ansible operator repo and build+push its image to an ImageStream
+# Shared Pipeline: clone an Ansible operator repo and build+push its image to an ImageStream.
+# Uses the git-clone and buildah Tasks pre-installed in the openshift-pipelines namespace
+# via the Tekton cluster resolver (no custom images needed).
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
@@ -11,6 +13,7 @@ spec:
   description: >
     Clones an Ansible Operator repository from GitHub, builds the container image
     using buildah, and pushes it to the OpenShift internal registry ImageStream.
+    Uses openshift-pipelines Tasks via the cluster resolver.
   params:
     - name: git-url
       type: string
@@ -40,99 +43,57 @@ spec:
       description: Build context directory within the cloned repo
   workspaces:
     - name: source
-      description: Workspace where the source code is cloned
+      description: Workspace where the source code is cloned and built
   tasks:
     - name: git-clone
-      taskSpec:
+      taskRef:
+        resolver: cluster
         params:
-          - name: url
-          - name: revision
-          - name: deleteExisting
-            default: "true"
-        workspaces:
-          - name: output
-        steps:
-          - name: clone
-            image: registry.redhat.io/openshift4/ose-git-clone-rhel9:latest
-            env:
-              - name: PARAM_URL
-                value: $(params.url)
-              - name: PARAM_REVISION
-                value: $(params.revision)
-              - name: WORKSPACE_OUTPUT_PATH
-                value: $(workspaces.output.path)
-              - name: PARAM_DELETE_EXISTING
-                value: $(params.deleteExisting)
-            script: |
-              #!/usr/bin/env sh
-              set -eu
-              if [ "${PARAM_DELETE_EXISTING}" = "true" ]; then
-                rm -rf "${WORKSPACE_OUTPUT_PATH}"/*
-              fi
-              git clone --depth=1 --branch "${PARAM_REVISION}" \
-                "${PARAM_URL}" "${WORKSPACE_OUTPUT_PATH}"
-              cd "${WORKSPACE_OUTPUT_PATH}"
-              echo "Cloned $(git rev-parse --short HEAD) from ${PARAM_URL}@${PARAM_REVISION}"
+          - name: kind
+            value: task
+          - name: name
+            value: git-clone
+          - name: namespace
+            value: openshift-pipelines
       params:
-        - name: url
+        - name: URL
           value: $(params.git-url)
-        - name: revision
+        - name: REVISION
           value: $(params.git-revision)
+        - name: DELETE_EXISTING
+          value: "true"
+        - name: SSL_VERIFY
+          value: "false"
       workspaces:
         - name: output
           workspace: source
 
     - name: build-and-push
       runAfter: [git-clone]
-      taskSpec:
+      taskRef:
+        resolver: cluster
         params:
-          - name: IMAGE
-          - name: CONTEXT
-            default: "."
-          - name: DOCKERFILE
-            default: "Dockerfile"
-          - name: TLSVERIFY
-            default: "false"
-        workspaces:
-          - name: source
-        steps:
-          - name: build
-            image: registry.redhat.io/rhel9/buildah:latest
-            securityContext:
-              privileged: true
-            workingDir: $(workspaces.source.path)
-            env:
-              - name: PARAM_IMAGE
-                value: $(params.IMAGE)
-              - name: PARAM_CONTEXT
-                value: $(params.CONTEXT)
-              - name: PARAM_DOCKERFILE
-                value: $(params.DOCKERFILE)
-              - name: PARAM_TLSVERIFY
-                value: $(params.TLSVERIFY)
-            script: |
-              #!/usr/bin/env sh
-              set -eu
-              buildah --storage-driver=vfs bud \
-                --tls-verify="${PARAM_TLSVERIFY}" \
-                --file="${PARAM_DOCKERFILE}" \
-                --tag="${PARAM_IMAGE}" \
-                "${PARAM_CONTEXT}"
-              buildah --storage-driver=vfs push \
-                --tls-verify="${PARAM_TLSVERIFY}" \
-                "${PARAM_IMAGE}" \
-                "docker://${PARAM_IMAGE}"
-              echo "Successfully built and pushed ${PARAM_IMAGE}"
+          - name: kind
+            value: task
+          - name: name
+            value: buildah
+          - name: namespace
+            value: openshift-pipelines
       params:
         - name: IMAGE
           value: "$(params.image-registry)/$(params.image-namespace)/$(params.image-name):$(params.image-tag)"
         - name: CONTEXT
           value: $(params.context-dir)
-        - name: TLSVERIFY
+        - name: DOCKERFILE
+          value: ./Dockerfile
+        - name: TLS_VERIFY
           value: "false"
+        - name: STORAGE_DRIVER
+          value: vfs
       workspaces:
         - name: source
           workspace: source
+
 # Note: PipelineRun examples are in charts/instances/custom-operators-pipelines/samples/pipelineruns/
 # Apply them manually with: oc create -f <file> -n sovereign-cloud
 # Or use: make trigger-build OPERATOR=<name>   (from bootstrap/)
