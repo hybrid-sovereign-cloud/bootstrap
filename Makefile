@@ -598,15 +598,22 @@ sample-crs-apply: ## Apply sample Custom Resources for testing all 8 operators (
 	oc apply -f $$SAMPLES/03-rbac.yaml 2>&1; \
 	oc apply -f $$SAMPLES/04-cloudaws-container.yaml 2>&1; \
 	oc apply -f $$SAMPLES/05-team-container.yaml 2>&1; \
+	oc apply -f $$SAMPLES/07-cloudoso-container.yaml 2>&1; \
 	sleep 10; \
 	oc apply -f $$SAMPLES/06-assignment.yaml 2>&1; \
+	oc apply -f $$SAMPLES/08-platformopenshift-sample.yaml 2>&1; \
+	oc apply -f $$SAMPLES/09-projects-sample.yaml 2>&1; \
 	echo "==> Sample CRs applied. Checking status..."; \
-	sleep 10; \
+	sleep 15; \
 	echo "--- RbacConfig ---"; oc get rbacconfig -n sovereign-cloud 2>&1; \
 	echo "--- Entity ---"; oc get entity 2>&1; \
 	echo "--- Rbac ---"; oc get rbac -n entity-acme 2>&1; \
-	echo "--- Containers ---"; oc get container -n entity-acme 2>&1; \
-	echo "--- Assignment ---"; oc get assignment -n entity-acme 2>&1
+	echo "--- CloudAWS Containers ---"; oc get container -n entity-acme 2>&1; \
+	echo "--- CloudOSO ---"; oc get cloudosos.hybridsovereign.redhat -A 2>&1; \
+	echo "--- PlatformOpenshift ---"; oc get platformopenshifts.hybridsovereign.redhat -A 2>&1; \
+	echo "--- Projects ---"; oc get projects.hybridsovereign.redhat -A 2>&1; \
+	echo "--- Teams ---"; oc get teams.hybridsovereign.redhat -A 2>&1; \
+	echo "--- Assignment ---"; oc get assignment.hybridsovereign.redhat -A 2>&1
 
 ##@ Status
 status: ## Show status of all helm releases and key resources

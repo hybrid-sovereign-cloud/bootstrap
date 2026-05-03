@@ -1,0 +1,21 @@
+apiVersion: hybridsovereign.redhat/v1alpha1
+kind: CloudOSO
+metadata:
+  name: oso-prod
+  namespace: entity-acme
+spec:
+  entity: acme
+  autoCreateProject: true
+  projectName: acme-oso-prod
+  landingZoneTemplate: default
+  capabilities:
+    designateDomain: false
+    quota: ""
+    floatingIPAPI: false
+    floatingIPApps: false
+  rbac:
+    adminGroup:
+      - acme/admins
+    developerGroup:
+      - acme/developers
+    readGroup: []

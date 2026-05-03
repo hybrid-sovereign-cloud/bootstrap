@@ -5,6 +5,17 @@ gitea:
   persistence:
     enabled: true
     size: 5Gi
+  # OpenShift: use anyuid SCC (see templates/scc-rolebinding.yaml) so the
+  # init-directories container can chmod /data/git/.ssh. Run as UID 1000 (git user).
+  podSecurityContext:
+    fsGroup: 1000
+  containerSecurityContext:
+    runAsUser: 1000
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
   gitea:
     admin:
       username: sovereign-admin
