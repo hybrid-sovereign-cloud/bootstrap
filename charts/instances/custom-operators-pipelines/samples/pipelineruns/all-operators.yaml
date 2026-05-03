@@ -24,8 +24,13 @@ spec:
       value: latest
   workspaces:
     - name: source
-      persistentVolumeClaim:
-        claimName: ansible-operator-build-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 2Gi
     - name: git-credentials
       secret:
         secretName: github-basic-auth
@@ -50,8 +55,13 @@ spec:
       value: latest
   workspaces:
     - name: source
-      persistentVolumeClaim:
-        claimName: ansible-operator-build-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 2Gi
     - name: git-credentials
       secret:
         secretName: github-basic-auth
@@ -76,8 +86,13 @@ spec:
       value: latest
   workspaces:
     - name: source
-      persistentVolumeClaim:
-        claimName: ansible-operator-build-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 2Gi
     - name: git-credentials
       secret:
         secretName: github-basic-auth
@@ -102,8 +117,13 @@ spec:
       value: latest
   workspaces:
     - name: source
-      persistentVolumeClaim:
-        claimName: ansible-operator-build-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 2Gi
     - name: git-credentials
       secret:
         secretName: github-basic-auth
@@ -128,8 +148,13 @@ spec:
       value: latest
   workspaces:
     - name: source
-      persistentVolumeClaim:
-        claimName: ansible-operator-build-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 2Gi
     - name: git-credentials
       secret:
         secretName: github-basic-auth
@@ -154,8 +179,13 @@ spec:
       value: latest
   workspaces:
     - name: source
-      persistentVolumeClaim:
-        claimName: ansible-operator-build-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 2Gi
     - name: git-credentials
       secret:
         secretName: github-basic-auth
@@ -180,8 +210,13 @@ spec:
       value: latest
   workspaces:
     - name: source
-      persistentVolumeClaim:
-        claimName: ansible-operator-build-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 2Gi
     - name: git-credentials
       secret:
         secretName: github-basic-auth
@@ -206,8 +241,13 @@ spec:
       value: latest
   workspaces:
     - name: source
-      persistentVolumeClaim:
-        claimName: ansible-operator-build-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 2Gi
     - name: git-credentials
       secret:
         secretName: github-basic-auth
