@@ -8,7 +8,7 @@
 	install-all-instances install-pipelines-bootstrap \
 	wait-openshift-gitops-csv wait-argocd-ready wait-csv-succeeded \
 	argocd-post-sync-waits verify-argocd-app-health \
-	vault-init keycloak-config external-secrets-config \
+	vault-init vault-enable-kv vault-store-gitea-admin vault-store-keycloak-auth keycloak-config external-secrets-config \
 	install-odf-operator install-odf-noobaa install-quay-instance \
 	install-rhacm-operator install-rhacs-operator \
 	install-rhacm-instance install-rhacs-instance \
@@ -17,7 +17,7 @@
 	install-custom-operators-git-creds install-custom-operators-pipelines \
 	install-custom-operators-applicationset deploy-custom-operators \
 	trigger-build-all trigger-build wait-custom-operators \
-	status-custom-operators sample-crs-apply \
+	status-custom-operators restart-custom-operators sample-crs-apply \
 	uninstall-all-operators uninstall-all-instances uninstall-pipelines-bootstrap \
 	teardown-bootstrap delete-bootstrap-namespaces approve-rhbk-installplan status \
 	validate-helm verify-pipelines-bootstrap rebuild-all
@@ -119,7 +119,23 @@ phase2-applicationset: ## Phase 2: install platform ApplicationSet into openshif
 
 gitops-full-bootstrap: phase1-gitops phase2-applicationset ## Run phase1 then phase2
 
-rebuild-all: phase1-gitops phase2-applicationset deploy-custom-operators ## Full platform rebuild: GitOps + platform AppSet + all custom operator prereqs (use on brand new cluster)
+rebuild-all: ## Full platform rebuild on a brand new cluster (Phase 1→2→vault→keycloak→custom-operators)
+	@echo "================================================================"
+	@echo "  HYBRID SOVEREIGN CLOUD — Full Platform Rebuild"
+	@echo "================================================================"
+	$(MAKE) phase1-gitops
+	$(MAKE) phase2-applicationset
+	@echo "==> Waiting for ArgoCD to reconcile operators (60s)..."
+	@sleep 60
+	$(MAKE) vault-enable-kv
+	$(MAKE) vault-store-gitea-admin
+	$(MAKE) keycloak-config
+	$(MAKE) vault-store-keycloak-auth
+	$(MAKE) external-secrets-config
+	$(MAKE) deploy-custom-operators
+	@echo "================================================================"
+	@echo "  Rebuild complete. Run 'make status' to verify all components."
+	@echo "================================================================"
 
 ##@ Cluster Access
 login: ## Login to OpenShift (uses OCP_*; loads ./.env if present)
@@ -493,17 +509,15 @@ trigger-build-all: ## Trigger Tekton PipelineRuns to build all 8 custom operator
 	  echo "All PipelineRuns created. Monitor with: oc get pipelinerun -n sovereign-cloud" || \
 	  echo "Note: error above may be expected if runs already exist."
 
-trigger-build: ## Trigger a PipelineRun for a single operator; requires OPERATOR=<name> and REPO=<github-repo-name>
-	@set -euo pipefail; \
-	$(SOURCE_BASHRC); \
-	set -a; [ -f .env ] && . ./.env; set +a; \
-	$(MAKE) login; \
-	test -n "$${OPERATOR:-}" || { echo "Usage: make trigger-build OPERATOR=<name> REPO=<github-repo>"; exit 1; }; \
+trigger-build: ## Trigger a PipelineRun for a single operator; requires OPERATOR=<name> REPO=<github-repo-name>
+	@test -n "$${OPERATOR:-}" || { echo "Usage: make trigger-build OPERATOR=<name> REPO=<github-repo>"; exit 1; }; \
 	REPO_NAME=$${REPO:-$$OPERATOR}; \
-	YAML=$$(printf 'apiVersion: tekton.dev/v1\nkind: PipelineRun\nmetadata:\n  generateName: %s-build-\n  labels:\n    operator: %s\nspec:\n  pipelineRef:\n    name: ansible-operator-image-build\n  params:\n  - name: git-url\n    value: https://github.com/hybrid-sovereign-cloud/%s.git\n  - name: image-name\n    value: %s\n  - name: image-tag\n    value: latest\n  workspaces:\n  - name: source\n    persistentVolumeClaim:\n      claimName: ansible-operator-build-workspace\n' \
-	  "$$OPERATOR" "$$OPERATOR" "$$REPO_NAME" "$$OPERATOR"); \
-	echo "$$YAML" | oc create -f - -n sovereign-cloud && \
-	  echo "PipelineRun created. Monitor: oc get pipelinerun -n sovereign-cloud -l operator=$$OPERATOR"
+	TMPFILE=$$(mktemp /tmp/pipelinerun-XXXXXX.yaml); \
+	printf 'apiVersion: tekton.dev/v1\nkind: PipelineRun\nmetadata:\n  generateName: %s-build-\n  labels:\n    operator: %s\nspec:\n  pipelineRef:\n    name: ansible-operator-image-build\n  params:\n  - name: git-url\n    value: https://github.com/hybrid-sovereign-cloud/%s.git\n  - name: image-name\n    value: %s\n  - name: image-tag\n    value: latest\n  workspaces:\n  - name: source\n    volumeClaimTemplate:\n      spec:\n        accessModes:\n        - ReadWriteOnce\n        resources:\n          requests:\n            storage: 1Gi\n  - name: git-credentials\n    secret:\n      secretName: github-basic-auth\n' \
+	  "$$OPERATOR" "$$OPERATOR" "$$REPO_NAME" "$$OPERATOR" > "$$TMPFILE"; \
+	oc create -n sovereign-cloud -f "$$TMPFILE" && \
+	  echo "PipelineRun created. Monitor: oc get pipelinerun -n sovereign-cloud -l operator=$$OPERATOR"; \
+	rm -f "$$TMPFILE"
 
 wait-custom-operators: ## Wait for all custom operator pods to be ready
 	@set -euo pipefail; \
@@ -518,24 +532,53 @@ wait-custom-operators: ## Wait for all custom operator pods to be ready
 	done
 
 status-custom-operators: ## Show status of all custom operator deployments
-	@echo "=== Custom Operator Pods ==="; \
-	oc get pods -n sovereign-cloud -l "app.kubernetes.io/managed-by=Helm" 2>&1 | head -20; \
-	oc get pods -n sovereign-cloud-plugins 2>&1 | head -10; \
+	@echo "=== Custom Operator Pods (sovereign-cloud) ==="; \
+	oc get pods -n sovereign-cloud 2>&1 | grep -E 'operator|pipeline' | grep -v 'build\|Completed' | head -15; \
+	echo "=== Custom Operator Pods (sovereign-cloud-plugins) ==="; \
+	oc get pods -n sovereign-cloud-plugins 2>&1 | grep -v 'docker\|Completed' | head -5; \
 	echo "=== Custom Operator ArgoCD Apps ==="; \
-	oc get application.argoproj.io -n openshift-gitops | grep -E "plugin-rbac|entity-operator|cloudaws|cloudoso|platformopenshift|team-operator|projects-operator|assignment" 2>&1; \
+	oc get applications.argoproj.io -n openshift-gitops 2>&1 | grep -E "plugin-rbac|entity-operator|cloudaws|cloudoso|platformopenshift|team-operator|projects-operator|assignment|custom-ops"; \
 	echo "=== PipelineRuns ==="; \
 	oc get pipelinerun -n sovereign-cloud 2>&1 | head -20; \
 	echo "=== CRDs ==="; \
-	oc get crd | grep -E "hybridsovereign|rbacplugins" 2>&1
+	oc get crd 2>&1 | grep -E "hybridsovereign|rbacplugins"; \
+	echo "=== Sample CRs ==="; \
+	oc get entity,rbacconfig 2>&1; \
+	oc get rbac,container,cloudaws,team,assignment -n entity-acme 2>&1 | head -20
 
-sample-crs-apply: ## Apply sample Custom Resources for testing all 8 operators
-	@set -euo pipefail; \
-	$(SOURCE_BASHRC); \
-	set -a; [ -f .env ] && . ./.env; set +a; \
-	$(MAKE) login; \
-	echo "Applying sample CRs for testing..."; \
-	oc apply -f $(CHARTS_DIR)/instances/custom-operators-pipelines/samples/ 2>/dev/null || \
-	  echo "No sample CRs found in chart — apply manually from each operator repo config/samples/"
+restart-custom-operators: ## Restart all custom operator deployments (pick up new images)
+	@echo "==> Restarting custom operator deployments..."
+	@for dep in assignment-operator cloudaws-operator cloudoso-operator entity-operator \
+	            platformopenshift-operator team-operator projects-operator; do \
+	  oc rollout restart deployment/$$dep -n sovereign-cloud 2>&1 | head -1; \
+	done
+	@oc rollout restart deployment/rbac-plugin-operator -n sovereign-cloud-plugins 2>&1 | head -1
+	@echo "==> Waiting for rollouts to complete..."
+	@for dep in assignment-operator cloudaws-operator cloudoso-operator entity-operator \
+	            platformopenshift-operator team-operator projects-operator; do \
+	  oc rollout status deployment/$$dep -n sovereign-cloud --timeout=120s 2>&1 | tail -1; \
+	done
+	@oc rollout status deployment/rbac-plugin-operator -n sovereign-cloud-plugins --timeout=60s 2>&1 | tail -1
+
+sample-crs-apply: ## Apply sample Custom Resources for testing all 8 operators (ordered)
+	@echo "==> Applying sample CRs in dependency order..."
+	@SAMPLES=$(CHARTS_DIR)/instances/custom-operators-pipelines/samples; \
+	oc apply -f $$SAMPLES/01-rbacconfig.yaml 2>&1; \
+	echo "  Waiting for RbacConfig..."; sleep 5; \
+	oc apply -f $$SAMPLES/02-entity.yaml 2>&1; \
+	echo "  Waiting for Entity namespace..."; sleep 15; \
+	oc apply -f $$SAMPLES/03-rbac.yaml 2>&1; \
+	oc apply -f $$SAMPLES/04-cloudaws-container.yaml 2>&1; \
+	oc apply -f $$SAMPLES/05-team-container.yaml 2>&1; \
+	sleep 10; \
+	oc apply -f $$SAMPLES/06-assignment.yaml 2>&1; \
+	echo "==> Sample CRs applied. Checking status..."; \
+	sleep 10; \
+	echo "--- RbacConfig ---"; oc get rbacconfig -n sovereign-cloud 2>&1; \
+	echo "--- Entity ---"; oc get entity 2>&1; \
+	echo "--- Rbac ---"; oc get rbac -n entity-acme 2>&1; \
+	echo "--- Containers ---"; oc get container -n entity-acme 2>&1; \
+	echo "--- Assignment ---"; oc get assignment -n entity-acme 2>&1
 
 ##@ Status
 status: ## Show status of all helm releases and key resources
