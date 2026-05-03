@@ -66,38 +66,38 @@ spec:
               if echo "$OAUTH_JSON" | grep -q '"Keycloak"'; then
                 echo "Keycloak IDP already present in OAuth cluster CR – skipping"
               else
-                echo "Adding Keycloak OIDC IDP to cluster OAuth (strategic-merge preserves htpasswd)..."
-                # Use strategic-merge-patch+json so existing providers (htpasswd) are
-                # preserved; the server merges identityProviders by the 'name' field.
+                echo "Adding Keycloak OIDC IDP to cluster OAuth (JSON Patch append preserves htpasswd)..."
+                # Use json-patch+json with op=add and path /spec/identityProviders/-
+                # which APPENDS to the array without touching existing entries (htpasswd).
                 PATCH=$(cat <<EOPATCH
-              {
-                "spec": {
-                  "identityProviders": [
-                    {
-                      "name": "Keycloak",
-                      "mappingMethod": "claim",
-                      "type": "OpenID",
-                      "openID": {
-                        "clientID": "${CLIENT_ID}",
-                        "clientSecret": {"name": "${OIDC_SECRET_NAME}"},
-                        "issuer": "${ISSUER}",
-                        "claims": {
-                          "preferredUsername": ["preferred_username", "email"],
-                          "name": ["name"],
-                          "email": ["email"],
-                          "groups": ["groups"]
-                        },
-                        "extraScopes": ["profile", "email"]
-                      }
+              [
+                {
+                  "op": "add",
+                  "path": "/spec/identityProviders/-",
+                  "value": {
+                    "name": "Keycloak",
+                    "mappingMethod": "claim",
+                    "type": "OpenID",
+                    "openID": {
+                      "clientID": "${CLIENT_ID}",
+                      "clientSecret": {"name": "${OIDC_SECRET_NAME}"},
+                      "issuer": "${ISSUER}",
+                      "claims": {
+                        "preferredUsername": ["preferred_username", "email"],
+                        "name": ["name"],
+                        "email": ["email"],
+                        "groups": ["groups"]
+                      },
+                      "extraScopes": ["profile", "email"]
                     }
-                  ]
+                  }
                 }
-              }
+              ]
               EOPATCH
               )
                 HTTP_CODE=$(curl -sk -o /tmp/resp.txt -w "%{http_code}" \
                   -H "Authorization: Bearer $SA_TOKEN" \
-                  -H "Content-Type: application/strategic-merge-patch+json" \
+                  -H "Content-Type: application/json-patch+json" \
                   -X PATCH "$K8S/apis/config.openshift.io/v1/oauths/cluster" \
                   -d "$PATCH")
                 echo "$HTTP_CODE" | grep -qE '^2' || { echo "ERROR patching OAuth: HTTP $HTTP_CODE"; cat /tmp/resp.txt; exit 1; }
