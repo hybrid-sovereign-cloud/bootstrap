@@ -8,7 +8,7 @@
 	install-all-instances install-pipelines-bootstrap \
 	wait-openshift-gitops-csv wait-argocd-ready wait-csv-succeeded \
 	argocd-post-sync-waits verify-argocd-app-health \
-	vault-init vault-enable-kv vault-store-gitea-admin vault-store-github-token vault-store-keycloak-auth keycloak-config external-secrets-config fix-csv-operator-groups fix-gitea-scc \
+	vault-init vault-enable-kv vault-store-gitea-admin vault-store-github-token vault-store-keycloak-auth keycloak-config external-secrets-config fix-csv-operator-groups fix-gitea-scc gitea-setup-entity-credentials \
 	install-odf-operator install-odf-noobaa install-quay-instance \
 	install-rhacm-operator install-rhacs-operator \
 	install-rhacm-instance install-rhacs-instance \
@@ -567,6 +567,41 @@ fix-gitea-scc: ## Grant anyuid SCC to Gitea default SA (needed for init-director
 	@oc adm policy add-scc-to-user anyuid -z default -n gitea 2>&1 || true
 	@oc rollout restart deployment gitea -n gitea 2>&1 || true
 	@echo "Gitea anyuid SCC granted and rollout restarted"
+
+gitea-setup-entity-credentials: ## Create Gitea org, repo, token for entity-operator git sync
+	@set -euo pipefail; \
+	$(SOURCE_BASHRC); \
+	set -a; [ -f .env ] && . ./.env; set +a; \
+	GITEA_ROUTE=$$(oc get route gitea -n gitea -o jsonpath='{.spec.host}' 2>/dev/null); \
+	GITEA_ADMIN_USER=$$(oc get secret gitea-admin-secret -n gitea -o jsonpath='{.data.username}' 2>/dev/null | base64 -d); \
+	GITEA_ADMIN_PASS=$$(oc get secret gitea-admin-secret -n gitea -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); \
+	echo "==> Creating Gitea org 'cloud' and repo 'git_resources'..."; \
+	curl -sk -X POST "https://$$GITEA_ROUTE/api/v1/orgs" \
+	  -u "$$GITEA_ADMIN_USER:$$GITEA_ADMIN_PASS" \
+	  -H "Content-Type: application/json" \
+	  -d '{"username":"cloud","visibility":"public"}' > /dev/null 2>&1 || true; \
+	curl -sk -X POST "https://$$GITEA_ROUTE/api/v1/orgs/cloud/repos" \
+	  -u "$$GITEA_ADMIN_USER:$$GITEA_ADMIN_PASS" \
+	  -H "Content-Type: application/json" \
+	  -d '{"name":"git_resources","private":false,"auto_init":true}' > /dev/null 2>&1 || true; \
+	echo "==> Creating Gitea API token for entity-operator..."; \
+	curl -sk -X DELETE "https://$$GITEA_ROUTE/api/v1/users/$$GITEA_ADMIN_USER/tokens/entity-op-rw" \
+	  -u "$$GITEA_ADMIN_USER:$$GITEA_ADMIN_PASS" 2>/dev/null || true; \
+	TOKEN_JSON=$$(curl -sk -X POST "https://$$GITEA_ROUTE/api/v1/users/$$GITEA_ADMIN_USER/tokens" \
+	  -u "$$GITEA_ADMIN_USER:$$GITEA_ADMIN_PASS" \
+	  -H "Content-Type: application/json" \
+	  -d '{"name":"entity-op-rw","scopes":["write:repository","write:organization","read:user"]}'); \
+	NEW_TOKEN=$$(echo "$$TOKEN_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha1',''))" 2>/dev/null); \
+	[ -z "$$NEW_TOKEN" ] && echo "ERROR: Failed to create token: $$TOKEN_JSON" && exit 1; \
+	echo "==> Updating gitea-credentials secret in sovereign-cloud..."; \
+	oc create secret generic gitea-credentials -n sovereign-cloud \
+	  --from-literal=GITEA_URL=http://gitea-http.gitea.svc:3000 \
+	  --from-literal=GITEA_TOKEN=$$NEW_TOKEN \
+	  --from-literal=REPO_OWNER=cloud \
+	  --from-literal=REPO_NAME=git_resources \
+	  --dry-run=client -o yaml | oc apply -f -; \
+	oc rollout restart deployment/entity-operator -n sovereign-cloud 2>/dev/null || true; \
+	echo "==> Gitea entity credentials configured"
 
 deploy-custom-operators: install-custom-operators-git-creds install-custom-operators-pipelines install-custom-operators-applicationset ## Deploy all custom operator prereqs + ApplicationSet
 
