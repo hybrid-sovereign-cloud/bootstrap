@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.workspacePvcName }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.workspacePvcSize }}
+  {{- if .Values.workspacePvcStorageClass }}
+  storageClassName: {{ .Values.workspacePvcStorageClass }}
+  {{- end }}

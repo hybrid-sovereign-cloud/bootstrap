@@ -1,0 +1,52 @@
+namespace: sovereign-cloud
+
+# Shared pipeline name used by all operator PipelineRuns
+pipelineName: ansible-operator-image-build
+
+# PVC name for the shared git workspace used during builds
+workspacePvcName: ansible-operator-build-workspace
+workspacePvcSize: 2Gi
+workspacePvcStorageClass: ""   # leave empty to use cluster default
+
+# GitHub org base URL (used in git-clone params)
+githubOrg: https://github.com/hybrid-sovereign-cloud
+
+# Git revision (branch) to clone for each operator
+defaultRevision: main
+
+# Buildah image used for the build task
+buildahImage: registry.redhat.io/rhel9/buildah:latest
+
+# Each operator: git repo name (appended to githubOrg), image name in the internal registry
+operators:
+  - name: plugin-rbac
+    repo: plugin_rbac
+    imageName: plugin-rbac-operator
+
+  - name: entity-operator
+    repo: sovereign_tenancy
+    imageName: entity-operator
+
+  - name: cloudaws-operator
+    repo: CloudAWS
+    imageName: cloudaws-operator
+
+  - name: cloudoso-operator
+    repo: CloudOSO
+    imageName: cloudoso-operator
+
+  - name: platformopenshift-operator
+    repo: PlatformOpenshift
+    imageName: platformopenshift-operator
+
+  - name: team-operator
+    repo: Team
+    imageName: team-operator
+
+  - name: projects-operator
+    repo: Projects
+    imageName: projects-operator
+
+  - name: assignment-operator
+    repo: Assignment
+    imageName: assignment-operator

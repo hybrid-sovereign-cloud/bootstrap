@@ -1,0 +1,16 @@
+{{- range .Values.operators }}
+---
+# ImageStream for {{ .name }} — created here so the build pipeline can push
+# before the operator's Helm chart is applied by ArgoCD.
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: {{ .imageName | quote }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+    operator: {{ .name | quote }}
+    {{- include "chart.labels" $ | nindent 4 }}
+spec:
+  lookupPolicy:
+    local: true
+{{- end }}

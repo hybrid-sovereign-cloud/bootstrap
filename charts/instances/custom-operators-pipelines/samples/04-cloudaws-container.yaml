@@ -1,0 +1,15 @@
+# Container — deploys a CloudAWS child CR via sovereign_tenancy composition
+# Apply in entity-acme namespace AFTER the entity namespace has label sovereign-cloud=acme
+apiVersion: hybridsovereign.redhat/v1alpha1
+kind: Container
+metadata:
+  name: aws-prod
+  namespace: entity-acme
+spec:
+  cloudAWS:
+    awsAccount: "123456789012"
+    rbac:
+      adminGroup:
+        - acme/admins
+      developerGroup:
+        - acme/developers

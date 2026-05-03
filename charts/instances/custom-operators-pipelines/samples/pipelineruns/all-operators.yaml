@@ -1,0 +1,189 @@
+# Example PipelineRuns — apply with: oc create -f all-operators.yaml -n sovereign-cloud
+# Or use: make trigger-build-all   (from bootstrap/)
+#
+# NOTE: Use 'oc create' (not 'oc apply') since generateName creates a unique name each time.
+
+---
+# plugin_rbac
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: plugin-rbac-build-
+  namespace: sovereign-cloud
+  labels:
+    operator: plugin-rbac
+spec:
+  pipelineRef:
+    name: ansible-operator-image-build
+  params:
+    - name: git-url
+      value: https://github.com/hybrid-sovereign-cloud/plugin_rbac.git
+    - name: image-name
+      value: plugin-rbac-operator
+    - name: image-tag
+      value: latest
+  workspaces:
+    - name: source
+      persistentVolumeClaim:
+        claimName: ansible-operator-build-workspace
+---
+# sovereign_tenancy (entity-operator)
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: entity-operator-build-
+  namespace: sovereign-cloud
+  labels:
+    operator: entity-operator
+spec:
+  pipelineRef:
+    name: ansible-operator-image-build
+  params:
+    - name: git-url
+      value: https://github.com/hybrid-sovereign-cloud/sovereign_tenancy.git
+    - name: image-name
+      value: entity-operator
+    - name: image-tag
+      value: latest
+  workspaces:
+    - name: source
+      persistentVolumeClaim:
+        claimName: ansible-operator-build-workspace
+---
+# cloudaws-operator
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: cloudaws-operator-build-
+  namespace: sovereign-cloud
+  labels:
+    operator: cloudaws-operator
+spec:
+  pipelineRef:
+    name: ansible-operator-image-build
+  params:
+    - name: git-url
+      value: https://github.com/hybrid-sovereign-cloud/CloudAWS.git
+    - name: image-name
+      value: cloudaws-operator
+    - name: image-tag
+      value: latest
+  workspaces:
+    - name: source
+      persistentVolumeClaim:
+        claimName: ansible-operator-build-workspace
+---
+# cloudoso-operator
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: cloudoso-operator-build-
+  namespace: sovereign-cloud
+  labels:
+    operator: cloudoso-operator
+spec:
+  pipelineRef:
+    name: ansible-operator-image-build
+  params:
+    - name: git-url
+      value: https://github.com/hybrid-sovereign-cloud/CloudOSO.git
+    - name: image-name
+      value: cloudoso-operator
+    - name: image-tag
+      value: latest
+  workspaces:
+    - name: source
+      persistentVolumeClaim:
+        claimName: ansible-operator-build-workspace
+---
+# platformopenshift-operator
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: platformopenshift-operator-build-
+  namespace: sovereign-cloud
+  labels:
+    operator: platformopenshift-operator
+spec:
+  pipelineRef:
+    name: ansible-operator-image-build
+  params:
+    - name: git-url
+      value: https://github.com/hybrid-sovereign-cloud/PlatformOpenshift.git
+    - name: image-name
+      value: platformopenshift-operator
+    - name: image-tag
+      value: latest
+  workspaces:
+    - name: source
+      persistentVolumeClaim:
+        claimName: ansible-operator-build-workspace
+---
+# team-operator
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: team-operator-build-
+  namespace: sovereign-cloud
+  labels:
+    operator: team-operator
+spec:
+  pipelineRef:
+    name: ansible-operator-image-build
+  params:
+    - name: git-url
+      value: https://github.com/hybrid-sovereign-cloud/Team.git
+    - name: image-name
+      value: team-operator
+    - name: image-tag
+      value: latest
+  workspaces:
+    - name: source
+      persistentVolumeClaim:
+        claimName: ansible-operator-build-workspace
+---
+# projects-operator
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: projects-operator-build-
+  namespace: sovereign-cloud
+  labels:
+    operator: projects-operator
+spec:
+  pipelineRef:
+    name: ansible-operator-image-build
+  params:
+    - name: git-url
+      value: https://github.com/hybrid-sovereign-cloud/Projects.git
+    - name: image-name
+      value: projects-operator
+    - name: image-tag
+      value: latest
+  workspaces:
+    - name: source
+      persistentVolumeClaim:
+        claimName: ansible-operator-build-workspace
+---
+# assignment-operator
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: assignment-operator-build-
+  namespace: sovereign-cloud
+  labels:
+    operator: assignment-operator
+spec:
+  pipelineRef:
+    name: ansible-operator-image-build
+  params:
+    - name: git-url
+      value: https://github.com/hybrid-sovereign-cloud/Assignment.git
+    - name: image-name
+      value: assignment-operator
+    - name: image-tag
+      value: latest
+  workspaces:
+    - name: source
+      persistentVolumeClaim:
+        claimName: ansible-operator-build-workspace

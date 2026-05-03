@@ -14,9 +14,13 @@
 	install-rhacm-instance install-rhacs-instance \
 	install-rhacs-config install-rhacm-config \
 	wait-rhacm-ready wait-rhacs-ready \
+	install-custom-operators-git-creds install-custom-operators-pipelines \
+	install-custom-operators-applicationset deploy-custom-operators \
+	trigger-build-all trigger-build wait-custom-operators \
+	status-custom-operators sample-crs-apply \
 	uninstall-all-operators uninstall-all-instances uninstall-pipelines-bootstrap \
 	teardown-bootstrap delete-bootstrap-namespaces approve-rhbk-installplan status \
-	validate-helm verify-pipelines-bootstrap
+	validate-helm verify-pipelines-bootstrap rebuild-all
 
 SHELL := /bin/bash
 
@@ -65,6 +69,9 @@ PIPELINES_BOOT_CHART := $(CHARTS_DIR)/instances/pipelines-bootstrap
 RHACM_INST_CHART  := $(CHARTS_DIR)/instances/rhacm-instance
 RHACS_INST_CHART  := $(CHARTS_DIR)/instances/rhacs-instance
 GITOPS_APPS_CHART     := $(CHARTS_DIR)/gitops/platform-applicationset
+CUSTOM_OPS_APPSET_CHART   := $(CHARTS_DIR)/gitops/custom-operators-applicationset
+CUSTOM_OPS_PIPELINES_CHART := $(CHARTS_DIR)/instances/custom-operators-pipelines
+CUSTOM_OPS_GIT_CREDS_CHART := $(CHARTS_DIR)/instances/custom-operators-git-creds
 
 # Config chart paths
 VAULT_INIT_CHART  := $(CHARTS_DIR)/config/vault-init
@@ -75,7 +82,7 @@ RHACM_CONFIG_CHART := $(CHARTS_DIR)/config/rhacm-config
 
 # Namespaces managed by this bootstrap (for teardown). Optional: DELETE_OPENSHIFT_STORAGE_NS=1
 BOOTSTRAP_NAMESPACES := ansible-automation-platform external-secrets-operator \
-	rhbk openshift-gitops quay vault aap gitea sovereign-cloud \
+	rhbk openshift-gitops quay vault aap gitea sovereign-cloud sovereign-cloud-plugins \
 	open-cluster-management open-cluster-management-hub open-cluster-management-agent \
 	open-cluster-management-agent-addon rhacs-operator stackrox
 
@@ -107,9 +114,12 @@ phase2-applicationset: ## Phase 2: install platform ApplicationSet into openshif
 		--namespace openshift-gitops --create-namespace \
 		--set-string appsDomain="$$APPS_DOMAIN" \
 		--set-string git.repoURL="$$GITHUB_URL" \
-		--set-string git.revision="$${GITHUB_REVISION:-main}"
+		--set-string git.revision="$${GITHUB_REVISION:-main}" \
+		--set-string githubToken="$${GITHUB_TOKEN:-}"
 
 gitops-full-bootstrap: phase1-gitops phase2-applicationset ## Run phase1 then phase2
+
+rebuild-all: phase1-gitops phase2-applicationset deploy-custom-operators ## Full platform rebuild: GitOps + platform AppSet + all custom operator prereqs (use on brand new cluster)
 
 ##@ Cluster Access
 login: ## Login to OpenShift (uses OCP_*; loads ./.env if present)
@@ -401,11 +411,135 @@ delete-bootstrap-namespaces: ## Delete bootstrap namespaces (destructive; set CO
 		echo "Skipping openshift-storage (set DELETE_OPENSHIFT_STORAGE_NS=1 to remove ODF namespace)."; \
 	fi
 
+##@ Custom Operators
+
+install-custom-operators-git-creds: ## Install ArgoCD org credential template for hybrid-sovereign-cloud GitHub org
+	@set -euo pipefail; \
+	$(SOURCE_BASHRC); \
+	set -a; [ -f .env ] && . ./.env; set +a; \
+	$(MAKE) login; \
+	test -n "$${GITHUB_TOKEN:-}" || { echo "GITHUB_TOKEN is required."; exit 1; }; \
+	helm upgrade --install custom-operators-git-creds $(CUSTOM_OPS_GIT_CREDS_CHART) \
+		--namespace openshift-gitops --create-namespace \
+		--set-string githubToken="$$GITHUB_TOKEN"
+
+install-custom-operators-pipelines: ## Install Tekton pipelines and ImageStreams for all 8 custom operators
+	@set -euo pipefail; \
+	$(SOURCE_BASHRC); \
+	set -a; [ -f .env ] && . ./.env; set +a; \
+	$(MAKE) login; \
+	helm upgrade --install custom-operators-pipelines $(CUSTOM_OPS_PIPELINES_CHART) \
+		--namespace sovereign-cloud --create-namespace
+
+install-custom-operators-applicationset: ## Install ArgoCD ApplicationSet for the 8 custom operators
+	@set -euo pipefail; \
+	$(SOURCE_BASHRC); \
+	set -a; [ -f .env ] && . ./.env; set +a; \
+	$(MAKE) login; \
+	helm upgrade --install custom-operators-applicationset $(CUSTOM_OPS_APPSET_CHART) \
+		--namespace openshift-gitops --create-namespace
+
+deploy-custom-operators: install-custom-operators-git-creds install-custom-operators-pipelines install-custom-operators-applicationset ## Deploy all custom operator prereqs + ApplicationSet
+
+trigger-build-all: ## Trigger Tekton PipelineRuns to build all 8 custom operator images
+	@set -euo pipefail; \
+	$(SOURCE_BASHRC); \
+	set -a; [ -f .env ] && . ./.env; set +a; \
+	$(MAKE) login; \
+	for op in plugin-rbac entity-operator cloudaws-operator cloudoso-operator \
+	           platformopenshift-operator team-operator projects-operator assignment-operator; do \
+		echo "Triggering build for $$op ..."; \
+		oc create -f - -n sovereign-cloud <<EOF 2>/dev/null || echo "  (already running or failed, check: oc get pipelinerun -n sovereign-cloud)"; \
+	apiVersion: tekton.dev/v1\
+	kind: PipelineRun\
+	metadata:\
+	  generateName: $${op}-build-\
+	  labels:\
+	    operator: $${op}\
+	spec:\
+	  pipelineRef:\
+	    name: ansible-operator-image-build\
+	  params:\
+	    - name: git-url\
+	      value: "https://github.com/hybrid-sovereign-cloud/$${op//-operator/}.git"\
+	    - name: image-name\
+	      value: $${op}\
+	    - name: image-tag\
+	      value: latest\
+	  workspaces:\
+	    - name: source\
+	      persistentVolumeClaim:\
+	        claimName: ansible-operator-build-workspace\
+	EOF\
+	done
+
+trigger-build: ## Trigger a PipelineRun for a single operator (OPERATOR=<name>)
+	@set -euo pipefail; \
+	$(SOURCE_BASHRC); \
+	set -a; [ -f .env ] && . ./.env; set +a; \
+	$(MAKE) login; \
+	test -n "$${OPERATOR:-}" || { echo "Usage: make trigger-build OPERATOR=<name> e.g. entity-operator"; exit 1; }; \
+	oc create -f - -n sovereign-cloud <<EOF; \
+	apiVersion: tekton.dev/v1\
+	kind: PipelineRun\
+	metadata:\
+	  generateName: $${OPERATOR}-build-\
+	  labels:\
+	    operator: $${OPERATOR}\
+	spec:\
+	  pipelineRef:\
+	    name: ansible-operator-image-build\
+	  params:\
+	    - name: git-url\
+	      value: "https://github.com/hybrid-sovereign-cloud/$${OPERATOR}.git"\
+	    - name: image-name\
+	      value: $${OPERATOR}\
+	    - name: image-tag\
+	      value: latest\
+	  workspaces:\
+	    - name: source\
+	      persistentVolumeClaim:\
+	        claimName: ansible-operator-build-workspace\
+	EOF
+
+wait-custom-operators: ## Wait for all custom operator pods to be ready
+	@set -euo pipefail; \
+	$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	for dep in plugin-rbac entity-operator cloudaws-operator cloudoso-operator \
+	           platformopenshift-operator team-operator projects-operator assignment-operator; do \
+		echo -n "Waiting for $$dep ... "; \
+		oc rollout status deployment/$$dep -n sovereign-cloud --timeout=300s 2>/dev/null || \
+		oc rollout status deployment/$$dep -n sovereign-cloud-plugins --timeout=300s 2>/dev/null || \
+		echo "  $$dep not found or not yet deployed"; \
+	done
+
+status-custom-operators: ## Show status of all custom operator deployments
+	@echo "=== Custom Operator Pods ==="; \
+	oc get pods -n sovereign-cloud -l "app.kubernetes.io/managed-by=Helm" 2>&1 | head -20; \
+	oc get pods -n sovereign-cloud-plugins 2>&1 | head -10; \
+	echo "=== Custom Operator ArgoCD Apps ==="; \
+	oc get application.argoproj.io -n openshift-gitops | grep -E "plugin-rbac|entity-operator|cloudaws|cloudoso|platformopenshift|team-operator|projects-operator|assignment" 2>&1; \
+	echo "=== PipelineRuns ==="; \
+	oc get pipelinerun -n sovereign-cloud 2>&1 | head -20; \
+	echo "=== CRDs ==="; \
+	oc get crd | grep -E "hybridsovereign|rbacplugins" 2>&1
+
+sample-crs-apply: ## Apply sample Custom Resources for testing all 8 operators
+	@set -euo pipefail; \
+	$(SOURCE_BASHRC); \
+	set -a; [ -f .env ] && . ./.env; set +a; \
+	$(MAKE) login; \
+	echo "Applying sample CRs for testing..."; \
+	oc apply -f $(CHARTS_DIR)/instances/custom-operators-pipelines/samples/ 2>/dev/null || \
+	  echo "No sample CRs found in chart — apply manually from each operator repo config/samples/"
+
 ##@ Status
 status: ## Show status of all helm releases and key resources
 	@echo "=== Helm Releases ==="; helm list -A 2>&1
-	@echo "=== Argo CD Applications ==="; oc get application.argoproj.io -n openshift-gitops 2>&1 | head -35
+	@echo "=== Argo CD Applications ==="; oc get application.argoproj.io -n openshift-gitops 2>&1 | head -40
 	@echo "=== Operator CSVs ==="; oc get csv -A 2>&1 | grep -E "(Succeeded|Failed|Installing|Pending)" | head -30
 	@echo "=== Key Pods ==="; oc get pods -n vault 2>&1; oc get pods -n rhbk 2>&1
 	@echo "=== RHACM Status ==="; oc get multiclusterhub -n open-cluster-management 2>&1 | head -5
 	@echo "=== RHACS Status ==="; oc get central -n stackrox 2>&1 | head -5
+	@echo "=== Custom Operators ==="; oc get pods -n sovereign-cloud --field-selector=status.phase=Running 2>&1 | head -20

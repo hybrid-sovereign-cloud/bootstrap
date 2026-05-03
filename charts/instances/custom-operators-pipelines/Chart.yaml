@@ -1,0 +1,6 @@
+apiVersion: v2
+name: custom-operators-pipelines
+description: OpenShift Pipelines (Tekton) definitions for building all 8 custom Sovereign Cloud operator images
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

@@ -19,6 +19,7 @@ spec:
             wave: {{ .wave | quote }}
             param_hostname: {{ if eq .name "rhbk-instance" }}{{ printf "keycloak-rhbk.%s" $.Values.appsDomain | quote }}{{ else }}""{{ end }}
             param_keycloakUrl: {{ if or (eq .name "keycloak-config") (eq .name "service-oidc-config") (eq .name "rhacs-config") (eq .name "rhacm-config") }}{{ printf "https://keycloak-rhbk.%s" $.Values.appsDomain | quote }}{{ else }}""{{ end }}
+            param_githubToken: {{ if eq .name "custom-operators-git-creds" }}{{ $.Values.githubToken | quote }}{{ else }}""{{ end }}
         {{- end }}
   template:
     metadata:
@@ -40,6 +41,8 @@ spec:
               value: '{{ "{{ .param_hostname }}" }}'
             - name: keycloakUrl
               value: '{{ "{{ .param_keycloakUrl }}" }}'
+            - name: githubToken
+              value: '{{ "{{ .param_githubToken }}" }}'
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{ "{{ .namespace }}" }}'

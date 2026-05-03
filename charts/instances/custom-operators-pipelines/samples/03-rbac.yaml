@@ -1,0 +1,17 @@
+# Rbac — in entity-acme namespace; creates Keycloak group acme/admins
+# Apply AFTER entity-acme namespace exists (entity operator creates it)
+apiVersion: rbacplugins.hybridsovereign.redhat/v1alpha1
+kind: Rbac
+metadata:
+  name: admins
+  namespace: entity-acme
+spec:
+  rbacConfig: keycloak-base
+---
+apiVersion: rbacplugins.hybridsovereign.redhat/v1alpha1
+kind: Rbac
+metadata:
+  name: developers
+  namespace: entity-acme
+spec:
+  rbacConfig: keycloak-base

@@ -1,0 +1,19 @@
+{{- if .Values.githubToken }}
+# ArgoCD organisation credential template — covers all repos under the org URL prefix.
+# Any Application / ApplicationSet that sources from https://github.com/hybrid-sovereign-cloud/*
+# will automatically use these credentials.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hybrid-sovereign-cloud-org-creds
+  namespace: openshift-gitops
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    argocd.argoproj.io/secret-type: repo-creds
+stringData:
+  type: git
+  url: {{ .Values.githubOrgUrl | quote }}
+  username: {{ .Values.githubUsername | quote }}
+  password: {{ .Values.githubToken | quote }}
+  insecure: {{ .Values.insecureSkipVerify | quote }}
+{{- end }}

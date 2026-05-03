@@ -1,0 +1,14 @@
+# Container — deploys a Team child CR via sovereign_tenancy composition
+apiVersion: hybridsovereign.redhat/v1alpha1
+kind: Container
+metadata:
+  name: platform-team
+  namespace: entity-acme
+spec:
+  team:
+    adminGroup:
+      - acme/admins
+    developerGroup:
+      - acme/developers
+    capabilities:
+      gitops: true

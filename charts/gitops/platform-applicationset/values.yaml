@@ -3,6 +3,10 @@ appsDomain: apps.REPLACE.example.com
 
 applicationSetName: platform-gitops
 
+# GitHub token for accessing private repos in the hybrid-sovereign-cloud org.
+# Passed to custom-operators-git-creds at install time (make phase2-applicationset).
+githubToken: ""
+
 git:
   repoURL: https://github.com/hybrid-sovereign-cloud/bootstrap.git
   revision: main
@@ -108,3 +112,19 @@ applications:
     path: charts/gitops/argocd-init-job
     namespace: openshift-gitops
     wave: "250"
+  # Custom operator git credentials (org-level ArgoCD credential template)
+  # GITHUB_TOKEN must be passed at install time via make phase2-applicationset
+  - name: custom-operators-git-creds
+    path: charts/instances/custom-operators-git-creds
+    namespace: openshift-gitops
+    wave: "275"
+  # OpenShift Pipelines definitions and ImageStreams for the 8 custom operators
+  - name: custom-operators-pipelines
+    path: charts/instances/custom-operators-pipelines
+    namespace: sovereign-cloud
+    wave: "280"
+  # ApplicationSet that sources each operator from its own GitHub repo
+  - name: custom-operators-applicationset
+    path: charts/gitops/custom-operators-applicationset
+    namespace: openshift-gitops
+    wave: "285"

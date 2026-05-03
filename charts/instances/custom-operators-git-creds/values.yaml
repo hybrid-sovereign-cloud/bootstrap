@@ -1,0 +1,13 @@
+# GitHub org HTTPS prefix — ArgoCD uses this as a credential template
+# covering ALL repos under hybrid-sovereign-cloud
+githubOrgUrl: https://github.com/hybrid-sovereign-cloud
+
+# GitHub username for HTTPS auth (use "git" for token-based auth)
+githubUsername: git
+
+# GitHub Personal Access Token — passed at install time via --set or .env
+# Required: must have read access to all operator repos
+githubToken: ""
+
+# insecure: skip TLS verification (set false for production)
+insecureSkipVerify: "true"
