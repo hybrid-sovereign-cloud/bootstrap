@@ -11,6 +11,5 @@ subscription:
 
 operatorGroup:
   create: true
-  # Namespace-scoped OG required by ROSA OLM for openshift-gitops
-  targetNamespaces:
-    - openshift-gitops
+  # AllNamespaces mode: leave targetNamespaces empty for cluster-scoped operator
+  targetNamespaces: []

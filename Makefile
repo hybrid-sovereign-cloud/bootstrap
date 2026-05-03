@@ -468,6 +468,25 @@ delete-bootstrap-namespaces: ## Delete bootstrap namespaces (destructive; set CO
 	else \
 		echo "Skipping openshift-storage (set DELETE_OPENSHIFT_STORAGE_NS=1 to remove ODF namespace)."; \
 	fi
+	@echo "==> Fixing stuck RHACM/HyperShift/MulticlusterEngine webhook CRDs to prevent ArgoCD cache blocking..."
+	@for crd in clustermanagementaddons.addon.open-cluster-management.io \
+	            managedclusteraddons.addon.open-cluster-management.io \
+	            agentclassifications.agent-install.openshift.io \
+	            agents.agent-install.openshift.io \
+	            infraenvs.agent-install.openshift.io; do \
+	  oc patch crd $$crd --type=json \
+	    -p='[{"op":"replace","path":"/spec/conversion/strategy","value":"None"},{"op":"remove","path":"/spec/conversion/webhook"}]' \
+	    2>/dev/null || true; \
+	done
+	@echo "==> Force-removing finalizers from terminating namespaces..."
+	@for ns in $(BOOTSTRAP_NAMESPACES); do \
+	  STATUS=$$(oc get ns $$ns -o jsonpath='{.status.phase}' 2>/dev/null); \
+	  if [ "$$STATUS" = "Terminating" ]; then \
+	    oc get namespace $$ns -o json 2>/dev/null | \
+	      python3 -c "import sys,json; d=json.load(sys.stdin); d['spec']['finalizers']=[]; print(json.dumps(d))" | \
+	      oc replace --raw /api/v1/namespaces/$$ns/finalize -f - > /dev/null 2>&1 || true; \
+	  fi; \
+	done
 
 ##@ Custom Operators
 
