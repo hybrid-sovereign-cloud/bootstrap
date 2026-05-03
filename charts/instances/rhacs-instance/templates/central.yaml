@@ -9,12 +9,20 @@ metadata:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   central:
+    {{- if .Values.central.resources }}
+    resources:
+      {{- toYaml .Values.central.resources | nindent 6 }}
+    {{- end }}
     exposure:
       loadBalancer:
         enabled: {{ .Values.central.exposure.loadBalancer.enabled }}
       route:
         enabled: {{ .Values.central.exposure.route.enabled }}
     db:
+      {{- if .Values.central.db.resources }}
+      resources:
+        {{- toYaml .Values.central.db.resources | nindent 8 }}
+      {{- end }}
       {{- if .Values.central.db.storageClass }}
       persistence:
         persistentVolumeClaim:
@@ -25,6 +33,33 @@ spec:
         persistentVolumeClaim:
           size: {{ .Values.central.db.storageSize }}
       {{- end }}
+  {{- if .Values.scanner }}
+  scanner:
+    {{- if .Values.scanner.analyzer }}
+    analyzer:
+      {{- if .Values.scanner.analyzer.resources }}
+      resources:
+        {{- toYaml .Values.scanner.analyzer.resources | nindent 8 }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- if .Values.scannerV4 }}
+  scannerV4:
+    {{- if .Values.scannerV4.indexer }}
+    indexer:
+      {{- if .Values.scannerV4.indexer.resources }}
+      resources:
+        {{- toYaml .Values.scannerV4.indexer.resources | nindent 8 }}
+      {{- end }}
+    {{- end }}
+    {{- if .Values.scannerV4.matcher }}
+    matcher:
+      {{- if .Values.scannerV4.matcher.resources }}
+      resources:
+        {{- toYaml .Values.scannerV4.matcher.resources | nindent 8 }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
   monitoring:
     openshift:
       enabled: {{ .Values.central.monitoring.openshift.enabled }}
