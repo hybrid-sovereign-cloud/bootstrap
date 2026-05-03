@@ -9,8 +9,6 @@ metadata:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   central:
-    adminPasswordSecret:
-      name: {{ .Values.central.adminPasswordSecret }}
     exposure:
       loadBalancer:
         enabled: {{ .Values.central.exposure.loadBalancer.enabled }}

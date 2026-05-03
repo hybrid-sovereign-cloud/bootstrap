@@ -278,23 +278,24 @@ install-rhbk-instance: ## Install Keycloak instance in rhbk namespace
 		--namespace rhbk --create-namespace \
 		--set "hostname=keycloak-rhbk.$$APPS_DOMAIN"
 
-install-gitops-instance: ## Apply gitops-instance chart (ArgoCD CR with resourceExclusions, controller resources)
-	@APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}' 2>/dev/null || echo ""); \
+install-gitops-instance: ## Apply gitops-instance chart (ArgoCD CR + repo secret). Reads GITHUB_URL/GITHUB_TOKEN from env/.env if set.
+	@set -euo pipefail; \
+	set -a; [ -f .env ] && . ./.env || true; set +a; \
+	APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}' 2>/dev/null || echo ""); \
 	helm upgrade --install gitops-instance $(GITOPS_INST_CHART) \
 		--namespace openshift-gitops --create-namespace \
-		$${APPS_DOMAIN:+--set argocd.appsDomain="$$APPS_DOMAIN"}
+		$${APPS_DOMAIN:+--set argocd.appsDomain="$$APPS_DOMAIN"} \
+		$${GITHUB_URL:+--set-string github.repositoryUrl="$$GITHUB_URL"} \
+		$${GITHUB_TOKEN:+--set-string github.token="$$GITHUB_TOKEN"} \
+		$${GITHUB_URL:+--set-string github.insecure="true"} \
+		$${GITHUB_URL:+--set-string github.username="git"}
 
-install-gitops-instance-repos: ## Configure Argo CD repository secret + optional server flags (GITHUB_URL, GITHUB_TOKEN)
+install-gitops-instance-repos: ## Configure Argo CD repository secret (requires GITHUB_URL and GITHUB_TOKEN)
 	@set -euo pipefail; \
 	$(SOURCE_BASHRC); \
 	set -a; [ -f .env ] && . ./.env; set +a; \
 	test -n "$${GITHUB_URL:-}" && test -n "$${GITHUB_TOKEN:-}" || { echo "Set GITHUB_URL and GITHUB_TOKEN (e.g. in .env)."; exit 1; }; \
-	helm upgrade --install gitops-instance $(GITOPS_INST_CHART) \
-		--namespace openshift-gitops --create-namespace \
-		--set-string github.repositoryUrl="$$GITHUB_URL" \
-		--set-string github.token="$$GITHUB_TOKEN" \
-		--set-string github.insecure="true" \
-		--set-string github.username="git"
+	$(MAKE) install-gitops-instance
 
 install-gitea-instance: ## Install Gitea in gitea namespace
 	helm upgrade --install gitea-instance $(GITEA_INST_CHART) \

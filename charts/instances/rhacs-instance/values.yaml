@@ -2,7 +2,6 @@ namespace: stackrox
 
 central:
   name: stackrox-central-services
-  adminPasswordSecret: central-htpasswd
   # Persistent storage for Central DB
   db:
     storageClass: ""  # empty = cluster default
