@@ -1,0 +1,13 @@
+namespace: stackrox
+centralName: stackrox-central-services
+securedClusterName: stackrox-secured-cluster-services
+clusterName: local-cluster
+initBundleSecretName: sensor-tls
+
+vaultAddr: "http://central-vault.vault.svc:8200"
+vaultKvPath: central
+vaultSecretName: vault-init-keys
+vaultSecretNamespace: vault
+
+curlImage: docker.io/curlimages/curl:8.12.0
+ocImage: registry.redhat.io/openshift4/ose-cli:latest

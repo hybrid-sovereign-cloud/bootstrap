@@ -1,9 +1,9 @@
-# .cursorrules
-# Explicitly ignore all git metadata
+# .cursorrules — Hybrid Sovereign Cloud Bootstrap
+# Applied automatically to every Cursor session in this workspace.
+
 .git/
 **/.git/
 
-# Global Spec: Token Minification
 rules:
   - no_preamble: true
   - no_postamble: true
@@ -11,34 +11,66 @@ rules:
   - verbosity: 0
   - format: "markdown_hierarchical"
   - code: "snip_only_if_possible"
-  - math: "latex_standard"
   - respond_with: "fact_nodes_only"
 
-# Repository layout: do not add files to parent multi-repo root; use bootstrap/ and architecture/ only.
+# ── Repo boundaries ────────────────────────────────────────────────────────────
+# Only modify bootstrap/ and architecture/. Never write to the workspace root.
+scope:
+  allowed_paths: ["bootstrap/", "architecture/"]
+  forbidden_paths: ["/", "*.md at root", ".env"]
 
-# Environment Access
+# ── Environment / login ────────────────────────────────────────────────────────
 env:
   OCP_SERVER: "${OCP_SERVER}"
   OCP_USERNAME: "${OCP_USERNAME}"
   OCP_PASSWORD: "${OCP_PASSWORD}"
-  login_cmd: 'make -C bootstrap login'
+  login_cmd: "make -C bootstrap login"
   namespace: "sovereign-cloud"
 
-# Deployment Constraints
+# ── Deployment constraints ─────────────────────────────────────────────────────
 deployment:
-  - helm_only_for_install: true
-  - makefile_forbidden: ["oc create", "oc apply"]
-  - makefile_exceptions: ["oc patch for RHBK InstallPlan approval", "oc delete namespace for CONFIRM_CLUSTER_RESET teardown"]
-  - oc_allowed_for: "investigation (get, describe, logs, exec)"
-  - openshift_pipelines: true
-  - imagestreams: true
-  - validate_before_commit: "make -C bootstrap validate-helm"
+  - all_cluster_installs_via_helm_charts: true
+  - all_helm_charts_managed_by_argocd_applicationset: true
+  - all_oc_interactions_via_make_targets: true
+  - makefile_wraps_oc: true           # oc allowed inside Makefile targets only
+  - validate_before_done: "make validate-helm"
+  - git_commit_push_allowed: true     # at any time, any number of times
 
-# Architecture Documentation
-architecture:
-  path: "design/architecture"
-  repo_decisions: "decisions/"
-  agent_must_update:
-    - "docs/ — operational guides (e.g. openshift-pipelines-bootstrap.md)"
-    - "decisions/ — ADRs (architecture repo root)"
-    - "specs/ — architecture specs"
+# ── Build and image pipeline ───────────────────────────────────────────────────
+builds:
+  - use_openshift_pipelines: true     # Tekton for all CI/CD builds
+  - use_imagestreams: true            # push images to OpenShift ImageStreams
+  - no_external_registry_direct_push: true
+
+# ── GitOps workflow (Argo CD) ──────────────────────────────────────────────────
+gitops:
+  - all_installs_through_argocd_applicationset: true
+  - self_heal: true
+  - prune: true
+  - sync_waves_used: true
+  - post_sync_hooks_for_init_jobs: true
+  - secrets_via_vault_and_eso: true   # never hardcode secrets
+
+# ── Documentation ─────────────────────────────────────────────────────────────
+docs:
+  - update_readme_on_every_chart_change: true
+  - update_architecture_repo_decisions: true
+  - use_mermaid_diagrams: true
+  - keep_makefile_help_text_current: true
+
+# ── Operators approved ─────────────────────────────────────────────────────────
+operators:
+  install_plan_approval: Automatic
+  ordered_sequence:
+    - aap-operator
+    - external-secrets-operator
+    - odf-operator
+    - openshift-pipelines-operator
+    - quay-operator
+    - rhbk-operator
+    - rhacm-operator
+    - rhacs-operator
+
+# ── AI policy reference ────────────────────────────────────────────────────────
+policy_doc: "bootstrap/AI-POLICY.md"
+agents_doc: "bootstrap/AGENTS.md"

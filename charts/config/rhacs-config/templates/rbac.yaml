@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rhacs-config-sa
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+---
+# Read/write secrets in stackrox namespace (init bundle, admin password)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: rhacs-config-secrets
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "update", "patch"]
+  - apiGroups: ["platform.stackrox.io"]
+    resources: ["centrals", "securedclusters"]
+    verbs: ["get", "patch"]
+  - apiGroups: ["route.openshift.io"]
+    resources: ["routes"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rhacs-config-secrets
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: rhacs-config-secrets
+subjects:
+  - kind: ServiceAccount
+    name: rhacs-config-sa
+    namespace: {{ .Release.Namespace }}
+---
+# Read vault-init-keys
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: rhacs-config-vault-read
+  namespace: {{ .Values.vaultSecretNamespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: [{{ .Values.vaultSecretName | quote }}]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rhacs-config-vault-read
+  namespace: {{ .Values.vaultSecretNamespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: rhacs-config-vault-read
+subjects:
+  - kind: ServiceAccount
+    name: rhacs-config-sa
+    namespace: {{ .Release.Namespace }}

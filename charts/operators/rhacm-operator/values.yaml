@@ -1,0 +1,13 @@
+operatorNamespace: open-cluster-management
+
+subscription:
+  name: advanced-cluster-management
+  channel: release-2.16
+  installPlanApproval: Automatic
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+
+# RHACM requires a cluster-scoped OperatorGroup (no targetNamespaces = all namespaces)
+operatorGroup:
+  create: true
+  targetNamespaces: []

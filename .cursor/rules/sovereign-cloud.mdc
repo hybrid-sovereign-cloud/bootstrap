@@ -1,59 +1,40 @@
 ---
-description: Sovereign Cloud Bootstrap — Agent Rules
+description: Hybrid Sovereign Cloud — always-applied agent rules
 globs: ["**/*"]
 alwaysApply: true
 ---
 
-# Sovereign Cloud Bootstrap — Agent Rules
+# Sovereign Cloud Agent Rules
 
-## Repository layout
+## Non-negotiable constraints
 
-- **Do not** add or modify files in a parent multi-repo root (e.g. `sovereign/`). Limit changes to **`bootstrap/`** and **`architecture/`** (and paths they clone, e.g. `design/architecture` after `import-architecture`).
-- Before finishing bootstrap changes, run **`make validate-helm`** from `bootstrap/`.
-- You may **`git add` / `commit` / `push`** the `bootstrap` and `architecture` repos when changes are coherent.
+- **Repo boundary**: modify only `bootstrap/` and `architecture/`. Never write to `/` (workspace root).
+- **Validate**: run `make validate-helm` before marking chart work done.
+- **Make for oc**: all OpenShift CLI interactions must go through `make` targets.
+- **GitOps**: after Phase 1, all installs must be ArgoCD ApplicationSet driven.
+- **Secrets**: store in Vault (`central/<path>`), pull via ESO ExternalSecrets. Never hardcode.
+- **Builds**: use OpenShift Pipelines (Tekton) + ImageStreams. No external registry direct push.
+- **Git**: commit and push freely. Commit messages: `<type>: <description>`.
+- **Docs**: update README, Makefile help, and architecture ADR on every meaningful change.
+- **Iterate**: deploy → test → fix loop until `Synced + Healthy`. Debug with `oc` read commands.
+- **Diagrams**: use Mermaid in architecture docs.
 
-## Environment Access
+## Policy reference
 
-- `OCP_SERVER`, `OCP_USERNAME`, `OCP_PASSWORD` — `make login`
-- **GitOps**: `GITHUB_URL`, `GITHUB_TOKEN`, optional `GITHUB_REVISION` — see `.env.example`
+Full governance: `bootstrap/AI-POLICY.md`
+Agent guide: `bootstrap/AGENTS.md`
 
-## Deployment model
+## Wave order (ApplicationSet sync)
 
-**Default path is GitOps-first:**
+```
+10-70   → operators (aap, eso, odf, pipelines, quay, rhbk, rhacm, rhacs)
+100-155 → instances (sovereign-cloud, vault, aap, rhbk, gitea, odf, pipelines, quay, rhacm, rhacs)
+200-245 → config   (vault-init, keycloak, eso-config, oidc, rhacs-config, rhacm-config)
+250     → argocd-init-job
+```
 
-1. **`make phase1-gitops`** — Cluster-scoped OpenShift GitOps operator + Argo repository Secret (`platform-git-repository`, optional TLS `insecure`).
-2. **`make phase2-applicationset`** — Helm-installs **`platform-applicationset`**; Argo **Applications** manage operators (except GitOps), instances, and config with **prune** + **selfHeal** and **sync waves**.
+## Teardown command
 
-**Helm only** for chart-driven installs (including ApplicationSet and the post-sync **`argocd-init-job`** chart). **`oc create` / `oc apply`** are not added to Makefile for routine provisioning.
-
-**Exceptions**: `approve-rhbk-installplan` (`oc patch`); `delete-bootstrap-namespaces` (`oc delete` with `CONFIRM_CLUSTER_RESET=1`); read-only **`oc`** for investigation and **wait** targets.
-
-All supported cluster workflows must be exposed as **`make`** targets for portability.
-
-## Testing and iteration
-
-- Run **`make validate-helm`** after chart/Makefile edits.
-- On a live cluster: run **`phase1-gitops`**, then **`phase2-applicationset`**, then **`argocd-post-sync-waits`** as needed; fix failures before moving on.
-- Use **OpenShift Pipelines** for cluster builds; **ImageStreams** for in-cluster image references; **podman** locally.
-
-## Namespace map
-
-| Component | Namespace |
-|---|---|
-| GitOps / Argo / ApplicationSet | `openshift-gitops` |
-| AAP Operator | `ansible-automation-platform` |
-| External Secrets Operator | `external-secrets-operator` |
-| RHBK | `rhbk` |
-| Quay | `quay` |
-| ODF | `openshift-storage` |
-| Sovereign / pipelines bootstrap | `sovereign-cloud` |
-| Pipelines subscription | `openshift-operators` |
-| Vault | `vault` |
-
-## Architecture documentation
-
-Update **`architecture`** (`docs/`, `decisions/`, `specs/`) for GitOps and bootstrap changes. ADRs live in **`architecture/decisions/`**.
-
-## Code style
-
-- Technical, dense markdown; ignore `.git/` metadata.
+```bash
+make teardown-bootstrap && make delete-bootstrap-namespaces
+```

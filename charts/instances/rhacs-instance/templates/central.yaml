@@ -1,0 +1,32 @@
+apiVersion: platform.stackrox.io/v1alpha1
+kind: Central
+metadata:
+  name: {{ .Values.central.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  central:
+    adminPasswordSecret:
+      name: {{ .Values.central.adminPasswordSecret }}
+    exposure:
+      loadBalancer:
+        enabled: {{ .Values.central.exposure.loadBalancer.enabled }}
+      route:
+        enabled: {{ .Values.central.exposure.route.enabled }}
+    db:
+      {{- if .Values.central.db.storageClass }}
+      persistence:
+        persistentVolumeClaim:
+          storageClassName: {{ .Values.central.db.storageClass }}
+          size: {{ .Values.central.db.storageSize }}
+      {{- else }}
+      persistence:
+        persistentVolumeClaim:
+          size: {{ .Values.central.db.storageSize }}
+      {{- end }}
+  monitoring:
+    openshift:
+      enabled: {{ .Values.central.monitoring.openshift.enabled }}

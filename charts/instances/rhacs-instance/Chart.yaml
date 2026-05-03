@@ -1,0 +1,6 @@
+apiVersion: v2
+name: rhacs-instance
+description: Central and SecuredCluster CRs for Red Hat Advanced Cluster Security
+type: application
+version: 0.1.0
+appVersion: "stable"

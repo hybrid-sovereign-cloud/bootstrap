@@ -1,0 +1,6 @@
+apiVersion: v2
+name: rhacm-config
+description: Post-install config for RHACM - ManagedClusterSet and hub self-import
+type: application
+version: 0.1.0
+appVersion: "2.16"

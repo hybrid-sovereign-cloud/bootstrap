@@ -1,0 +1,11 @@
+namespace: open-cluster-management
+
+# ManagedClusterSet groups clusters for RBAC and placement
+managedClusterSet:
+  name: sovereign-cloud-clusters
+
+# Hub cluster is automatically imported as local-cluster
+# This ClusterSet binding enables placement policies
+hubClusterSetBinding:
+  enabled: true
+  namespace: open-cluster-management

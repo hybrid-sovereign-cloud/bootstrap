@@ -18,7 +18,7 @@ spec:
             namespace: {{ .namespace | quote }}
             wave: {{ .wave | quote }}
             param_hostname: {{ if eq .name "rhbk-instance" }}{{ printf "keycloak-rhbk.%s" $.Values.appsDomain | quote }}{{ else }}""{{ end }}
-            param_keycloakUrl: {{ if or (eq .name "keycloak-config") (eq .name "service-oidc-config") }}{{ printf "https://keycloak-rhbk.%s" $.Values.appsDomain | quote }}{{ else }}""{{ end }}
+            param_keycloakUrl: {{ if or (eq .name "keycloak-config") (eq .name "service-oidc-config") (eq .name "rhacs-config") (eq .name "rhacm-config") }}{{ printf "https://keycloak-rhbk.%s" $.Values.appsDomain | quote }}{{ else }}""{{ end }}
         {{- end }}
   template:
     metadata:
@@ -63,6 +63,23 @@ spec:
             - /spec
         - group: argoproj.io
           kind: ArgoCD
+          jsonPointers:
+            - /status
+            - /spec
+        # RHACM MultiClusterHub is heavily reconciled by the operator
+        - group: operator.open-cluster-management.io
+          kind: MultiClusterHub
+          jsonPointers:
+            - /status
+            - /spec
+        # RHACS Central and SecuredCluster drift as the operator reconciles them
+        - group: platform.stackrox.io
+          kind: Central
+          jsonPointers:
+            - /status
+            - /spec
+        - group: platform.stackrox.io
+          kind: SecuredCluster
           jsonPointers:
             - /status
             - /spec

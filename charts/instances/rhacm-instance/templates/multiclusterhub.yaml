@@ -1,0 +1,12 @@
+apiVersion: operator.open-cluster-management.io/v1
+kind: MultiClusterHub
+metadata:
+  name: {{ .Values.multiClusterHub.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  availabilityConfig: {{ .Values.multiClusterHub.availabilityConfig }}
+  disableHubSelfManagement: {{ .Values.multiClusterHub.disableHubSelfManagement }}

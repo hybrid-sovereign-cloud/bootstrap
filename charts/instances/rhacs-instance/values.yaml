@@ -1,0 +1,29 @@
+namespace: stackrox
+
+central:
+  name: stackrox-central-services
+  adminPasswordSecret: central-htpasswd
+  # Persistent storage for Central DB
+  db:
+    storageClass: ""  # empty = cluster default
+    storageSize: 100Gi
+  # Monitoring
+  monitoring:
+    openshift:
+      enabled: true
+  # Exposure via Route
+  exposure:
+    loadBalancer:
+      enabled: false
+    route:
+      enabled: true
+
+securedCluster:
+  name: stackrox-secured-cluster-services
+  # ClusterName shown in ACS console
+  clusterName: local-cluster
+  centralEndpoint: ""  # populated by config job from Central route
+
+waitJob:
+  image: registry.redhat.io/openshift4/ose-cli:latest
+  timeoutMinutes: 20

@@ -10,6 +10,10 @@
 	argocd-post-sync-waits verify-argocd-app-health \
 	vault-init keycloak-config external-secrets-config \
 	install-odf-operator install-odf-noobaa install-quay-instance \
+	install-rhacm-operator install-rhacs-operator \
+	install-rhacm-instance install-rhacs-instance \
+	install-rhacs-config install-rhacm-config \
+	wait-rhacm-ready wait-rhacs-ready \
 	uninstall-all-operators uninstall-all-instances uninstall-pipelines-bootstrap \
 	teardown-bootstrap delete-bootstrap-namespaces approve-rhbk-installplan status \
 	validate-helm verify-pipelines-bootstrap
@@ -46,6 +50,8 @@ GITOPS_OP_CHART := $(CHARTS_DIR)/operators/gitops-operator
 QUAY_OP_CHART  := $(CHARTS_DIR)/operators/quay-operator
 ODF_OP_CHART   := $(CHARTS_DIR)/operators/odf-operator
 PIPELINES_OP_CHART := $(CHARTS_DIR)/operators/openshift-pipelines-operator
+RHACM_OP_CHART := $(CHARTS_DIR)/operators/rhacm-operator
+RHACS_OP_CHART := $(CHARTS_DIR)/operators/rhacs-operator
 
 # Instance chart paths
 AAP_INST_CHART    := $(CHARTS_DIR)/instances/aap-instance
@@ -56,16 +62,22 @@ GITEA_INST_CHART  := $(CHARTS_DIR)/instances/gitea-instance
 SC_CHART          := $(CHARTS_DIR)/instances/sovereign-cloud
 QUAY_INST_CHART   := $(CHARTS_DIR)/instances/quay-instance
 PIPELINES_BOOT_CHART := $(CHARTS_DIR)/instances/pipelines-bootstrap
+RHACM_INST_CHART  := $(CHARTS_DIR)/instances/rhacm-instance
+RHACS_INST_CHART  := $(CHARTS_DIR)/instances/rhacs-instance
 GITOPS_APPS_CHART     := $(CHARTS_DIR)/gitops/platform-applicationset
 
 # Config chart paths
 VAULT_INIT_CHART  := $(CHARTS_DIR)/config/vault-init
 KC_CONFIG_CHART   := $(CHARTS_DIR)/config/keycloak-config
 ESO_CONFIG_CHART  := $(CHARTS_DIR)/config/external-secrets-config
+RHACS_CONFIG_CHART := $(CHARTS_DIR)/config/rhacs-config
+RHACM_CONFIG_CHART := $(CHARTS_DIR)/config/rhacm-config
 
 # Namespaces managed by this bootstrap (for teardown). Optional: DELETE_OPENSHIFT_STORAGE_NS=1
 BOOTSTRAP_NAMESPACES := ansible-automation-platform external-secrets-operator \
-	rhbk openshift-gitops quay vault aap gitea sovereign-cloud
+	rhbk openshift-gitops quay vault aap gitea sovereign-cloud \
+	open-cluster-management open-cluster-management-hub open-cluster-management-agent \
+	open-cluster-management-agent-addon rhacs-operator stackrox
 
 ##@ Help
 help: ## Show this help
@@ -289,6 +301,46 @@ install-quay-instance: ## Install Quay registry
 	helm upgrade --install quay-instance $(QUAY_INST_CHART) \
 		--namespace quay --create-namespace
 
+install-rhacm-operator: ## Install RHACM OLM subscription (open-cluster-management ns)
+	helm upgrade --install rhacm-operator $(RHACM_OP_CHART) \
+		--namespace open-cluster-management --create-namespace
+
+install-rhacs-operator: ## Install RHACS OLM subscription (rhacs-operator ns)
+	helm upgrade --install rhacs-operator $(RHACS_OP_CHART) \
+		--namespace rhacs-operator --create-namespace
+
+install-rhacm-instance: ## Install RHACM MultiClusterHub
+	helm upgrade --install rhacm-instance $(RHACM_INST_CHART) \
+		--namespace open-cluster-management --create-namespace
+
+install-rhacs-instance: ## Install RHACS Central + SecuredCluster
+	helm upgrade --install rhacs-instance $(RHACS_INST_CHART) \
+		--namespace stackrox --create-namespace
+
+install-rhacs-config: ## Run RHACS post-install config (init-bundle, Vault secret storage)
+	helm upgrade --install rhacs-config $(RHACS_CONFIG_CHART) \
+		--namespace stackrox
+
+install-rhacm-config: ## Run RHACM post-install config (ManagedClusterSet)
+	helm upgrade --install rhacm-config $(RHACM_CONFIG_CHART) \
+		--namespace open-cluster-management
+
+wait-rhacm-ready: ## Wait for MultiClusterHub to reach Running phase
+	@set -e; n=0; \
+	until oc get multiclusterhub multiclusterhub -n open-cluster-management \
+	  -o jsonpath='{.status.phase}' 2>/dev/null | grep -qx Running; do \
+	  n=$$((n+1)); echo "waiting MultiClusterHub Running ($$n/$(WAIT_ATTEMPTS))"; \
+	  [ $$n -gt $(WAIT_ATTEMPTS) ] && exit 1; sleep $(WAIT_INTERVAL); \
+	done; echo "MultiClusterHub: Running"
+
+wait-rhacs-ready: ## Wait for ACS Central to be deployed
+	@set -e; n=0; \
+	until oc get central stackrox-central-services -n stackrox \
+	  -o jsonpath='{.status.conditions[?(@.type=="Deployed")].status}' 2>/dev/null | grep -qi true; do \
+	  n=$$((n+1)); echo "waiting ACS Central Deployed ($$n/$(WAIT_ATTEMPTS))"; \
+	  [ $$n -gt $(WAIT_ATTEMPTS) ] && exit 1; sleep $(WAIT_INTERVAL); \
+	done; echo "ACS Central: Deployed"
+
 ##@ Pipelines verify (read-only oc)
 verify-pipelines-bootstrap: ## Show Pipeline + ImageStream (requires login); start runs from console/tkn
 	oc get pipeline,imagestream -n sovereign-cloud
@@ -298,12 +350,18 @@ uninstall-pipelines-bootstrap: ## Remove pipelines-bootstrap Helm release
 	-helm uninstall pipelines-bootstrap -n sovereign-cloud
 
 uninstall-all-instances: ## Uninstall all instance/config releases (reverse dependency order)
+	-helm uninstall rhacs-config -n stackrox
+	-helm uninstall rhacm-config -n open-cluster-management
+	-helm uninstall service-oidc-config -n sovereign-cloud
+	-helm uninstall external-secrets-config -n sovereign-cloud
 	-helm uninstall vault-init -n vault
 	-helm uninstall keycloak-config -n rhbk
 	-helm uninstall eso-config -n sovereign-cloud
 	-helm uninstall pipelines-bootstrap -n sovereign-cloud
 	-helm uninstall odf-noobaa -n openshift-storage
 	-helm uninstall quay-instance -n quay
+	-helm uninstall rhacs-instance -n stackrox
+	-helm uninstall rhacm-instance -n open-cluster-management
 	-helm uninstall gitea-instance -n gitea
 	-helm uninstall rhbk-instance -n rhbk
 	-helm uninstall vault-instance -n vault
@@ -312,6 +370,8 @@ uninstall-all-instances: ## Uninstall all instance/config releases (reverse depe
 	-helm uninstall sovereign-cloud -n sovereign-cloud
 
 uninstall-all-operators: ## Uninstall all operator Helm releases
+	-helm uninstall rhacs-operator -n rhacs-operator
+	-helm uninstall rhacm-operator -n open-cluster-management
 	-helm uninstall openshift-pipelines-operator -n openshift-operators
 	-helm uninstall odf-operator -n openshift-storage
 	-helm uninstall quay-operator -n quay

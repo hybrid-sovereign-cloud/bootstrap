@@ -1,0 +1,6 @@
+apiVersion: v2
+name: rhacm-instance
+description: MultiClusterHub CR for Red Hat Advanced Cluster Management
+type: application
+version: 0.1.0
+appVersion: "2.16"

@@ -32,6 +32,14 @@ applications:
     path: charts/operators/rhbk-operator
     namespace: rhbk
     wave: "60"
+  - name: rhacm-operator
+    path: charts/operators/rhacm-operator
+    namespace: open-cluster-management
+    wave: "65"
+  - name: rhacs-operator
+    path: charts/operators/rhacs-operator
+    namespace: rhacs-operator
+    wave: "70"
   - name: sovereign-cloud
     path: charts/instances/sovereign-cloud
     namespace: sovereign-cloud
@@ -64,6 +72,14 @@ applications:
     path: charts/instances/quay-instance
     namespace: quay
     wave: "140"
+  - name: rhacm-instance
+    path: charts/instances/rhacm-instance
+    namespace: open-cluster-management
+    wave: "150"
+  - name: rhacs-instance
+    path: charts/instances/rhacs-instance
+    namespace: stackrox
+    wave: "155"
   - name: vault-init
     path: charts/config/vault-init
     namespace: vault
@@ -80,6 +96,14 @@ applications:
     path: charts/config/service-oidc-config
     namespace: sovereign-cloud
     wave: "230"
+  - name: rhacs-config
+    path: charts/config/rhacs-config
+    namespace: stackrox
+    wave: "240"
+  - name: rhacm-config
+    path: charts/config/rhacm-config
+    namespace: open-cluster-management
+    wave: "245"
   - name: argocd-init-job
     path: charts/gitops/argocd-init-job
     namespace: openshift-gitops

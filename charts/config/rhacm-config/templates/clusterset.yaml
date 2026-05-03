@@ -1,0 +1,26 @@
+apiVersion: cluster.open-cluster-management.io/v1beta2
+kind: ManagedClusterSet
+metadata:
+  name: {{ .Values.managedClusterSet.name }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  clusterSelector:
+    selectorType: ExclusiveClusterSetLabel
+---
+{{- if .Values.hubClusterSetBinding.enabled }}
+# Bind the hub namespace to the ManagedClusterSet so Placement can use it
+apiVersion: cluster.open-cluster-management.io/v1beta2
+kind: ManagedClusterSetBinding
+metadata:
+  name: {{ .Values.managedClusterSet.name }}
+  namespace: {{ .Values.hubClusterSetBinding.namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  clusterSet: {{ .Values.managedClusterSet.name }}
+{{- end }}
