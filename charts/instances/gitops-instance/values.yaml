@@ -11,3 +11,11 @@ github:
 argocd:
   # When true, merge server.insecure: true on the openshift-gitops ArgoCD CR (if chart deploys it).
   serverInsecure: false
+  # Application controller memory must be increased when managing many large operators (RHACM, RHACS)
+  controllerResources:
+    limits:
+      cpu: "4"
+      memory: "4Gi"
+    requests:
+      cpu: "500m"
+      memory: "2Gi"

@@ -1,4 +1,3 @@
-{{- if .Values.argocd.serverInsecure }}
 apiVersion: argoproj.io/v1beta1
 kind: ArgoCD
 metadata:
@@ -7,6 +6,15 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 spec:
+  {{- if .Values.argocd.serverInsecure }}
   server:
     insecure: true
-{{- end }}
+  {{- end }}
+  controller:
+    resources:
+      limits:
+        cpu: {{ .Values.argocd.controllerResources.limits.cpu | quote }}
+        memory: {{ .Values.argocd.controllerResources.limits.memory | quote }}
+      requests:
+        cpu: {{ .Values.argocd.controllerResources.requests.cpu | quote }}
+        memory: {{ .Values.argocd.controllerResources.requests.memory | quote }}
