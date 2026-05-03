@@ -353,8 +353,9 @@ keycloak-config: ## Configure Keycloak realm, users, clients, store secrets in V
 	oc logs -n rhbk job/keycloak-config --tail=20 2>/dev/null | tail -15
 
 external-secrets-config: ## Configure ExternalSecrets + SecretStore
-	helm upgrade --install eso-config $(ESO_CONFIG_CHART) \
-		--namespace sovereign-cloud --create-namespace
+	helm template eso-config $(ESO_CONFIG_CHART) \
+		--namespace sovereign-cloud | \
+		oc apply -f - 2>&1 | grep -v 'unchanged\|configured' || true
 
 ##@ ODF & Quay
 install-odf-operator: ## Install ODF operator (object storage only)
