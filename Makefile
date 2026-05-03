@@ -8,7 +8,7 @@
 	install-all-instances install-pipelines-bootstrap \
 	wait-openshift-gitops-csv wait-argocd-ready wait-csv-succeeded \
 	argocd-post-sync-waits verify-argocd-app-health \
-	vault-init vault-enable-kv vault-store-gitea-admin vault-store-github-token vault-store-keycloak-auth keycloak-config external-secrets-config \
+	vault-init vault-enable-kv vault-store-gitea-admin vault-store-github-token vault-store-keycloak-auth keycloak-config external-secrets-config fix-csv-operator-groups fix-gitea-scc \
 	install-odf-operator install-odf-noobaa install-quay-instance \
 	install-rhacm-operator install-rhacs-operator \
 	install-rhacm-instance install-rhacs-instance \
@@ -130,6 +130,8 @@ rebuild-all: ## Full platform rebuild on a brand new cluster (Phase 1→2→vaul
 	$(MAKE) vault-enable-kv
 	$(MAKE) vault-store-gitea-admin
 	$(MAKE) vault-store-github-token
+	$(MAKE) fix-csv-operator-groups
+	$(MAKE) fix-gitea-scc
 	$(MAKE) keycloak-config
 	$(MAKE) vault-store-keycloak-auth
 	$(MAKE) external-secrets-config
@@ -338,6 +340,28 @@ vault-store-github-token: ## Store GitHub PAT in Vault at central/github/token (
 	  "VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=$$ROOT_TOKEN vault kv put central/github token='$${GITHUB_TOKEN}'" && \
 	echo "Stored GitHub token in Vault"
 
+fix-csv-operator-groups: ## Fix CSVs missing the olm.operatorgroup.uid annotation (NoOperatorGroup issue)
+	@echo "==> Fixing CSVs with NoOperatorGroup issue..."
+	@for ns_og_csv in \
+	  "ansible-automation-platform,ansible-automation-platform-og" \
+	  "external-secrets-operator,external-secrets-operator-og" \
+	  "open-cluster-management,open-cluster-management-og" \
+	  "rhacs-operator,rhacs-operator-og" \
+	  "rhbk,rhbk-og"; do \
+	  NS=$$(echo $$ns_og_csv | cut -d',' -f1); \
+	  OG=$$(echo $$ns_og_csv | cut -d',' -f2); \
+	  OG_UID=$$(oc get operatorgroup $$OG -n $$NS -o jsonpath='{.metadata.uid}' 2>/dev/null); \
+	  [ -z "$$OG_UID" ] && continue; \
+	  for CSV in $$(oc get csv -n $$NS -o name 2>/dev/null | sed 's|.*/||'); do \
+	    REASON=$$(oc get csv $$CSV -n $$NS -o jsonpath='{.status.reason}' 2>/dev/null); \
+	    if [ "$$REASON" = "NoOperatorGroup" ]; then \
+	      echo "  Patching $$CSV in $$NS with OG $$OG (uid=$$OG_UID)"; \
+	      oc patch csv $$CSV -n $$NS --type=merge -p "{\"metadata\":{\"annotations\":{\"olm.operatorgroup.uid\":\"$$OG_UID\",\"olm.operatorgroup\":\"$$OG\"}}}" 2>&1 | head -1; \
+	    fi; \
+	  done; \
+	done; \
+	echo "==> Done fixing CSV OperatorGroup annotations"
+
 vault-enable-kv: ## Enable central KV engine in Vault (idempotent)
 	@ROOT_TOKEN=$$(oc get secret vault-init-keys -n vault -o jsonpath='{.data.root-token}' | base64 -d); \
 	oc exec -n vault central-vault-0 -- sh -c \
@@ -524,6 +548,11 @@ install-custom-operators-applicationset: ## Install ArgoCD ApplicationSet for th
 	$(MAKE) login; \
 	helm upgrade --install custom-operators-applicationset $(CUSTOM_OPS_APPSET_CHART) \
 		--namespace openshift-gitops --create-namespace
+
+fix-gitea-scc: ## Grant anyuid SCC to Gitea default SA (needed for init-directories chmod)
+	@oc adm policy add-scc-to-user anyuid -z default -n gitea 2>&1 || true
+	@oc rollout restart deployment gitea -n gitea 2>&1 || true
+	@echo "Gitea anyuid SCC granted and rollout restarted"
 
 deploy-custom-operators: install-custom-operators-git-creds install-custom-operators-pipelines install-custom-operators-applicationset ## Deploy all custom operator prereqs + ApplicationSet
 
