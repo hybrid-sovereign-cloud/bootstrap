@@ -8,7 +8,7 @@ kind: SecurityContextConstraints
 metadata:
   name: gitea-anyuid
   labels:
-    {{- include "gitea-instance.labels" . | nindent 4 }}
+    {{- include "chart.labels" . | nindent 4 }}
   annotations:
     argocd.argoproj.io/sync-options: Prune=true
 allowHostDirVolumePlugin: false
@@ -51,7 +51,7 @@ kind: ClusterRoleBinding
 metadata:
   name: gitea-anyuid-binding
   labels:
-    {{- include "gitea-instance.labels" . | nindent 4 }}
+    {{- include "chart.labels" . | nindent 4 }}
   annotations:
     argocd.argoproj.io/sync-options: Prune=true
 subjects:
