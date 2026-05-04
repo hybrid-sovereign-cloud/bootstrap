@@ -7,7 +7,8 @@
 	install-gitops-instance install-gitops-instance-repos install-gitea-instance install-sovereign-cloud \
 	install-all-instances install-pipelines-bootstrap \
 	wait-openshift-gitops-csv wait-argocd-ready wait-csv-succeeded \
-	argocd-post-sync-waits verify-argocd-app-health \
+	argocd-post-sync-waits verify-argocd-app-health sync-argocd-app sync-failing-apps fix-argocd-oom \
+	apply-phase4-samples status-phase4 create-devuser \
 	vault-init vault-enable-kv vault-store-gitea-admin vault-store-github-token vault-store-keycloak-auth keycloak-config external-secrets-config fix-csv-operator-groups fix-gitea-scc gitea-setup-entity-credentials \
 	install-odf-operator install-odf-noobaa install-quay-instance \
 	install-rhacm-operator install-rhacs-operator \
@@ -317,6 +318,52 @@ wait-argocd-ready: ## Retry until ArgoCD CR openshift-gitops reports Available/C
 verify-argocd-app-health: ## Exits 0 when Application APP is Healthy (APP= required)
 	@test -n "$(APP)" || { echo "Usage: make verify-argocd-app-health APP=vault-init"; exit 1; }
 	@oc get applications.argoproj.io "$(APP)" -n openshift-gitops -o jsonpath='{.status.health.status}' | grep -qx Healthy
+
+sync-argocd-app: ## Force ArgoCD hard-sync for APP= (replace=false by default; set REPLACE=true to delete+recreate)
+	@test -n "$(APP)" || { echo "Usage: make sync-argocd-app APP=entity-operator [REPLACE=true]"; exit 1; }
+	@echo "==> Hard syncing ArgoCD app: $(APP)"
+	@PATCH='{"operation":{"sync":{"syncStrategy":{"hook":{"force":true}},"prune":true}}}'; \
+	oc patch applications.argoproj.io "$(APP)" -n openshift-gitops --type=merge -p "$$PATCH"
+	@echo "==> Waiting for $(APP) sync to complete (up to 5m)..."
+	@for i in $$(seq 1 30); do \
+	  SYNC=$$(oc get applications.argoproj.io "$(APP)" -n openshift-gitops -o jsonpath='{.status.sync.status}' 2>/dev/null); \
+	  HEALTH=$$(oc get applications.argoproj.io "$(APP)" -n openshift-gitops -o jsonpath='{.status.health.status}' 2>/dev/null); \
+	  echo "  [$$i/30] sync=$$SYNC health=$$HEALTH"; \
+	  [ "$$SYNC" = "Synced" ] && [ "$$HEALTH" = "Healthy" ] && { echo "$(APP): Synced+Healthy"; exit 0; }; \
+	  sleep 10; \
+	done; echo "WARNING: $(APP) did not reach Synced+Healthy in 5m"
+
+fix-argocd-oom: ## Increase ArgoCD application-controller memory to 6Gi (fixes OOMKill with many large operators)
+	@echo "==> Patching ArgoCD CR controller.resources to 6Gi..."
+	@oc patch argocd openshift-gitops -n openshift-gitops --type=merge \
+	  -p '{"spec":{"controller":{"resources":{"limits":{"cpu":"4","memory":"6Gi"},"requests":{"cpu":"500m","memory":"2Gi"}}}}}'
+	@echo "==> Waiting 10s for ArgoCD operator to reconcile StatefulSet..."
+	@sleep 10
+	@echo "==> Current StatefulSet limits:"
+	@oc get statefulset openshift-gitops-application-controller -n openshift-gitops \
+	  -o jsonpath='{.spec.template.spec.containers[0].resources}' 2>/dev/null | python3 -m json.tool || true
+	@echo "==> Deleting application-controller pod to force fresh restart with new memory limits..."
+	@oc delete pod openshift-gitops-application-controller-0 -n openshift-gitops --grace-period=5 2>/dev/null || true
+	@echo "==> Waiting for application-controller pod to restart (up to 5m)..."
+	@for i in $$(seq 1 30); do \
+	  STATUS=$$(oc get pod openshift-gitops-application-controller-0 -n openshift-gitops -o jsonpath='{.status.phase}' 2>/dev/null); \
+	  READY=$$(oc get pod openshift-gitops-application-controller-0 -n openshift-gitops -o jsonpath='{.status.containerStatuses[0].ready}' 2>/dev/null); \
+	  MEM=$$(oc get pod openshift-gitops-application-controller-0 -n openshift-gitops -o jsonpath='{.spec.containers[0].resources.limits.memory}' 2>/dev/null); \
+	  echo "  [$$i/30] status=$$STATUS ready=$$READY memory=$$MEM"; \
+	  [ "$$READY" = "true" ] && { echo "application-controller is Ready with $$MEM memory limit"; exit 0; }; \
+	  sleep 10; \
+	done; echo "WARNING: application-controller not ready in 5m, check: oc describe pod/openshift-gitops-application-controller-0 -n openshift-gitops"
+
+sync-failing-apps: ## Force sync all OutOfSync ArgoCD apps
+	@echo "==> Syncing all OutOfSync applications..."
+	@for app in $$(oc get applications.argoproj.io -n openshift-gitops --no-headers 2>/dev/null | grep -v "Synced" | awk '{print $$1}'); do \
+	  echo "  Syncing: $$app"; \
+	  PATCH='{"operation":{"sync":{"syncStrategy":{"hook":{"force":true}},"prune":true}}}'; \
+	  oc patch applications.argoproj.io "$$app" -n openshift-gitops --type=merge -p "$$PATCH" 2>/dev/null || true; \
+	done
+	@echo "==> Waiting 60s then showing status..."
+	@sleep 60
+	@oc get applications.argoproj.io -n openshift-gitops --no-headers 2>&1 | head -40
 
 argocd-post-sync-waits: ## Wait for vault-init, keycloak-config, external-secrets-config Applications (GitOps)
 	@set -e; \
@@ -772,6 +819,69 @@ status: ## Show status of all helm releases and key resources
 	@echo "=== RHACM Status ==="; oc get multiclusterhub -n open-cluster-management 2>&1 | head -5
 	@echo "=== RHACS Status ==="; oc get central -n stackrox 2>&1 | head -5
 	@echo "=== Custom Operators ==="; oc get pods -n sovereign-cloud --field-selector=status.phase=Running 2>&1 | head -20
+
+##@ Phase 4 / 5: Testing
+apply-phase4-samples: ## Apply Phase4 Entity beta + all container types sample CRs
+	@echo "==> Creating Entity beta..."
+	@oc apply -f $(CUSTOM_OPS_PIPELINES_CHART)/samples/02-entity-beta.yaml 2>&1 | head -3
+	@echo "==> Waiting for entity-beta namespace (up to 3m)..."
+	@for i in $$(seq 1 18); do \
+	  oc get namespace entity-beta 2>/dev/null && break; \
+	  echo "  [$$i/18] entity-beta not yet created..."; sleep 10; \
+	done
+	@echo "==> Applying all container types for beta + fixing ocp1..."
+	@oc apply -f $(CUSTOM_OPS_PIPELINES_CHART)/samples/phase4-beta-entity-all-containers.yaml 2>&1 | grep -E "created|configured|unchanged|Error" | head -20
+	@echo "==> Phase 4 CRs applied. Check with: make status-phase4"
+
+status-phase4: ## Show status of Phase4 entities, containers, and Keycloak groups
+	@echo "=== Entities ==="; oc get entity 2>&1
+	@echo "=== Containers (entity-acme) ==="; oc get container -n entity-acme 2>&1
+	@echo "=== Containers (entity-beta) ==="; oc get container -n entity-beta 2>&1
+	@echo "=== Rbac CRs (entity-beta) ==="; oc get rbac -n entity-beta 2>&1
+	@echo "=== CloudAWS ==="; oc get cloudaws -A 2>&1
+	@echo "=== CloudOSO ==="; oc get cloudoso -A 2>&1
+	@echo "=== PlatformOpenshifts ==="; oc get platformopenshifts -A 2>&1
+	@echo "=== Teams ==="; oc get teams -A 2>&1
+	@echo "=== Projects (CRD) ==="; oc get projects.hybridsovereign.redhat -A 2>&1
+	@echo "=== Assignments ==="; oc get assignments.hybridsovereign.redhat -A 2>&1
+	@echo "=== Keycloak Groups ==="; \
+	  KC_URL=$$(oc get route keycloak -n rhbk -o jsonpath='{.spec.host}' 2>/dev/null || echo ""); \
+	  TOKEN=$$(oc exec -n rhbk deployment/keycloak -- curl -s -X POST "http://localhost:8080/realms/master/protocol/openid-connect/token" -d "grant_type=password&client_id=admin-cli&username=admin&password=$$(oc get secret -n rhbk keycloak-initial-admin-password -o jsonpath='{.data.password}' 2>/dev/null | base64 -d)" 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null); \
+	  if [ -n "$$TOKEN" ]; then \
+	    oc exec -n rhbk deployment/keycloak -- curl -s -H "Authorization: Bearer $$TOKEN" "http://localhost:8080/admin/realms/sovereign-cloud/groups" 2>/dev/null | python3 -c "import sys,json; [print(g.get('name',''),g.get('path','')) for g in json.load(sys.stdin)]" 2>/dev/null; \
+	  else echo "Cannot get Keycloak token"; fi
+
+create-devuser: ## Create devuser in Keycloak, add to beta/admins group (Phase 5)
+	@echo "==> Creating devuser in Keycloak sovereign-cloud realm..."
+	@KC_POD=$$(oc get pod -n rhbk -l app=keycloak -o jsonpath='{.items[0].metadata.name}' 2>/dev/null); \
+	KC_PASS=$$(oc get secret -n rhbk keycloak-initial-admin-password -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); \
+	TOKEN=$$(oc exec -n rhbk "$$KC_POD" -- curl -s -X POST "http://localhost:8080/realms/master/protocol/openid-connect/token" \
+	  -d "grant_type=password&client_id=admin-cli&username=admin&password=$$KC_PASS" 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))"); \
+	if [ -z "$$TOKEN" ]; then echo "Cannot get Keycloak token"; exit 1; fi; \
+	echo "Got token"; \
+	USER_ID=$$(oc exec -n rhbk "$$KC_POD" -- curl -s -H "Authorization: Bearer $$TOKEN" \
+	  "http://localhost:8080/admin/realms/sovereign-cloud/users?search=devuser" 2>/dev/null | \
+	  python3 -c "import sys,json; u=json.load(sys.stdin); print(u[0]['id'] if u else '')"); \
+	if [ -z "$$USER_ID" ]; then \
+	  oc exec -n rhbk "$$KC_POD" -- curl -s -o /dev/null -w "%{http_code}" -X POST \
+	    -H "Authorization: Bearer $$TOKEN" -H "Content-Type: application/json" \
+	    "http://localhost:8080/admin/realms/sovereign-cloud/users" \
+	    -d '{"username":"devuser","email":"devuser@sovereign.local","enabled":true,"credentials":[{"type":"password","value":"devpassword1!","temporary":false}]}'; \
+	  USER_ID=$$(oc exec -n rhbk "$$KC_POD" -- curl -s -H "Authorization: Bearer $$TOKEN" \
+	    "http://localhost:8080/admin/realms/sovereign-cloud/users?search=devuser" 2>/dev/null | \
+	    python3 -c "import sys,json; u=json.load(sys.stdin); print(u[0]['id'] if u else '')"); \
+	  echo "Created devuser: $$USER_ID"; \
+	else echo "User devuser already exists: $$USER_ID"; fi; \
+	GROUP_ID=$$(oc exec -n rhbk "$$KC_POD" -- curl -s -H "Authorization: Bearer $$TOKEN" \
+	  "http://localhost:8080/admin/realms/sovereign-cloud/groups?search=beta" 2>/dev/null | \
+	  python3 -c "import sys,json; gs=json.load(sys.stdin); admins=[g for g in gs if 'admins' in g.get('path','')]; print(admins[0]['id'] if admins else '')"); \
+	echo "beta/admins group: $$GROUP_ID"; \
+	if [ -n "$$GROUP_ID" ] && [ -n "$$USER_ID" ]; then \
+	  STATUS=$$(oc exec -n rhbk "$$KC_POD" -- curl -s -o /dev/null -w "%{http_code}" -X PUT \
+	    -H "Authorization: Bearer $$TOKEN" \
+	    "http://localhost:8080/admin/realms/sovereign-cloud/users/$$USER_ID/groups/$$GROUP_ID"); \
+	  echo "Add to beta/admins: HTTP $$STATUS"; \
+	else echo "Group beta/admins not found. Run make apply-phase4-samples first."; fi
 
 ##@ ACS Fixes
 debug-acs-consoleplugin: ## Read-only: show Console cluster plugins + advanced-cluster-security ConsolePlugin backend (oc get only)
