@@ -1,0 +1,19 @@
+# List of ConsolePlugin names to enable on the cluster Console.
+# Rendered into a patch Job that idempotently merges them into console.cluster spec.plugins.
+plugins:
+  - acm
+  - advanced-cluster-security
+  - gitops-plugin
+  - mce
+  - monitoring-plugin
+  - networking-console-plugin
+  - odf-console
+  - pipelines-console-plugin
+
+# The sovereign-cloud console plugin — added when the console repo is deployed.
+# sovereign-cloud-plugin is appended dynamically via separate make target / pipeline.
+additionalPlugins: []
+
+rbac:
+  serviceAccountName: dynamic-plugins-enabler
+  namespace: sovereign-cloud

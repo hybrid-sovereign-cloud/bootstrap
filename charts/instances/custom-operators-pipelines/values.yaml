@@ -50,3 +50,7 @@ operators:
   - name: assignment-operator
     repo: Assignment
     imageName: assignment-operator
+
+  - name: sovereign-cloud-console
+    repo: console
+    imageName: sovereign-cloud-console

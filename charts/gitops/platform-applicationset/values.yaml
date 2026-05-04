@@ -128,3 +128,8 @@ applications:
     path: charts/gitops/custom-operators-applicationset
     namespace: openshift-gitops
     wave: "285"
+  # Enable all dynamic console plugins (runs as an ArgoCD Sync hook)
+  - name: dynamic-plugins-config
+    path: charts/config/dynamic-plugins-config
+    namespace: sovereign-cloud
+    wave: "290"

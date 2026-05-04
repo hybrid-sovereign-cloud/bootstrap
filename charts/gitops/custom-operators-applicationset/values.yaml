@@ -71,3 +71,11 @@ operators:
     namespace: sovereign-cloud
     wave: "340"
     imageTag: latest
+
+  # Console dynamic plugin — built via OpenShift Pipelines (nodejs-console-build)
+  - name: sovereign-cloud-console
+    repoURL: https://github.com/hybrid-sovereign-cloud/console.git
+    path: helm/sovereign-cloud-plugin
+    namespace: sovereign-cloud
+    wave: "350"
+    imageTag: latest

@@ -1,0 +1,55 @@
+{{- $allPlugins := concat .Values.plugins .Values.additionalPlugins }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: enable-dynamic-plugins
+  namespace: {{ .Values.rbac.namespace }}
+  annotations:
+    # Re-run on every ArgoCD sync via hook so new plugins are picked up automatically.
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      serviceAccountName: {{ .Values.rbac.serviceAccountName }}
+      restartPolicy: OnFailure
+      containers:
+        - name: enable-plugins
+          image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+              echo "=== Enabling dynamic console plugins ==="
+
+              # Build the merged plugin list from existing + desired
+              EXISTING=$(oc get consoles.operator.openshift.io cluster -o jsonpath='{.spec.plugins}' 2>/dev/null || echo "[]")
+              DESIRED='{{ $allPlugins | toJson }}'
+
+              echo "Existing plugins: $EXISTING"
+              echo "Desired plugins:  $DESIRED"
+
+              # Use jq to compute the union of existing + desired (dedup)
+              MERGED=$(echo "$EXISTING $DESIRED" | \
+                python3 -c "
+              import sys, json
+              parts = sys.stdin.read().split()
+              existing = json.loads(parts[0]) if parts[0] != '' else []
+              desired  = json.loads(parts[1])
+              merged   = list(dict.fromkeys(existing + desired))
+              print(json.dumps(merged))
+              ")
+
+              echo "Merged plugins: $MERGED"
+
+              oc patch consoles.operator.openshift.io cluster \
+                --type=merge \
+                -p "{\"spec\":{\"plugins\":$MERGED}}"
+
+              echo "=== Plugin enable complete ==="
+
+              # Verify
+              CURRENT=$(oc get consoles.operator.openshift.io cluster -o jsonpath='{.spec.plugins}' 2>/dev/null)
+              echo "Current spec.plugins: $CURRENT"

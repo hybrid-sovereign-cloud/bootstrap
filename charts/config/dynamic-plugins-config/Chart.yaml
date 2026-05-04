@@ -1,0 +1,6 @@
+apiVersion: v2
+name: dynamic-plugins-config
+description: Enable all OpenShift Console dynamic plugins for the Sovereign Cloud platform
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

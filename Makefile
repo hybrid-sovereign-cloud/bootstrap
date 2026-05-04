@@ -20,7 +20,9 @@
 	status-custom-operators restart-custom-operators sample-crs-apply \
 	uninstall-all-operators uninstall-all-instances uninstall-pipelines-bootstrap \
 	teardown-bootstrap delete-bootstrap-namespaces approve-rhbk-installplan status \
-	validate-helm verify-pipelines-bootstrap rebuild-all
+	validate-helm verify-pipelines-bootstrap rebuild-all \
+	enable-dynamic-plugins install-dynamic-plugins-config enable-sovereign-console-plugin \
+	trigger-build-console wait-console-build deploy-console
 
 SHELL := /bin/bash
 
@@ -138,9 +140,87 @@ rebuild-all: ## Full platform rebuild on a brand new cluster (Phase 1→2→vaul
 	$(MAKE) vault-store-keycloak-auth
 	$(MAKE) external-secrets-config
 	$(MAKE) deploy-custom-operators
+	$(MAKE) enable-dynamic-plugins
 	@echo "================================================================"
 	@echo "  Rebuild complete. Run 'make status' to verify all components."
 	@echo "================================================================"
+
+##@ Dynamic Plugins
+
+enable-dynamic-plugins: ## Enable all dynamic console plugins (idempotent patch on consoles.operator.openshift.io)
+	@echo "==> Enabling dynamic console plugins..."
+	@PLUGINS=$$(oc get consoleplugins -o jsonpath='{range .items[*]}{.metadata.name}{" "}{end}' 2>/dev/null); \
+	CURRENT=$$(oc get consoles.operator.openshift.io cluster -o jsonpath='{.spec.plugins}' 2>/dev/null || echo "[]"); \
+	MERGED=$$(python3 -c " \
+	import json, sys; \
+	existing = json.loads('$$CURRENT') if '$$CURRENT' not in ('', '[]', 'null') else []; \
+	desired = '$$PLUGINS'.split(); \
+	merged = list(dict.fromkeys(existing + desired)); \
+	print(json.dumps(merged)) \
+	"); \
+	echo "Patching consoles.operator.openshift.io cluster with plugins: $$MERGED"; \
+	oc patch consoles.operator.openshift.io cluster --type=merge -p "{\"spec\":{\"plugins\":$$MERGED}}"
+	@echo "==> Current enabled plugins:"
+	@oc get consoles.operator.openshift.io cluster -o jsonpath='{.spec.plugins}' 2>/dev/null; echo ""
+
+install-dynamic-plugins-config: ## Deploy dynamic-plugins-config Helm chart directly
+	@APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}' 2>/dev/null); \
+	helm upgrade --install dynamic-plugins-config charts/config/dynamic-plugins-config \
+	  -n sovereign-cloud --create-namespace \
+	  --wait
+
+enable-sovereign-console-plugin: ## Enable the sovereign-cloud-plugin in consoles.operator.openshift.io cluster
+	@echo "==> Adding sovereign-cloud-plugin to enabled plugins..."
+	@CURRENT=$$(oc get consoles.operator.openshift.io cluster -o jsonpath='{.spec.plugins}' 2>/dev/null || echo "[]"); \
+	MERGED=$$(python3 -c " \
+	import json; \
+	existing = json.loads('$$CURRENT') if '$$CURRENT' not in ('', '[]', 'null') else []; \
+	if 'sovereign-cloud-plugin' not in existing: existing.append('sovereign-cloud-plugin'); \
+	print(json.dumps(existing)) \
+	"); \
+	echo "Patching consoles.operator.openshift.io cluster with plugins: $$MERGED"; \
+	oc patch consoles.operator.openshift.io cluster --type=merge -p "{\"spec\":{\"plugins\":$$MERGED}}"
+
+##@ Console Plugin Build
+
+trigger-build-console: ## Trigger OpenShift Pipeline build for sovereign-cloud-console
+	@echo "==> Triggering console plugin build pipeline..."
+	@oc create -f - <<EOF
+	apiVersion: tekton.dev/v1
+	kind: PipelineRun
+	metadata:
+	  generateName: console-build-
+	  namespace: sovereign-cloud
+	spec:
+	  pipelineRef:
+	    name: nodejs-console-build
+	  params:
+	    - name: git-url
+	      value: https://github.com/hybrid-sovereign-cloud/console.git
+	    - name: git-revision
+	      value: main
+	    - name: image-name
+	      value: sovereign-cloud-console
+	    - name: image-tag
+	      value: latest
+	  workspaces:
+	    - name: source
+	      persistentVolumeClaim:
+	        claimName: ansible-operator-build-workspace
+	    - name: git-credentials
+	      secret:
+	        secretName: github-basic-auth
+	EOF
+	@echo "==> Console PipelineRun created. Monitor with: oc get pipelinerun -n sovereign-cloud"
+
+wait-console-build: ## Wait for console plugin PipelineRun to succeed
+	@echo "==> Waiting for latest console-build PipelineRun..."
+	@PR=$$(oc get pipelinerun -n sovereign-cloud --no-headers -l tekton.dev/pipeline=nodejs-console-build 2>/dev/null | sort -k5 -r | head -1 | awk '{print $$1}'); \
+	if [ -z "$$PR" ]; then echo "No PipelineRun found"; exit 1; fi; \
+	echo "Watching PipelineRun: $$PR"; \
+	oc wait pipelinerun/$$PR -n sovereign-cloud --for=condition=Succeeded --timeout=600s
+
+deploy-console: trigger-build-console wait-console-build enable-sovereign-console-plugin ## Build console, wait, then enable plugin
 
 ##@ Cluster Access
 login: ## Login to OpenShift (uses OCP_*; loads ./.env if present)
