@@ -27,12 +27,14 @@ spec:
       persistence:
         persistentVolumeClaim:
           storageClassName: {{ .Values.central.db.storageClass }}
-          size: {{ .Values.central.db.storageSize }}
       {{- else }}
       persistence:
-        persistentVolumeClaim:
-          size: {{ .Values.central.db.storageSize }}
+        persistentVolumeClaim: {}
       {{- end }}
+      {{- /* NOTE: size/storageClass omitted intentionally — if the PVC already exists
+           the ACS operator cannot reconcile immutable fields and will fail with
+           "Irreconcilable". The PVC is created on first deploy; on subsequent
+           syncs the operator adopts the existing PVC. */ -}}
   {{- if .Values.scanner }}
   scanner:
     {{- if .Values.scanner.analyzer }}
