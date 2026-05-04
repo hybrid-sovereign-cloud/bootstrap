@@ -845,43 +845,55 @@ status-phase4: ## Show status of Phase4 entities, containers, and Keycloak group
 	@echo "=== Projects (CRD) ==="; oc get projects.hybridsovereign.redhat -A 2>&1
 	@echo "=== Assignments ==="; oc get assignments.hybridsovereign.redhat -A 2>&1
 	@echo "=== Keycloak Groups ==="; \
-	  KC_URL=$$(oc get route keycloak -n rhbk -o jsonpath='{.spec.host}' 2>/dev/null || echo ""); \
-	  TOKEN=$$(oc exec -n rhbk deployment/keycloak -- curl -s -X POST "http://localhost:8080/realms/master/protocol/openid-connect/token" -d "grant_type=password&client_id=admin-cli&username=admin&password=$$(oc get secret -n rhbk keycloak-initial-admin-password -o jsonpath='{.data.password}' 2>/dev/null | base64 -d)" 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null); \
+	  KC_URL=$$(oc get secret keycloak-auth-config -n sovereign-cloud -o jsonpath='{.data.KC_URL}' 2>/dev/null | base64 -d); \
+	  KC_REALM=$$(oc get secret keycloak-auth-config -n sovereign-cloud -o jsonpath='{.data.KC_REALM}' 2>/dev/null | base64 -d); \
+	  KC_AUTH_REALM=$$(oc get secret keycloak-auth-config -n sovereign-cloud -o jsonpath='{.data.KC_AUTH_REALM}' 2>/dev/null | base64 -d); \
+	  KC_USER=$$(oc get secret keycloak-auth-config -n sovereign-cloud -o jsonpath='{.data.KC_USERNAME}' 2>/dev/null | base64 -d); \
+	  KC_PASS=$$(oc get secret keycloak-auth-config -n sovereign-cloud -o jsonpath='{.data.KC_PASSWORD}' 2>/dev/null | base64 -d); \
+	  TOKEN=$$(curl -sk -X POST "$$KC_URL/realms/$${KC_AUTH_REALM:-master}/protocol/openid-connect/token" \
+	    -d "grant_type=password&client_id=admin-cli&username=$$KC_USER&password=$$KC_PASS" | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null); \
 	  if [ -n "$$TOKEN" ]; then \
-	    oc exec -n rhbk deployment/keycloak -- curl -s -H "Authorization: Bearer $$TOKEN" "http://localhost:8080/admin/realms/sovereign-cloud/groups" 2>/dev/null | python3 -c "import sys,json; [print(g.get('name',''),g.get('path','')) for g in json.load(sys.stdin)]" 2>/dev/null; \
+	    curl -sk -H "Authorization: Bearer $$TOKEN" "$$KC_URL/admin/realms/$$KC_REALM/groups" | python3 -c "import sys,json; [print(g.get('name',''), g.get('path',''), g.get('subGroups',[])) for g in json.load(sys.stdin)]" 2>/dev/null; \
 	  else echo "Cannot get Keycloak token"; fi
 
-create-devuser: ## Create devuser in Keycloak, add to beta/admins group (Phase 5)
-	@echo "==> Creating devuser in Keycloak sovereign-cloud realm..."
-	@KC_POD=$$(oc get pod -n rhbk -l app=keycloak -o jsonpath='{.items[0].metadata.name}' 2>/dev/null); \
-	KC_PASS=$$(oc get secret -n rhbk keycloak-initial-admin-password -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); \
-	TOKEN=$$(oc exec -n rhbk "$$KC_POD" -- curl -s -X POST "http://localhost:8080/realms/master/protocol/openid-connect/token" \
-	  -d "grant_type=password&client_id=admin-cli&username=admin&password=$$KC_PASS" 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))"); \
+create-devuser: ## Create devuser in Keycloak sovereign-tenants realm, add to beta/admins group (Phase 5)
+	@echo "==> Creating devuser in Keycloak sovereign-tenants realm..."
+	@KC_URL=$$(oc get secret keycloak-auth-config -n sovereign-cloud -o jsonpath='{.data.KC_URL}' 2>/dev/null | base64 -d); \
+	KC_REALM=$$(oc get secret keycloak-auth-config -n sovereign-cloud -o jsonpath='{.data.KC_REALM}' 2>/dev/null | base64 -d); \
+	KC_AUTH_REALM=$$(oc get secret keycloak-auth-config -n sovereign-cloud -o jsonpath='{.data.KC_AUTH_REALM}' 2>/dev/null | base64 -d); \
+	KC_USER=$$(oc get secret keycloak-auth-config -n sovereign-cloud -o jsonpath='{.data.KC_USERNAME}' 2>/dev/null | base64 -d); \
+	KC_PASS=$$(oc get secret keycloak-auth-config -n sovereign-cloud -o jsonpath='{.data.KC_PASSWORD}' 2>/dev/null | base64 -d); \
+	TOKEN=$$(curl -sk -X POST "$$KC_URL/realms/$${KC_AUTH_REALM:-master}/protocol/openid-connect/token" \
+	  -d "grant_type=password&client_id=admin-cli&username=$$KC_USER&password=$$KC_PASS" | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))"); \
 	if [ -z "$$TOKEN" ]; then echo "Cannot get Keycloak token"; exit 1; fi; \
-	echo "Got token"; \
-	USER_ID=$$(oc exec -n rhbk "$$KC_POD" -- curl -s -H "Authorization: Bearer $$TOKEN" \
-	  "http://localhost:8080/admin/realms/sovereign-cloud/users?search=devuser" 2>/dev/null | \
+	echo "==> Token OK. Realm: $$KC_REALM"; \
+	USER_ID=$$(curl -sk -H "Authorization: Bearer $$TOKEN" \
+	  "$$KC_URL/admin/realms/$$KC_REALM/users?search=devuser" | \
 	  python3 -c "import sys,json; u=json.load(sys.stdin); print(u[0]['id'] if u else '')"); \
 	if [ -z "$$USER_ID" ]; then \
-	  oc exec -n rhbk "$$KC_POD" -- curl -s -o /dev/null -w "%{http_code}" -X POST \
+	  HTTP=$$(curl -sk -o /dev/null -w "%{http_code}" -X POST \
 	    -H "Authorization: Bearer $$TOKEN" -H "Content-Type: application/json" \
-	    "http://localhost:8080/admin/realms/sovereign-cloud/users" \
-	    -d '{"username":"devuser","email":"devuser@sovereign.local","enabled":true,"credentials":[{"type":"password","value":"devpassword1!","temporary":false}]}'; \
-	  USER_ID=$$(oc exec -n rhbk "$$KC_POD" -- curl -s -H "Authorization: Bearer $$TOKEN" \
-	    "http://localhost:8080/admin/realms/sovereign-cloud/users?search=devuser" 2>/dev/null | \
+	    "$$KC_URL/admin/realms/$$KC_REALM/users" \
+	    -d '{"username":"devuser","email":"devuser@sovereign.local","enabled":true,"credentials":[{"type":"password","value":"devpassword1!","temporary":false}]}'); \
+	  echo "Create devuser: HTTP $$HTTP"; \
+	  USER_ID=$$(curl -sk -H "Authorization: Bearer $$TOKEN" \
+	    "$$KC_URL/admin/realms/$$KC_REALM/users?search=devuser" | \
 	    python3 -c "import sys,json; u=json.load(sys.stdin); print(u[0]['id'] if u else '')"); \
-	  echo "Created devuser: $$USER_ID"; \
 	else echo "User devuser already exists: $$USER_ID"; fi; \
-	GROUP_ID=$$(oc exec -n rhbk "$$KC_POD" -- curl -s -H "Authorization: Bearer $$TOKEN" \
-	  "http://localhost:8080/admin/realms/sovereign-cloud/groups?search=beta" 2>/dev/null | \
-	  python3 -c "import sys,json; gs=json.load(sys.stdin); admins=[g for g in gs if 'admins' in g.get('path','')]; print(admins[0]['id'] if admins else '')"); \
-	echo "beta/admins group: $$GROUP_ID"; \
-	if [ -n "$$GROUP_ID" ] && [ -n "$$USER_ID" ]; then \
-	  STATUS=$$(oc exec -n rhbk "$$KC_POD" -- curl -s -o /dev/null -w "%{http_code}" -X PUT \
+	echo "User ID: $$USER_ID"; \
+	BETA_ID=$$(curl -sk -H "Authorization: Bearer $$TOKEN" \
+	  "$$KC_URL/admin/realms/$$KC_REALM/groups" | \
+	  python3 -c "import sys,json; gs=json.load(sys.stdin); [print(g['id']) for g in gs if g.get('name')=='beta']"); \
+	ADMINS_ID=$$(curl -sk -H "Authorization: Bearer $$TOKEN" \
+	  "$$KC_URL/admin/realms/$$KC_REALM/groups/$$BETA_ID/children" | \
+	  python3 -c "import sys,json; gs=json.load(sys.stdin); [print(g['id']) for g in gs if g.get('name')=='admins']"); \
+	echo "beta/admins group: $$ADMINS_ID"; \
+	if [ -n "$$ADMINS_ID" ] && [ -n "$$USER_ID" ]; then \
+	  STATUS=$$(curl -sk -o /dev/null -w "%{http_code}" -X PUT \
 	    -H "Authorization: Bearer $$TOKEN" \
-	    "http://localhost:8080/admin/realms/sovereign-cloud/users/$$USER_ID/groups/$$GROUP_ID"); \
-	  echo "Add to beta/admins: HTTP $$STATUS"; \
-	else echo "Group beta/admins not found. Run make apply-phase4-samples first."; fi
+	    "$$KC_URL/admin/realms/$$KC_REALM/users/$$USER_ID/groups/$$ADMINS_ID"); \
+	  echo "Add devuser to beta/admins: HTTP $$STATUS"; \
+	else echo "ERROR: beta/admins group or devuser not found."; fi
 
 ##@ ACS Fixes
 debug-acs-consoleplugin: ## Read-only: show Console cluster plugins + advanced-cluster-security ConsolePlugin backend (oc get only)
