@@ -185,32 +185,32 @@ enable-sovereign-console-plugin: ## Enable the sovereign-cloud-plugin in console
 
 trigger-build-console: ## Trigger OpenShift Pipeline build for sovereign-cloud-console
 	@echo "==> Triggering console plugin build pipeline..."
-	@oc create -f - <<EOF
-	apiVersion: tekton.dev/v1
-	kind: PipelineRun
-	metadata:
-	  generateName: console-build-
-	  namespace: sovereign-cloud
-	spec:
-	  pipelineRef:
-	    name: nodejs-console-build
-	  params:
-	    - name: git-url
-	      value: https://github.com/hybrid-sovereign-cloud/console.git
-	    - name: git-revision
-	      value: main
-	    - name: image-name
-	      value: sovereign-cloud-console
-	    - name: image-tag
-	      value: latest
-	  workspaces:
-	    - name: source
-	      persistentVolumeClaim:
-	        claimName: ansible-operator-build-workspace
-	    - name: git-credentials
-	      secret:
-	        secretName: github-basic-auth
-	EOF
+	@printf '%s\n' \
+	  'apiVersion: tekton.dev/v1' \
+	  'kind: PipelineRun' \
+	  'metadata:' \
+	  '  generateName: console-build-' \
+	  '  namespace: sovereign-cloud' \
+	  'spec:' \
+	  '  pipelineRef:' \
+	  '    name: nodejs-console-build' \
+	  '  params:' \
+	  '    - name: git-url' \
+	  '      value: https://github.com/hybrid-sovereign-cloud/console.git' \
+	  '    - name: git-revision' \
+	  '      value: main' \
+	  '    - name: image-name' \
+	  '      value: sovereign-cloud-console' \
+	  '    - name: image-tag' \
+	  '      value: latest' \
+	  '  workspaces:' \
+	  '    - name: source' \
+	  '      persistentVolumeClaim:' \
+	  '        claimName: ansible-operator-build-workspace' \
+	  '    - name: git-credentials' \
+	  '      secret:' \
+	  '        secretName: github-basic-auth' \
+	| oc create -f -
 	@echo "==> Console PipelineRun created. Monitor with: oc get pipelinerun -n sovereign-cloud"
 
 wait-console-build: ## Wait for console plugin PipelineRun to succeed
