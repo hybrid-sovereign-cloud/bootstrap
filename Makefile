@@ -151,14 +151,8 @@ enable-dynamic-plugins: ## Enable all dynamic console plugins (idempotent patch 
 	@echo "==> Enabling dynamic console plugins..."
 	@PLUGINS=$$(oc get consoleplugins -o jsonpath='{range .items[*]}{.metadata.name}{" "}{end}' 2>/dev/null); \
 	CURRENT=$$(oc get consoles.operator.openshift.io cluster -o jsonpath='{.spec.plugins}' 2>/dev/null || echo "[]"); \
-	MERGED=$$(python3 -c " \
-	import json, sys; \
-	existing = json.loads('$$CURRENT') if '$$CURRENT' not in ('', '[]', 'null') else []; \
-	desired = '$$PLUGINS'.split(); \
-	merged = list(dict.fromkeys(existing + desired)); \
-	print(json.dumps(merged)) \
-	"); \
-	echo "Patching consoles.operator.openshift.io cluster with plugins: $$MERGED"; \
+	MERGED=$$(python3 -c "import json,sys; e=json.loads(sys.argv[1]) if sys.argv[1] not in ('','[]','null') else []; d=sys.argv[2].split(); m=list(dict.fromkeys(e+d)); print(json.dumps(m))" "$$CURRENT" "$$PLUGINS"); \
+	echo "Patching with plugins: $$MERGED"; \
 	oc patch consoles.operator.openshift.io cluster --type=merge -p "{\"spec\":{\"plugins\":$$MERGED}}"
 	@echo "==> Current enabled plugins:"
 	@oc get consoles.operator.openshift.io cluster -o jsonpath='{.spec.plugins}' 2>/dev/null; echo ""
@@ -172,13 +166,8 @@ install-dynamic-plugins-config: ## Deploy dynamic-plugins-config Helm chart dire
 enable-sovereign-console-plugin: ## Enable the sovereign-cloud-plugin in consoles.operator.openshift.io cluster
 	@echo "==> Adding sovereign-cloud-plugin to enabled plugins..."
 	@CURRENT=$$(oc get consoles.operator.openshift.io cluster -o jsonpath='{.spec.plugins}' 2>/dev/null || echo "[]"); \
-	MERGED=$$(python3 -c " \
-	import json; \
-	existing = json.loads('$$CURRENT') if '$$CURRENT' not in ('', '[]', 'null') else []; \
-	if 'sovereign-cloud-plugin' not in existing: existing.append('sovereign-cloud-plugin'); \
-	print(json.dumps(existing)) \
-	"); \
-	echo "Patching consoles.operator.openshift.io cluster with plugins: $$MERGED"; \
+	MERGED=$$(python3 -c "import json,sys; e=json.loads(sys.argv[1]) if sys.argv[1] not in ('','[]','null') else []; p='sovereign-cloud-plugin'; e=e+[p] if p not in e else e; print(json.dumps(e))" "$$CURRENT"); \
+	echo "Patching with plugins: $$MERGED"; \
 	oc patch consoles.operator.openshift.io cluster --type=merge -p "{\"spec\":{\"plugins\":$$MERGED}}"
 
 ##@ Console Plugin Build
