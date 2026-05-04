@@ -15,7 +15,7 @@ Applies to: Cursor, Claude, and all AI agents working in this repository.
 | **Builds via OpenShift Pipelines** | Use Tekton for all container builds; push results to OpenShift ImageStreams. |
 | **Git freely** | `git add`, `commit`, `push` allowed at any time to keep history clean. |
 | **Update docs** | Update the relevant README, Makefile help text, and an architecture ADR on every meaningful change. |
-| **Iterate until fixed** | Deploy → test → fix loop; debug with `oc` commands, fix in chart/Makefile, commit and re-sync. |
+| **Iterate until fixed** | Deploy → test → fix loop; **`oc` read-only** (get/describe/logs); cluster **writes** via **`make`** targets; fix chart/Makefile, commit, re-sync. |
 | **No root writes** | Never create files at the repo root. |
 
 ## GitOps bootstrap sequence

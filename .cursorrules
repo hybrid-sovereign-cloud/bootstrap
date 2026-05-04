@@ -33,6 +33,9 @@ deployment:
   - all_helm_charts_managed_by_argocd_applicationset: true
   - all_oc_interactions_via_make_targets: true
   - makefile_wraps_oc: true           # oc allowed inside Makefile targets only
+  - agent_oc_read_only: true          # agents: oc/kubectl get|describe|logs only; writes via make
+  - deploy_test_iterate: true         # deploy wave → validate → fix → re-sync until healthy
+  - argocd_apps_parallel_debug: true  # optional subagents per Argo CD Application
   - validate_before_done: "make validate-helm"
   - git_commit_push_allowed: true     # at any time, any number of times
 

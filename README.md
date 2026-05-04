@@ -294,10 +294,13 @@ RHACS is installed at wave 70 (operator) and wave 155 (Central + SecuredCluster)
 4. Generates an init bundle via the ACS API
 5. Applies the bundle to enable Sensor/Collector on the cluster
 6. Patches `SecuredCluster.spec.centralEndpoint`
+7. PostSync `rhacs-fix-consoleplugin` (wave **15**, after `rhacs-init-bundle` wave **5**): merge-patches `ConsolePlugin/advanced-cluster-security` so `spec.backend.service` targets **`central:443`** in namespace **`stackrox`** with **`basePath: /static/ocp-plugin`** (RHACS `sensor-proxy` rejects unauthenticated `plugin-manifest.json`; Central serves static assets without a bearer token).
 
 ```bash
 make wait-rhacs-ready
 # Then open: https://central-stackrox.apps.<domain>/
+make debug-acs-consoleplugin   # read-only: enabled plugins + ConsolePlugin YAML head
+make fix-acs-consoleplugin     # same patch as chart job (manual recovery)
 ```
 
 ---

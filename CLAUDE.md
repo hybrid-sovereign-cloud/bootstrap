@@ -35,6 +35,8 @@ All bootstrap **`installPlanApproval: Automatic`** (including RHBK). Legacy `mak
 
 - **`make validate-helm`**
 - **`make phase1-gitops`** then **`phase2-applicationset`** on a cluster; debug with **`oc get applications -n openshift-gitops`**, Argo logs, and Makefile wait targets.
+- **Iterate:** fix failing wave, commit, re-sync; use **`make status`** / per-component **`make wait-*`** / **`make debug-*`** (read-only) before changing Helm.
+- **Agents:** prefer **`make`** for any cluster mutation; use **`oc`/`kubectl` only for read-only investigation** (get, describe, logs).
 
 ## Documentation
 

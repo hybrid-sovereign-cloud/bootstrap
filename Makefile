@@ -23,7 +23,7 @@
 	validate-helm verify-pipelines-bootstrap rebuild-all \
 	enable-dynamic-plugins install-dynamic-plugins-config enable-sovereign-console-plugin \
 	trigger-build-console wait-console-build deploy-console \
-	fix-acs-consoleplugin regenerate-acs-init-bundle
+	fix-acs-consoleplugin debug-acs-consoleplugin regenerate-acs-init-bundle
 
 SHELL := /bin/bash
 
@@ -774,6 +774,12 @@ status: ## Show status of all helm releases and key resources
 	@echo "=== Custom Operators ==="; oc get pods -n sovereign-cloud --field-selector=status.phase=Running 2>&1 | head -20
 
 ##@ ACS Fixes
+debug-acs-consoleplugin: ## Read-only: show Console cluster plugins + advanced-cluster-security ConsolePlugin backend (oc get only)
+	@echo "=== consoles.operator.openshift.io cluster spec.plugins ==="
+	@oc get consoles.operator.openshift.io cluster -o jsonpath='{.spec.plugins}' 2>/dev/null; echo ""
+	@echo "=== consoleplugin advanced-cluster-security (backend) ==="
+	@oc get consoleplugin advanced-cluster-security -o yaml 2>/dev/null | sed -n '1,80p' || echo "(not found)"
+
 regenerate-acs-init-bundle: ## Regenerate ACS init bundle (sensor-tls/collector-tls/admission-control-tls) from Central API
 	@echo "==> Regenerating ACS init bundle..."
 	@CENTRAL_HOST=$$(oc get route central -n stackrox -o jsonpath='{.spec.host}' 2>/dev/null); \
@@ -791,14 +797,19 @@ regenerate-acs-init-bundle: ## Regenerate ACS init bundle (sensor-tls/collector-
 	echo "==> Init bundle secrets applied. Restarting sensor and admission-control..."; \
 	oc rollout restart deployment/sensor deployment/admission-control -n stackrox
 
-fix-acs-consoleplugin: ## Fix ACS consoleplugin backend to use central:443 (sensor-proxy requires auth, breaks plugin manifest fetch)
-	@echo "==> Patching ACS consoleplugin backend -> central:443/static/ocp-plugin..."
-	@CURRENT=$$(oc get consoleplugin advanced-cluster-security \
+fix-acs-consoleplugin: ## Fix ACS consoleplugin backend to use central:443 (align with rhacs-config PostSync job)
+	@echo "==> Patching ACS consoleplugin -> central:443 /static/ocp-plugin in stackrox..."
+	@NS=stackrox; \
+	CURRENT=$$(oc get consoleplugin advanced-cluster-security \
 	  -o jsonpath='{.spec.backend.service.name}' 2>/dev/null || echo ""); \
-	if [ "$$CURRENT" = "central" ]; then \
+	PORT=$$(oc get consoleplugin advanced-cluster-security \
+	  -o jsonpath='{.spec.backend.service.port}' 2>/dev/null || echo ""); \
+	BP=$$(oc get consoleplugin advanced-cluster-security \
+	  -o jsonpath='{.spec.backend.service.basePath}' 2>/dev/null || echo ""); \
+	if [ "$$CURRENT" = "central" ] && [ "$$PORT" = "443" ] && [ "$$BP" = "/static/ocp-plugin" ]; then \
 	  echo "Already patched. Nothing to do."; \
 	else \
-	  oc patch consoleplugin advanced-cluster-security --type=json \
-	    -p='[{"op":"replace","path":"/spec/backend/service/name","value":"central"},{"op":"replace","path":"/spec/backend/service/basePath","value":"/static/ocp-plugin"}]'; \
+	  oc patch consoleplugin advanced-cluster-security --type=merge \
+	    -p "{\"spec\":{\"backend\":{\"type\":\"Service\",\"service\":{\"name\":\"central\",\"namespace\":\"$$NS\",\"port\":443,\"basePath\":\"/static/ocp-plugin\"}}}}"; \
 	  echo "Patched."; \
 	fi
