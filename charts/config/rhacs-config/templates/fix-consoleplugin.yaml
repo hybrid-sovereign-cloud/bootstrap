@@ -1,0 +1,63 @@
+{{- /*
+  ACS sensor-proxy requires bearer-token auth for ALL paths, including the
+  plugin-manifest.json fetch the console-bridge makes without any token.
+  Fix: patch the consoleplugin backend to point directly at central:443
+  which serves /static/ocp-plugin/* unauthenticated, while keeping the
+  user-facing proxy config pointing at sensor-proxy for API calls.
+*/ -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rhacs-fix-consoleplugin
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 5
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: rhacs-fix-consoleplugin
+    spec:
+      serviceAccountName: rhacs-config-sa
+      restartPolicy: OnFailure
+      containers:
+        - name: patch
+          image: {{ .Values.ocImage }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+              echo "=== Waiting for ACS consoleplugin to exist ==="
+              for i in $(seq 1 30); do
+                if oc get consoleplugin advanced-cluster-security &>/dev/null; then
+                  echo "consoleplugin found"
+                  break
+                fi
+                echo "Waiting... ($i/30)"
+                sleep 10
+              done
+
+              echo "=== Patching ACS consoleplugin backend to use central:443 ==="
+              # sensor-proxy requires bearer auth for all paths, including plugin-manifest.json
+              # which the console-bridge fetches without a token.
+              # Central serves /static/ocp-plugin/* unauthenticated — use it directly.
+              CURRENT_SVC=$(oc get consoleplugin advanced-cluster-security \
+                -o jsonpath='{.spec.backend.service.name}' 2>/dev/null || echo "")
+
+              if [ "$CURRENT_SVC" = "central" ]; then
+                echo "consoleplugin already patched (backend=central). Skipping."
+              else
+                oc patch consoleplugin advanced-cluster-security --type=json \
+                  -p='[
+                    {"op":"replace","path":"/spec/backend/service/name","value":"central"},
+                    {"op":"replace","path":"/spec/backend/service/basePath","value":"/static/ocp-plugin"}
+                  ]'
+                echo "consoleplugin patched: backend=central:443 basePath=/static/ocp-plugin"
+              fi
+              echo "=== Done ==="

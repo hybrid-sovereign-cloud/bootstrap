@@ -25,6 +25,33 @@ rules:
     resources: ["routes"]
     verbs: ["get", "list"]
 ---
+# Cluster-level permission to patch consoleplugins (fix ACS plugin manifest auth issue)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: rhacs-config-consoleplugin-patch
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["console.openshift.io"]
+    resources: ["consoleplugins"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: rhacs-config-consoleplugin-patch
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rhacs-config-consoleplugin-patch
+subjects:
+  - kind: ServiceAccount
+    name: rhacs-config-sa
+    namespace: {{ .Release.Namespace }}
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:

@@ -22,7 +22,8 @@
 	teardown-bootstrap delete-bootstrap-namespaces approve-rhbk-installplan status \
 	validate-helm verify-pipelines-bootstrap rebuild-all \
 	enable-dynamic-plugins install-dynamic-plugins-config enable-sovereign-console-plugin \
-	trigger-build-console wait-console-build deploy-console
+	trigger-build-console wait-console-build deploy-console \
+	fix-acs-consoleplugin regenerate-acs-init-bundle
 
 SHELL := /bin/bash
 
@@ -771,3 +772,33 @@ status: ## Show status of all helm releases and key resources
 	@echo "=== RHACM Status ==="; oc get multiclusterhub -n open-cluster-management 2>&1 | head -5
 	@echo "=== RHACS Status ==="; oc get central -n stackrox 2>&1 | head -5
 	@echo "=== Custom Operators ==="; oc get pods -n sovereign-cloud --field-selector=status.phase=Running 2>&1 | head -20
+
+##@ ACS Fixes
+regenerate-acs-init-bundle: ## Regenerate ACS init bundle (sensor-tls/collector-tls/admission-control-tls) from Central API
+	@echo "==> Regenerating ACS init bundle..."
+	@CENTRAL_HOST=$$(oc get route central -n stackrox -o jsonpath='{.spec.host}' 2>/dev/null); \
+	ADMIN_PASS=$$(oc get secret central-htpasswd -n stackrox -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); \
+	CENTRAL_URL="https://$${CENTRAL_HOST}"; \
+	echo "Central: $${CENTRAL_URL}"; \
+	oc get secret tls-cert-admission-control -n stackrox &>/dev/null && \
+	  { echo "Init bundle secrets exist. Delete sensor-tls/collector-tls/admission-control-tls first to regenerate."; exit 0; }; \
+	BUNDLE_RESP=$$(curl -sk -u "admin:$${ADMIN_PASS}" \
+	  -X POST "$${CENTRAL_URL}/v1/cluster-init/init-bundles" \
+	  -H "Content-Type: application/json" \
+	  -d '{"name":"local-cluster-bundle"}'); \
+	BUNDLE_B64=$$(echo "$$BUNDLE_RESP" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('kubectlBundle',''))"); \
+	printf '%s' "$$BUNDLE_B64" | base64 -d | oc apply -n stackrox -f -; \
+	echo "==> Init bundle secrets applied. Restarting sensor and admission-control..."; \
+	oc rollout restart deployment/sensor deployment/admission-control -n stackrox
+
+fix-acs-consoleplugin: ## Fix ACS consoleplugin backend to use central:443 (sensor-proxy requires auth, breaks plugin manifest fetch)
+	@echo "==> Patching ACS consoleplugin backend -> central:443/static/ocp-plugin..."
+	@CURRENT=$$(oc get consoleplugin advanced-cluster-security \
+	  -o jsonpath='{.spec.backend.service.name}' 2>/dev/null || echo ""); \
+	if [ "$$CURRENT" = "central" ]; then \
+	  echo "Already patched. Nothing to do."; \
+	else \
+	  oc patch consoleplugin advanced-cluster-security --type=json \
+	    -p='[{"op":"replace","path":"/spec/backend/service/name","value":"central"},{"op":"replace","path":"/spec/backend/service/basePath","value":"/static/ocp-plugin"}]'; \
+	  echo "Patched."; \
+	fi
