@@ -33,6 +33,16 @@ SOURCE_BASHRC := { set +eu; . $${HOME}/.bashrc 2>/dev/null; set -eu; } 2>/dev/nu
 WAIT_INTERVAL ?= 15
 WAIT_ATTEMPTS ?= 120
 
+# ---------------------------------------------------------------------------
+# TLS / SSL flags
+# Set INSECURE_SKIP_TLS=true (default) to tolerate self-signed / lab certs.
+# Propagated to: oc login, helm (via kubeconfig), curl calls.
+# ---------------------------------------------------------------------------
+INSECURE_SKIP_TLS ?= true
+OC_INSECURE       := $(if $(filter true,$(INSECURE_SKIP_TLS)),--insecure-skip-tls-verify,)
+HELM_INSECURE     := $(if $(filter true,$(INSECURE_SKIP_TLS)),--kube-insecure-skip-tls-verify,)
+CURL_INSECURE     := $(if $(filter true,$(INSECURE_SKIP_TLS)),-k,)
+
 # Git remote for Argo CD + ApplicationSet (HTTPS URL with org/repo). Personal access token required.
 GITHUB_URL ?=
 GITHUB_TOKEN ?=
@@ -114,7 +124,7 @@ phase2-applicationset: ## Phase 2: install platform ApplicationSet into openshif
 	APPS_DOMAIN=$${APPS_DOMAIN_OVERRIDE:-$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}')}; \
 	test -n "$$APPS_DOMAIN" || { echo "Could not read cluster apps domain from ingresses.config.openshift.io/cluster."; exit 1; }; \
 	echo "Using apps domain: $$APPS_DOMAIN"; \
-	helm upgrade --install platform-applicationset $(GITOPS_APPS_CHART) \
+	helm upgrade --install $(HELM_INSECURE) platform-applicationset $(GITOPS_APPS_CHART) \
 		--namespace openshift-gitops --create-namespace \
 		--set-string appsDomain="$$APPS_DOMAIN" \
 		--set-string git.repoURL="$$GITHUB_URL" \
@@ -161,7 +171,7 @@ enable-dynamic-plugins: ## Enable all dynamic console plugins (idempotent patch 
 
 install-dynamic-plugins-config: ## Deploy dynamic-plugins-config Helm chart directly
 	@APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}' 2>/dev/null); \
-	helm upgrade --install dynamic-plugins-config charts/config/dynamic-plugins-config \
+	helm upgrade --install $(HELM_INSECURE) dynamic-plugins-config charts/config/dynamic-plugins-config \
 	  -n sovereign-cloud --create-namespace \
 	  --wait
 
@@ -223,7 +233,7 @@ login: ## Login to OpenShift (uses OCP_*; loads ./.env if present)
 		echo "Cursor Cloud Agents: add the same three names in Dashboard → Cloud Agents → Secrets." >&2; \
 		exit 1; \
 	fi; \
-	oc login "$$OCP_SERVER" -u "$$OCP_USERNAME" -p "$$OCP_PASSWORD" --insecure-skip-tls-verify
+	oc login "$$OCP_SERVER" -u "$$OCP_USERNAME" -p "$$OCP_PASSWORD" $(OC_INSECURE)
 
 ##@ Import
 import-architecture: ## Clone/pull architecture repo into design/
@@ -260,27 +270,27 @@ validate-helm: ## Helm-template all charts to catch YAML/chart errors
 
 ##@ Operators (OLM Subscriptions)
 install-aap-operator: ## Install AAP operator (namespace-scoped)
-	helm upgrade --install aap-operator $(AAP_OP_CHART) \
+	helm upgrade --install $(HELM_INSECURE) aap-operator $(AAP_OP_CHART) \
 		--namespace ansible-automation-platform --create-namespace
 
 install-eso-operator: ## Install External Secrets operator (namespace-scoped)
-	helm upgrade --install eso-operator $(ESO_OP_CHART) \
+	helm upgrade --install $(HELM_INSECURE) eso-operator $(ESO_OP_CHART) \
 		--namespace external-secrets-operator --create-namespace
 
 install-rhbk-operator: ## Install RHBK operator (namespace-scoped)
-	helm upgrade --install rhbk-operator $(RHBK_OP_CHART) \
+	helm upgrade --install $(HELM_INSECURE) rhbk-operator $(RHBK_OP_CHART) \
 		--namespace rhbk --create-namespace
 
 install-gitops-operator: ## Install OpenShift GitOps operator (cluster-scoped OperatorGroup)
-	helm upgrade --install gitops-operator $(GITOPS_OP_CHART) \
+	helm upgrade --install $(HELM_INSECURE) gitops-operator $(GITOPS_OP_CHART) \
 		--namespace openshift-gitops --create-namespace
 
 install-quay-operator: ## Install Quay operator (namespace-scoped)
-	helm upgrade --install quay-operator $(QUAY_OP_CHART) \
+	helm upgrade --install $(HELM_INSECURE) quay-operator $(QUAY_OP_CHART) \
 		--namespace quay --create-namespace
 
 install-openshift-pipelines-operator: ## Install Red Hat OpenShift Pipelines (subscription in openshift-operators)
-	helm upgrade --install openshift-pipelines-operator $(PIPELINES_OP_CHART) \
+	helm upgrade --install $(HELM_INSECURE) openshift-pipelines-operator $(PIPELINES_OP_CHART) \
 		--namespace openshift-operators
 
 install-all-operators: install-aap-operator install-eso-operator install-rhbk-operator install-gitops-operator install-quay-operator install-openshift-pipelines-operator ## Install core operators (no ODF)
@@ -378,20 +388,20 @@ argocd-post-sync-waits: ## Wait for vault-init, keycloak-config, external-secret
 
 ##@ Instances (Operand CRs / Workloads)
 install-sovereign-cloud: ## Create sovereign-cloud foundation namespace
-	helm upgrade --install sovereign-cloud $(SC_CHART) \
+	helm upgrade --install $(HELM_INSECURE) sovereign-cloud $(SC_CHART) \
 		--namespace sovereign-cloud --create-namespace
 
 install-aap-instance: ## Install AAP instance in aap namespace
-	helm upgrade --install aap-instance $(AAP_INST_CHART) \
+	helm upgrade --install $(HELM_INSECURE) aap-instance $(AAP_INST_CHART) \
 		--namespace aap --create-namespace
 
 install-vault-instance: ## Install Vault in vault namespace
-	helm upgrade --install vault-instance $(VAULT_INST_CHART) \
+	helm upgrade --install $(HELM_INSECURE) vault-instance $(VAULT_INST_CHART) \
 		--namespace vault --create-namespace
 
 install-rhbk-instance: ## Install Keycloak instance in rhbk namespace
 	@APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}'); \
-	helm upgrade --install rhbk-instance $(RHBK_INST_CHART) \
+	helm upgrade --install $(HELM_INSECURE) rhbk-instance $(RHBK_INST_CHART) \
 		--namespace rhbk --create-namespace \
 		--set "hostname=keycloak-rhbk.$$APPS_DOMAIN"
 
@@ -399,7 +409,7 @@ install-gitops-instance: ## Apply gitops-instance chart (ArgoCD CR + repo secret
 	@set -euo pipefail; \
 	set -a; [ -f .env ] && . ./.env || true; set +a; \
 	APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}' 2>/dev/null || echo ""); \
-	helm upgrade --install gitops-instance $(GITOPS_INST_CHART) \
+	helm upgrade --install $(HELM_INSECURE) gitops-instance $(GITOPS_INST_CHART) \
 		--namespace openshift-gitops --create-namespace \
 		$${APPS_DOMAIN:+--set argocd.appsDomain="$$APPS_DOMAIN"} \
 		$${GITHUB_URL:+--set-string github.repositoryUrl="$$GITHUB_URL"} \
@@ -417,7 +427,7 @@ install-gitops-instance-repos: ## Configure Argo CD repository secret (requires 
 install-gitea-instance: ## Install Gitea in gitea namespace (DOMAIN/ROOT_URL from cluster ingress domain)
 	@APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}'); \
 	test -n "$$APPS_DOMAIN" || { echo "Could not read cluster apps domain."; exit 1; }; \
-	helm upgrade --install gitea-instance $(GITEA_INST_CHART) \
+	helm upgrade --install $(HELM_INSECURE) gitea-instance $(GITEA_INST_CHART) \
 		--namespace gitea --create-namespace \
 		--set-string gitea.gitea.config.server.DOMAIN=gitea.$$APPS_DOMAIN \
 		--set-string gitea.gitea.config.server.ROOT_URL=https://gitea.$$APPS_DOMAIN \
@@ -426,7 +436,7 @@ install-gitea-instance: ## Install Gitea in gitea namespace (DOMAIN/ROOT_URL fro
 		--set-string gitea.route.tls.termination=edge
 
 install-pipelines-bootstrap: ## Install ImageStream + sample Tekton pipeline in sovereign-cloud (requires OpenShift Pipelines)
-	helm upgrade --install pipelines-bootstrap $(PIPELINES_BOOT_CHART) \
+	helm upgrade --install $(HELM_INSECURE) pipelines-bootstrap $(PIPELINES_BOOT_CHART) \
 		--namespace sovereign-cloud --create-namespace
 
 install-all-instances: install-sovereign-cloud install-aap-instance install-vault-instance install-rhbk-instance ## Install core instances (add pipelines-bootstrap after operators)
@@ -522,39 +532,39 @@ external-secrets-config: ## Configure ExternalSecrets + SecretStore
 
 ##@ ODF & Quay
 install-odf-operator: ## Install ODF operator (object storage only)
-	helm upgrade --install odf-operator $(ODF_OP_CHART) \
+	helm upgrade --install $(HELM_INSECURE) odf-operator $(ODF_OP_CHART) \
 		--namespace openshift-storage --create-namespace
 
 install-odf-noobaa: ## Install NooBaa for S3-compatible object storage
-	helm upgrade --install odf-noobaa $(CHARTS_DIR)/instances/odf-noobaa \
+	helm upgrade --install $(HELM_INSECURE) odf-noobaa $(CHARTS_DIR)/instances/odf-noobaa \
 		--namespace openshift-storage
 
 install-quay-instance: ## Install Quay registry
-	helm upgrade --install quay-instance $(QUAY_INST_CHART) \
+	helm upgrade --install $(HELM_INSECURE) quay-instance $(QUAY_INST_CHART) \
 		--namespace quay --create-namespace
 
 install-rhacm-operator: ## Install RHACM OLM subscription (open-cluster-management ns)
-	helm upgrade --install rhacm-operator $(RHACM_OP_CHART) \
+	helm upgrade --install $(HELM_INSECURE) rhacm-operator $(RHACM_OP_CHART) \
 		--namespace open-cluster-management --create-namespace
 
 install-rhacs-operator: ## Install RHACS OLM subscription (rhacs-operator ns)
-	helm upgrade --install rhacs-operator $(RHACS_OP_CHART) \
+	helm upgrade --install $(HELM_INSECURE) rhacs-operator $(RHACS_OP_CHART) \
 		--namespace rhacs-operator --create-namespace
 
 install-rhacm-instance: ## Install RHACM MultiClusterHub
-	helm upgrade --install rhacm-instance $(RHACM_INST_CHART) \
+	helm upgrade --install $(HELM_INSECURE) rhacm-instance $(RHACM_INST_CHART) \
 		--namespace open-cluster-management --create-namespace
 
 install-rhacs-instance: ## Install RHACS Central + SecuredCluster
-	helm upgrade --install rhacs-instance $(RHACS_INST_CHART) \
+	helm upgrade --install $(HELM_INSECURE) rhacs-instance $(RHACS_INST_CHART) \
 		--namespace stackrox --create-namespace
 
 install-rhacs-config: ## Run RHACS post-install config (init-bundle, Vault secret storage)
-	helm upgrade --install rhacs-config $(RHACS_CONFIG_CHART) \
+	helm upgrade --install $(HELM_INSECURE) rhacs-config $(RHACS_CONFIG_CHART) \
 		--namespace stackrox
 
 install-rhacm-config: ## Run RHACM post-install config (ManagedClusterSet)
-	helm upgrade --install rhacm-config $(RHACM_CONFIG_CHART) \
+	helm upgrade --install $(HELM_INSECURE) rhacm-config $(RHACM_CONFIG_CHART) \
 		--namespace open-cluster-management
 
 wait-rhacm-ready: ## Wait for MultiClusterHub to reach Running phase
@@ -660,7 +670,7 @@ install-custom-operators-git-creds: ## Install ArgoCD org credential template fo
 	set -a; [ -f .env ] && . ./.env; set +a; \
 	$(MAKE) login; \
 	test -n "$${GITHUB_TOKEN:-}" || { echo "GITHUB_TOKEN is required."; exit 1; }; \
-	helm upgrade --install custom-operators-git-creds $(CUSTOM_OPS_GIT_CREDS_CHART) \
+	helm upgrade --install $(HELM_INSECURE) custom-operators-git-creds $(CUSTOM_OPS_GIT_CREDS_CHART) \
 		--namespace openshift-gitops --create-namespace \
 		--set-string githubToken="$$GITHUB_TOKEN"
 
@@ -669,7 +679,7 @@ install-custom-operators-pipelines: ## Install Tekton pipelines and ImageStreams
 	$(SOURCE_BASHRC); \
 	set -a; [ -f .env ] && . ./.env; set +a; \
 	$(MAKE) login; \
-	helm upgrade --install custom-operators-pipelines $(CUSTOM_OPS_PIPELINES_CHART) \
+	helm upgrade --install $(HELM_INSECURE) custom-operators-pipelines $(CUSTOM_OPS_PIPELINES_CHART) \
 		--namespace sovereign-cloud --create-namespace
 
 install-custom-operators-applicationset: ## Install ArgoCD ApplicationSet for the 8 custom operators
@@ -677,7 +687,7 @@ install-custom-operators-applicationset: ## Install ArgoCD ApplicationSet for th
 	$(SOURCE_BASHRC); \
 	set -a; [ -f .env ] && . ./.env; set +a; \
 	$(MAKE) login; \
-	helm upgrade --install custom-operators-applicationset $(CUSTOM_OPS_APPSET_CHART) \
+	helm upgrade --install $(HELM_INSECURE) custom-operators-applicationset $(CUSTOM_OPS_APPSET_CHART) \
 		--namespace openshift-gitops --create-namespace
 
 fix-gitea-scc: ## Grant anyuid SCC to Gitea default SA (needed for init-directories chmod)
