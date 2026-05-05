@@ -2,7 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-eso-to-vault
-  namespace: external-secrets-operator
+  namespace: external-secrets
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 spec:
