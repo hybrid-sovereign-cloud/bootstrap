@@ -6,6 +6,14 @@ alwaysApply: true
 
 # Sovereign Cloud Agent Rules
 
+## Phase 1 — Bootstrap Design Philosophy (ADR-0022)
+
+- **Rapid initialisation**: `make phase1-gitops && make phase2-applicationset` = zero-to-platform.
+- **Makefile portability**: every OpenShift mutation is a `make` target; rerunnable on any cluster by setting env vars.
+- **OCP Appliance end-goal**: bootstrap pipeline will produce a versioned OCP Appliance image embedding all platform components for sovereign/air-gapped deployment.
+- **Developer sandbox**: clone bootstrap → set env → `make` = isolated dev cluster, no shared cluster needed.
+- **OC read-only**: `oc`/`kubectl` for investigation only; all mutations via `make` or ArgoCD.
+
 ## Non-negotiable constraints
 
 - **Repo boundary**: modify only `bootstrap/` and `architecture/`. Never write to `/` (workspace root).

@@ -1,5 +1,13 @@
 # CLAUDE.md — Agent Rules for Hybrid Sovereign Cloud Bootstrap
 
+## Phase 1 Design Philosophy (ADR-0022)
+
+- **Rapid initialisation**: `make phase1-gitops && make phase2-applicationset` = zero-to-platform on any cluster.
+- **Makefile portability**: every OCP mutation is a `make` target; rerunnable by env vars only.
+- **OCP Appliance end-goal**: pipeline produces a versioned appliance image for sovereign/air-gapped deployments.
+- **Developer sandbox**: clone → set env → `make` = isolated dev cluster, no shared cluster needed.
+- **OC read-only**: `oc`/`kubectl` for investigation only; mutations via `make` or ArgoCD.
+
 ## Repository layout
 
 - Work only **`bootstrap/`** and **`architecture/`**; never add project files to a parent workspace root.
