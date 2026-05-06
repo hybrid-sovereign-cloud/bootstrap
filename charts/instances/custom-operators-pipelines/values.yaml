@@ -55,6 +55,10 @@ operators:
     repo: plugin_vault
     imageName: vault-plugin-operator
 
+  - name: aap-plugin-operator
+    repo: plugin_aap
+    imageName: aap-plugin-operator
+
   - name: sovereign-cloud-console
     repo: console
     imageName: sovereign-cloud-console
