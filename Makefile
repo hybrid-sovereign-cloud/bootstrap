@@ -1336,10 +1336,10 @@ deploy-custom-operators: install-custom-operators-git-creds install-custom-opera
 
 ##@ Custom Operator Deployments (Phase 2 — ArgoCD Application + OCI Helm from operator repos)
 
-install-plugin-rbac: ## Deploy plugin-rbac operator via ArgoCD Application (OCI helm v0.3.1)
+install-plugin-rbac: ## Deploy plugin-rbac operator via ArgoCD Application (OCI helm v0.3.2)
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
-	CHART_VERSION=0.3.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-rbac rbac-plugin-operator sovereign-cloud-plugins 300; \
+	CHART_VERSION=0.3.2 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-rbac rbac-plugin-operator sovereign-cloud-plugins 300; \
 	$(MAKE) sync-wait-argoapp APP=plugin-rbac
 
 uninstall-plugin-rbac: ## Delete plugin-rbac ArgoCD Application
@@ -1348,10 +1348,10 @@ uninstall-plugin-rbac: ## Delete plugin-rbac ArgoCD Application
 	oc delete application.argoproj.io plugin-rbac -n openshift-gitops --ignore-not-found; \
 	echo "==> plugin-rbac Application deleted"
 
-install-plugin-vault: ## Deploy vault-plugin-operator via ArgoCD Application (OCI helm v0.1.4)
+install-plugin-vault: ## Deploy vault-plugin-operator via ArgoCD Application (OCI helm v0.1.5)
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
-	CHART_VERSION=0.1.4 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-vault vault-plugin-operator sovereign-cloud-plugins 350; \
+	CHART_VERSION=0.1.5 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-vault vault-plugin-operator sovereign-cloud-plugins 350; \
 	$(MAKE) sync-wait-argoapp APP=plugin-vault
 
 uninstall-plugin-vault: ## Delete vault-plugin-operator ArgoCD Application
