@@ -1557,7 +1557,7 @@ wait-build-vault-plugin: ## Wait for vault-plugin-operator build PipelineRun to 
 install-plugin-aap: ## Deploy aap-plugin-operator via ArgoCD Application (OCI helm v0.1.0)
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
-	CHART_VERSION=0.1.0 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-aap aap-plugin-operator sovereign-cloud-plugins 360; \
+	CHART_VERSION=0.1.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-aap aap-plugin-operator sovereign-cloud-plugins 360; \
 	$(MAKE) sync-wait-argoapp APP=plugin-aap
 
 uninstall-plugin-aap: ## Delete aap-plugin-operator ArgoCD Application
@@ -1575,8 +1575,8 @@ aap-store-admin-token: ## Copy AAP admin tokens to sovereign-cloud-plugins Secre
 	AAP_GW_PASS=$$(oc get secret central-aap-admin-password \
 		-n ansible-automation-platform \
 		-o jsonpath='{.data.password}' 2>/dev/null | base64 -d); \
-	AAP_CTRL_URL="https://central-aap-controller-ansible-automation-platform.apps.$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}' 2>/dev/null)"; \
-	AAP_GW_URL="https://central-aap-ansible-automation-platform.apps.$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}' 2>/dev/null)"; \
+	AAP_CTRL_URL="https://central-aap-controller-ansible-automation-platform.$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}' 2>/dev/null)"; \
+	AAP_GW_URL="https://central-aap-ansible-automation-platform.$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}' 2>/dev/null)"; \
 	if [ -z "$$AAP_CTRL_PASS" ]; then echo "ERROR: Cannot find AAP controller admin password"; exit 1; fi; \
 	oc create namespace sovereign-cloud-plugins --dry-run=client -o yaml | oc apply -f -; \
 	oc create secret generic aap-admin-token \
@@ -1599,7 +1599,7 @@ create-aapconfig-cr: ## Create the platform AAPConfig CR in sovereign-cloud-plug
 	$(MAKE) login; \
 	DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}' 2>/dev/null); \
 	if [ -z "$$DOMAIN" ]; then echo "ERROR: Cannot find cluster domain"; exit 1; fi; \
-	printf 'apiVersion: hybridsovereign.redhat/v1alpha1\nkind: AAPConfig\nmetadata:\n  name: platform\n  namespace: sovereign-cloud-plugins\n  labels:\n    app.kubernetes.io/part-of: sovereign-aap-plugin\nspec:\n  secret: aap-admin-token\n  url: https://central-aap-controller-ansible-automation-platform.apps.%s\n  gatewayUrl: https://central-aap-ansible-automation-platform.apps.%s\n  rbac: sovereign-tenants\n  tlsSkipVerify: true\n' "$$DOMAIN" "$$DOMAIN" | oc apply -f -; \
+	printf 'apiVersion: hybridsovereign.redhat/v1alpha1\nkind: AAPConfig\nmetadata:\n  name: platform\n  namespace: sovereign-cloud-plugins\n  labels:\n    app.kubernetes.io/part-of: sovereign-aap-plugin\nspec:\n  secret: aap-admin-token\n  url: https://central-aap-controller-ansible-automation-platform.%s\n  gatewayUrl: https://central-aap-ansible-automation-platform.%s\n  rbac: sovereign-tenants\n  tlsSkipVerify: true\n' "$$DOMAIN" "$$DOMAIN" | oc apply -f -; \
 	echo "==> AAPConfig/platform created in sovereign-cloud-plugins"
 
 trigger-build-aap-plugin: ## Trigger dedicated build pipeline for aap-plugin-operator
