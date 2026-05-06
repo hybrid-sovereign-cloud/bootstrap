@@ -1353,10 +1353,10 @@ deploy-custom-operators: install-custom-operators-git-creds install-custom-opera
 
 ##@ Custom Operator Deployments (Phase 2 — ArgoCD Application + OCI Helm from operator repos)
 
-install-plugin-rbac: ## Deploy plugin-rbac operator via ArgoCD Application (OCI helm v0.3.2)
+install-plugin-rbac: ## Deploy plugin-rbac operator via ArgoCD Application (OCI helm v0.3.4)
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
-	CHART_VERSION=0.3.2 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-rbac rbac-plugin-operator sovereign-cloud-plugins 300; \
+	CHART_VERSION=0.3.4 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-rbac rbac-plugin-operator sovereign-cloud-plugins 300; \
 	$(MAKE) sync-wait-argoapp APP=plugin-rbac
 
 uninstall-plugin-rbac: ## Delete plugin-rbac ArgoCD Application
