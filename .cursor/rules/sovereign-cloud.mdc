@@ -59,7 +59,7 @@ Agent guide: `bootstrap/AGENTS.md`
 | Team | Team | hybridsovereign.redhat | 330 |
 | Projects | Projects | hybridsovereign.redhat | 340 |
 | Assignment | Assignment | hybridsovereign.redhat | 340 |
-| plugin_rbac | RbacConfig, Rbac | rbacplugins.hybridsovereign.redhat | 300 |
+| plugin_rbac | RbacConfig, Rbac | hybridsovereign.redhat | 300 |
 
 ## Teardown command
 

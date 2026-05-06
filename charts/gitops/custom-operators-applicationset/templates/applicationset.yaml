@@ -81,11 +81,11 @@ spec:
           kind: Container
           jsonPointers:
             - /status
-        - group: rbacplugins.hybridsovereign.redhat
+        - group: hybridsovereign.redhat
           kind: Rbac
           jsonPointers:
             - /status
-        - group: rbacplugins.hybridsovereign.redhat
+        - group: hybridsovereign.redhat
           kind: RbacConfig
           jsonPointers:
             - /status

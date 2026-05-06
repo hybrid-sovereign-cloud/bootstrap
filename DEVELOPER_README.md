@@ -134,7 +134,7 @@ Each operator repo has a `DEVELOPER_README.md` with operator-specific instructio
 ### Step 1: Create a RbacConfig (one-time per cluster)
 ```bash
 oc apply -f - <<EOF
-apiVersion: rbacplugins.hybridsovereign.redhat/v1alpha1
+apiVersion: hybridsovereign.redhat/v1alpha1
 kind: RbacConfig
 metadata:
   name: keycloak-base
@@ -167,7 +167,7 @@ EOF
 ```bash
 # After entity-acme namespace is created by entity-operator:
 oc apply -f - <<EOF
-apiVersion: rbacplugins.hybridsovereign.redhat/v1alpha1
+apiVersion: hybridsovereign.redhat/v1alpha1
 kind: Rbac
 metadata:
   name: admins
