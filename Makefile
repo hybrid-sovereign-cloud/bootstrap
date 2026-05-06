@@ -1356,10 +1356,10 @@ uninstall-entity-operator: ## Delete entity-operator ArgoCD Application
 	oc delete application.argoproj.io entity-operator -n openshift-gitops --ignore-not-found; \
 	echo "==> entity-operator Application deleted"
 
-install-cloudaws-operator: ## Deploy CloudAWS operator via ArgoCD Application (OCI helm v0.1.1)
+install-cloudaws-operator: ## Deploy CloudAWS operator via ArgoCD Application (OCI helm v0.1.3)
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
-	CHART_VERSION=0.1.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh cloudaws-operator cloudaws-operator sovereign-cloud 320; \
+	CHART_VERSION=0.1.3 bash $(SCRIPTS_DIR)/apply-argoapp.sh cloudaws-operator cloudaws-operator sovereign-cloud 320; \
 	$(MAKE) sync-wait-argoapp APP=cloudaws-operator
 
 uninstall-cloudaws-operator: ## Delete CloudAWS operator ArgoCD Application
@@ -1368,10 +1368,10 @@ uninstall-cloudaws-operator: ## Delete CloudAWS operator ArgoCD Application
 	oc delete application.argoproj.io cloudaws-operator -n openshift-gitops --ignore-not-found; \
 	echo "==> cloudaws-operator Application deleted"
 
-install-cloudoso-operator: ## Deploy CloudOSO operator via ArgoCD Application (OCI helm v0.1.1)
+install-cloudoso-operator: ## Deploy CloudOSO operator via ArgoCD Application (OCI helm v0.1.3)
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
-	CHART_VERSION=0.1.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh cloudoso-operator cloudoso-operator sovereign-cloud 320; \
+	CHART_VERSION=0.1.3 bash $(SCRIPTS_DIR)/apply-argoapp.sh cloudoso-operator cloudoso-operator sovereign-cloud 320; \
 	$(MAKE) sync-wait-argoapp APP=cloudoso-operator
 
 uninstall-cloudoso-operator: ## Delete CloudOSO operator ArgoCD Application
@@ -1380,10 +1380,10 @@ uninstall-cloudoso-operator: ## Delete CloudOSO operator ArgoCD Application
 	oc delete application.argoproj.io cloudoso-operator -n openshift-gitops --ignore-not-found; \
 	echo "==> cloudoso-operator Application deleted"
 
-install-platformopenshift-operator: ## Deploy PlatformOpenshift operator via ArgoCD Application (OCI helm v0.1.1)
+install-platformopenshift-operator: ## Deploy PlatformOpenshift operator via ArgoCD Application (OCI helm v0.1.2)
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
-	CHART_VERSION=0.1.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh platformopenshift-operator platformopenshift-operator sovereign-cloud 330; \
+	CHART_VERSION=0.1.2 bash $(SCRIPTS_DIR)/apply-argoapp.sh platformopenshift-operator platformopenshift-operator sovereign-cloud 330; \
 	$(MAKE) sync-wait-argoapp APP=platformopenshift-operator
 
 uninstall-platformopenshift-operator: ## Delete PlatformOpenshift operator ArgoCD Application
@@ -1392,10 +1392,10 @@ uninstall-platformopenshift-operator: ## Delete PlatformOpenshift operator ArgoC
 	oc delete application.argoproj.io platformopenshift-operator -n openshift-gitops --ignore-not-found; \
 	echo "==> platformopenshift-operator Application deleted"
 
-install-team-operator: ## Deploy Team operator via ArgoCD Application (OCI helm v0.1.1)
+install-team-operator: ## Deploy Team operator via ArgoCD Application (OCI helm v0.1.2)
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
-	CHART_VERSION=0.1.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh team-operator team-operator sovereign-cloud 330; \
+	CHART_VERSION=0.1.2 bash $(SCRIPTS_DIR)/apply-argoapp.sh team-operator team-operator sovereign-cloud 330; \
 	$(MAKE) sync-wait-argoapp APP=team-operator
 
 uninstall-team-operator: ## Delete Team operator ArgoCD Application
@@ -1416,10 +1416,10 @@ uninstall-projects-operator: ## Delete Projects operator ArgoCD Application
 	oc delete application.argoproj.io projects-operator -n openshift-gitops --ignore-not-found; \
 	echo "==> projects-operator Application deleted"
 
-install-assignment-operator: ## Deploy Assignment operator via ArgoCD Application (OCI helm v0.1.1)
+install-assignment-operator: ## Deploy Assignment operator via ArgoCD Application (OCI helm v0.1.3)
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
-	CHART_VERSION=0.1.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh assignment-operator assignment-operator sovereign-cloud 340; \
+	CHART_VERSION=0.1.3 bash $(SCRIPTS_DIR)/apply-argoapp.sh assignment-operator assignment-operator sovereign-cloud 340; \
 	$(MAKE) sync-wait-argoapp APP=assignment-operator
 
 uninstall-assignment-operator: ## Delete Assignment operator ArgoCD Application
