@@ -45,22 +45,37 @@ graph TD
 |-------------|---------|
 | OpenShift / ROSA | 4.14+ |
 | `oc` CLI | matching cluster version |
-| `helm` | 3.12+ |
+| `helm` | 3.14+ (OCI support required) |
 | `make` | any |
 | `git` + `bash` | any |
+| `curl` | any (for Quay API) |
 
 ### Environment variables
 
-Copy `.env.example` to `.env` and fill in:
+All environment variables must be set in `~/.bashrc` or exported in your shell before running any `make` commands. No `.env` file is needed when variables are in `~/.bashrc`.
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `OCP_SERVER` | **Yes** | OpenShift API endpoint | `https://api.cluster.example.com:6443` |
+| `OCP_USERNAME` | **Yes** | OpenShift admin username | `kubeadmin` |
+| `OCP_PASSWORD` | **Yes** | OpenShift admin password | `<password>` |
+| `OCI_REGISTRY` | **Yes** | Quay.io organization URL | `https://quay.io/organization/sovereignhybrid` |
+| `OCI_REGISTRY_TOKEN` | **Yes** | Quay.io robot account OAuth token | `<token>` |
+| `GITHUB_TOKEN` | **Yes** | GitHub PAT for pipeline Git credentials | `ghp_...` |
+| `GITHUB_URL` | No | Bootstrap repo URL (optional override) | `https://github.com/<org>/bootstrap.git` |
+| `GITHUB_REVISION` | No | Git revision (default: `main`) | `main` |
 
 ```bash
-export OCP_SERVER=https://api.<cluster>.<domain>:6443
-export OCP_USERNAME=<username>
-export OCP_PASSWORD=<password>
-export GITHUB_URL=https://github.com/<org>/bootstrap.git
-export GITHUB_TOKEN=<personal-access-token>
-export GITHUB_REVISION=main   # optional, defaults to main
+# Add to ~/.bashrc:
+export OCP_SERVER="https://api.<cluster-domain>:6443"
+export OCP_USERNAME="<admin-user>"
+export OCP_PASSWORD="<admin-password>"
+export OCI_REGISTRY="https://quay.io/organization/sovereignhybrid"
+export OCI_REGISTRY_TOKEN="<quay-robot-oauth-token>"
+export GITHUB_TOKEN="<github-pat>"
 ```
+
+> **How to get `OCI_REGISTRY_TOKEN`**: Log in to [quay.io](https://quay.io), go to your organization → Robot Accounts, create a robot with write access, and copy the OAuth token.
 
 ### Validate without a cluster
 

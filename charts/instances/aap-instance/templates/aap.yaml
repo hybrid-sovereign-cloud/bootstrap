@@ -6,4 +6,12 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 spec:
-{{ toYaml .Values.spec | indent 2 }}
+  controller:
+    disabled: {{ .Values.spec.controller.disabled }}
+  eda:
+    disabled: {{ .Values.spec.eda.disabled }}
+    {{- if and (not .Values.spec.eda.disabled) .Values.appsDomain }}
+    ingress_type: Route
+    {{- end }}
+  hub:
+    disabled: {{ .Values.spec.hub.disabled }}

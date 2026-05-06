@@ -2,7 +2,7 @@ apiVersion: v2
 name: gitea-instance
 description: Gitea git server for sovereign cloud
 type: application
-version: 0.1.0
+version: 0.1.3
 appVersion: "1.0"
 dependencies:
   - name: gitea

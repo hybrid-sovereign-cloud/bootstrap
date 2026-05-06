@@ -9,9 +9,8 @@ plugins:
   - networking-console-plugin
   - odf-console
   - pipelines-console-plugin
+  - sovereign-cloud-plugin
 
-# The sovereign-cloud console plugin — added when the console repo is deployed.
-# sovereign-cloud-plugin is appended dynamically via separate make target / pipeline.
 additionalPlugins: []
 
 rbac:

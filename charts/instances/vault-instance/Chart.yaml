@@ -2,7 +2,7 @@ apiVersion: v2
 name: vault-instance
 description: HashiCorp Vault instance for sovereign cloud
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "1.21.2"
 dependencies:
   - name: vault

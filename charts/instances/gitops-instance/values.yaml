@@ -7,6 +7,15 @@ github:
   insecure: "true"
   username: "git"
 
+# OCI Helm registry credential template for ArgoCD (quay.io/sovereignhybrid).
+# ArgoCD uses this to pull OCI Helm charts for all Applications pointing to this registry.
+# Pass OCI_REGISTRY_TOKEN at install time: --set-string ociRegistry.token=$OCI_REGISTRY_TOKEN
+ociRegistry:
+  enabled: true
+  url: "quay.io/sovereignhybrid"
+  username: "$oauthtoken"
+  token: ""
+
 # Optional: tighten Argo CD server behavior when using self-signed Git endpoints.
 argocd:
   # When true, merge server.insecure: true on the openshift-gitops ArgoCD CR (if chart deploys it).

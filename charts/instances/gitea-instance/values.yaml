@@ -23,8 +23,10 @@ gitea:
   gitea:
     admin:
       username: sovereign-admin
+      # Password sourced from Vault via ExternalSecret gitea-admin-secret (gitea/admin.password)
+      # Set existingSecret to use Vault-managed credentials instead of a static password.
       password: ""
-      existingSecret: gitea-admin-secret
+      existingSecret: "gitea-admin-secret"
     config:
       server:
         DOMAIN: gitea.apps.REPLACE

@@ -54,3 +54,4 @@ operators:
   - name: sovereign-cloud-console
     repo: console
     imageName: sovereign-cloud-console
+    dockerfile: "console-plugin/Containerfile"

@@ -1212,7 +1212,7 @@ install-keycloak-config: ## Deploy keycloak-config job via ArgoCD Application (O
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
 	APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}'); \
-	bash $(SCRIPTS_DIR)/apply-argoapp.sh keycloak-config keycloak-config rhbk 210 \
+	CHART_VERSION=0.1.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh keycloak-config keycloak-config rhbk 210 \
 		"keycloakUrl=https://keycloak-rhbk.$$APPS_DOMAIN"; \
 	$(MAKE) sync-wait-argoapp APP=keycloak-config
 

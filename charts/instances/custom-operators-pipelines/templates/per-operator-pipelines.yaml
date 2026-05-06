@@ -1,0 +1,82 @@
+{{- range .Values.operators }}
+---
+# Dedicated Pipeline for {{ .name }} — hardcodes the git source so each operator
+# can be built independently with: tkn pipeline start {{ .name }}-build
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: {{ printf "%s-build" .name | quote }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+    operator: {{ .name | quote }}
+    pipeline-type: operator-build
+    {{- include "chart.labels" $ | nindent 4 }}
+spec:
+  description: >
+    Dedicated build pipeline for {{ .name }}.
+    Clones {{ $.Values.githubOrg }}/{{ .repo }} and builds the container image.
+  params:
+    - name: git-revision
+      type: string
+      default: {{ $.Values.defaultRevision | quote }}
+      description: Branch or commit to build
+    - name: image-tag
+      type: string
+      default: latest
+      description: Tag for the built image
+  workspaces:
+    - name: source
+      description: Workspace for source code
+    - name: git-credentials
+      description: kubernetes.io/basic-auth Secret for GitHub HTTPS auth
+      optional: true
+  tasks:
+    - name: git-clone
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: git-clone
+          - name: namespace
+            value: openshift-pipelines
+      params:
+        - name: URL
+          value: {{ printf "%s/%s.git" $.Values.githubOrg .repo | quote }}
+        - name: revision
+          value: $(params.git-revision)
+        - name: deleteExisting
+          value: "true"
+      workspaces:
+        - name: output
+          workspace: source
+        - name: basic-auth
+          workspace: git-credentials
+    - name: build-and-push
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: buildah
+          - name: namespace
+            value: openshift-pipelines
+      runAfter:
+        - git-clone
+      params:
+        - name: IMAGE
+          value: image-registry.openshift-image-registry.svc:5000/{{ $.Values.namespace }}/{{ .imageName }}:$(params.image-tag)
+        - name: DOCKERFILE
+          value: {{ .dockerfile | default "./Dockerfile" }}
+        - name: CONTEXT
+          value: "."
+        - name: SKIP_PUSH
+          value: "false"
+        - name: TLSVERIFY
+          value: "false"
+      workspaces:
+        - name: source
+          workspace: source
+{{- end }}

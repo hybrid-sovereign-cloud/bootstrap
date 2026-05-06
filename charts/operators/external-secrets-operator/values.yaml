@@ -10,3 +10,8 @@ subscription:
 operatorGroup:
   create: true
   targetNamespaces: []
+
+# Disabled by default: CRD is not available until after the operator CSV succeeds.
+# Enable in a follow-up Application (e.g. external-secrets-config) after the operator is Running.
+externalSecretsConfig:
+  enabled: false
