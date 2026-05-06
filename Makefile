@@ -1309,7 +1309,7 @@ uninstall-custom-operators-git-creds: ## Delete custom-operators-git-creds ArgoC
 install-custom-operators-pipelines: ## Deploy custom-operators-pipelines via ArgoCD Application (OCI helm)
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
-	CHART_VERSION=0.1.2 bash $(SCRIPTS_DIR)/apply-argoapp.sh custom-operators-pipelines custom-operators-pipelines sovereign-cloud 280; \
+	CHART_VERSION=0.1.3 bash $(SCRIPTS_DIR)/apply-argoapp.sh custom-operators-pipelines custom-operators-pipelines sovereign-cloud 280; \
 	$(MAKE) sync-wait-argoapp APP=custom-operators-pipelines
 
 uninstall-custom-operators-pipelines: ## Delete custom-operators-pipelines ArgoCD Application
@@ -1348,10 +1348,10 @@ uninstall-plugin-rbac: ## Delete plugin-rbac ArgoCD Application
 	oc delete application.argoproj.io plugin-rbac -n openshift-gitops --ignore-not-found; \
 	echo "==> plugin-rbac Application deleted"
 
-install-plugin-vault: ## Deploy vault-plugin-operator via ArgoCD Application (OCI helm v0.1.0)
+install-plugin-vault: ## Deploy vault-plugin-operator via ArgoCD Application (OCI helm v0.1.4)
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
-	CHART_VERSION=0.1.0 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-vault vault-plugin-operator sovereign-cloud-plugins 350; \
+	CHART_VERSION=0.1.4 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-vault vault-plugin-operator sovereign-cloud-plugins 350; \
 	$(MAKE) sync-wait-argoapp APP=plugin-vault
 
 uninstall-plugin-vault: ## Delete vault-plugin-operator ArgoCD Application
@@ -1363,7 +1363,7 @@ uninstall-plugin-vault: ## Delete vault-plugin-operator ArgoCD Application
 vault-store-vault-admin-token: ## Copy Vault admin token to sovereign-cloud-plugins Secret
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
-	VAULT_TOKEN=$$(oc get secret vault-init-keys -n vault -o jsonpath='{.data.VAULT_ROOT_TOKEN}' 2>/dev/null | base64 -d); \
+	VAULT_TOKEN=$$(oc get secret vault-init-keys -n vault -o jsonpath='{.data.root-token}' 2>/dev/null | base64 -d); \
 	VAULT_URL=$$(oc get route -n vault central-vault -o jsonpath='{.spec.host}' 2>/dev/null); \
 	if [ -z "$$VAULT_TOKEN" ]; then echo "ERROR: Cannot find vault root token in vault-init-keys secret"; exit 1; fi; \
 	oc create namespace sovereign-cloud-plugins --dry-run=client -o yaml | oc apply -f -; \
@@ -1384,19 +1384,7 @@ create-vaultconfig-cr: ## Create the platform VaultConfig CR in sovereign-cloud-
 	$(MAKE) login; \
 	VAULT_URL=$$(oc get route -n vault central-vault -o jsonpath='{.spec.host}' 2>/dev/null); \
 	if [ -z "$$VAULT_URL" ]; then echo "ERROR: Cannot find Vault route"; exit 1; fi; \
-	oc apply -f - <<EOF
-apiVersion: hybridsovereign.redhat/v1alpha1
-kind: VaultConfig
-metadata:
-  name: platform
-  namespace: sovereign-cloud-plugins
-  labels:
-    app.kubernetes.io/part-of: sovereign-vault-plugin
-spec:
-  secret: vault-admin-token
-  url: https://$$VAULT_URL
-  rbac: sovereign-tenants
-EOF
+	printf 'apiVersion: hybridsovereign.redhat/v1alpha1\nkind: VaultConfig\nmetadata:\n  name: platform\n  namespace: sovereign-cloud-plugins\n  labels:\n    app.kubernetes.io/part-of: sovereign-vault-plugin\nspec:\n  secret: vault-admin-token\n  url: https://%s\n  rbac: sovereign-tenants\n' "$$VAULT_URL" | oc apply -f -; \
 	echo "==> VaultConfig/platform created in sovereign-cloud-plugins"
 
 install-entity-operator: ## Deploy entity-operator via ArgoCD Application (OCI helm v0.1.1)
