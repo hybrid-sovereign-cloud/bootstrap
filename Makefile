@@ -58,6 +58,10 @@
 	quay-store-admin-token uninstall-quay-store-admin-token \
 	create-quayconfig-cr \
 	trigger-build-quay-plugin wait-build-quay-plugin \
+	install-plugin-iaac uninstall-plugin-iaac \
+	iaac-copy-git-credentials uninstall-iaac-git-credentials \
+	create-iaac-cr \
+	trigger-build-iaac-plugin wait-build-iaac-plugin \
 	install-sovereign-cloud-console uninstall-sovereign-cloud-console \
 	wait-argoapp sync-wait-argoapp teardown-all-argocd-apps
 
@@ -626,7 +630,10 @@ gitea-setup-entity-credentials: ## Create Gitea org, repo, token for entity-oper
 	  --from-literal=REPO_NAME=git_resources \
 	  --dry-run=client -o yaml | oc apply -f -; \
 	oc rollout restart deployment/entity-operator -n sovereign-cloud 2>/dev/null || true; \
-	echo "==> Gitea entity credentials configured"
+	echo "==> Gitea entity credentials configured"; \
+	echo "==> Copying gitea-credentials to sovereign-cloud-plugins for IaaC operator..."; \
+	$(MAKE) iaac-copy-git-credentials; \
+	echo "==> IaaC git credentials configured"
 
 deploy-custom-operators: install-custom-operators-git-creds install-custom-operators-pipelines ## Deploy git-creds + pipelines via ArgoCD Applications (OCI helm); see Phase 2 section
 
@@ -883,7 +890,7 @@ oci-push-bootstrap: oci-login ## Package and push all bootstrap charts to OCI re
 oci-push-operators: oci-login ## Package and push all operator repo charts to OCI registry (pre-creates repos as public)
 	@$(SOURCE_BASHRC); \
 	mkdir -p /tmp/helm-oci-push; \
-	OPERATOR_REPOS="Assignment CloudAWS CloudOSO PlatformOpenshift plugin_rbac plugin_vault plugin_aap plugin_quay Projects sovereign_tenancy Team console"; \
+	OPERATOR_REPOS="Assignment CloudAWS CloudOSO PlatformOpenshift plugin_rbac plugin_vault plugin_aap plugin_quay plugin_iaac Projects sovereign_tenancy Team console"; \
 	WORKSPACE=$$(dirname $$(pwd)); \
 	echo "==> Pushing operator charts from: $$OPERATOR_REPOS"; \
 	for repo in $$OPERATOR_REPOS; do \
@@ -930,6 +937,7 @@ oci-make-public: ## Ensure all known charts are public in Quay (idempotent)
 		platformopenshift-operator platformopenshift-operator-imagestreams platformopenshift-operator-samples \
 		rbac-plugin-operator rbac-plugin-imagestream \
 		quay-plugin-operator quay-plugin-imagestream \
+		iaac-plugin-operator iaac-plugin-imagestream \
 		projects-operator projects-operator-imagestreams projects-operator-samples \
 		entity-operator entity-operator-imagestreams entity-operator-samples \
 		team-operator team-operator-imagestreams team-operator-samples \
@@ -1508,7 +1516,7 @@ uninstall-all-instances: ## Delete all instance/config ArgoCD Applications (reve
 	$(MAKE) login; \
 	for app in sovereign-cloud-console assignment-operator projects-operator team-operator \
 	           platformopenshift-operator cloudoso-operator cloudaws-operator entity-operator \
-	           plugin-quay plugin-rbac dynamic-plugins-config custom-operators-pipelines custom-operators-git-creds \
+	           plugin-quay plugin-iaac plugin-rbac dynamic-plugins-config custom-operators-pipelines custom-operators-git-creds \
 	           rhacm-config rhacs-config service-oidc-config external-secrets-config \
 	           keycloak-config vault-init rhacs-instance rhacm-instance quay-instance \
 	           pipelines-bootstrap odf-noobaa gitea-instance rhbk-instance aap-instance \
@@ -1671,6 +1679,61 @@ wait-build-quay-plugin: ## Wait for quay-plugin-operator build PipelineRun to su
 	@$(SOURCE_BASHRC); $(MAKE) login; \
 	$(MAKE) _wait-op-build PIPELINE=quay-plugin-operator-build
 
+install-plugin-iaac: ## Deploy iaac-plugin-operator via ArgoCD Application (OCI helm v0.1.0)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	CHART_VERSION=0.1.0 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-iaac iaac-plugin-operator sovereign-cloud-plugins 366; \
+	$(MAKE) sync-wait-argoapp APP=plugin-iaac
+
+uninstall-plugin-iaac: ## Delete iaac-plugin-operator ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io plugin-iaac -n openshift-gitops --ignore-not-found; \
+	echo "==> plugin-iaac Application deleted"
+
+iaac-copy-git-credentials: ## Copy gitea-credentials from sovereign-cloud to sovereign-cloud-plugins for IaaC operator
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	echo "==> Copying gitea-credentials to sovereign-cloud-plugins..."; \
+	GITEA_URL=$$(oc get secret gitea-credentials -n sovereign-cloud \
+	  -o jsonpath='{.data.GITEA_URL}' 2>/dev/null | base64 -d); \
+	GITEA_TOKEN=$$(oc get secret gitea-credentials -n sovereign-cloud \
+	  -o jsonpath='{.data.GITEA_TOKEN}' 2>/dev/null | base64 -d); \
+	REPO_OWNER=$$(oc get secret gitea-credentials -n sovereign-cloud \
+	  -o jsonpath='{.data.REPO_OWNER}' 2>/dev/null | base64 -d); \
+	REPO_NAME=$$(oc get secret gitea-credentials -n sovereign-cloud \
+	  -o jsonpath='{.data.REPO_NAME}' 2>/dev/null | base64 -d); \
+	[ -z "$$GITEA_URL" ] && echo "ERROR: gitea-credentials not found in sovereign-cloud. Run 'make gitea-setup-entity-credentials' first." && exit 1; \
+	oc create namespace sovereign-cloud-plugins --dry-run=client -o yaml | oc apply -f -; \
+	oc create secret generic gitea-credentials \
+	  -n sovereign-cloud-plugins \
+	  --from-literal=GITEA_URL="$$GITEA_URL" \
+	  --from-literal=GITEA_TOKEN="$$GITEA_TOKEN" \
+	  --from-literal=REPO_OWNER="$$REPO_OWNER" \
+	  --from-literal=REPO_NAME="$$REPO_NAME" \
+	  --dry-run=client -o yaml | oc apply -f -; \
+	echo "==> gitea-credentials copied to sovereign-cloud-plugins"
+
+uninstall-iaac-git-credentials: ## Remove gitea-credentials from sovereign-cloud-plugins
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete secret gitea-credentials -n sovereign-cloud-plugins --ignore-not-found; \
+	echo "==> gitea-credentials removed from sovereign-cloud-plugins"
+
+create-iaac-cr: ## Create the Iaac CR in sovereign-cloud-plugins
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	printf 'apiVersion: hybridsovereign.redhat/v1alpha1\nkind: Iaac\nmetadata:\n  name: default\n  namespace: sovereign-cloud-plugins\n  labels:\n    app.kubernetes.io/part-of: sovereign-iaac-plugin\nspec: {}\n' | oc apply -f -; \
+	echo "==> Iaac/default created in sovereign-cloud-plugins"
+
+trigger-build-iaac-plugin: ## Trigger dedicated build pipeline for iaac-plugin-operator
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _trigger-op-build PIPELINE=iaac-plugin-operator-build
+
+wait-build-iaac-plugin: ## Wait for iaac-plugin-operator build PipelineRun to succeed
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _wait-op-build PIPELINE=iaac-plugin-operator-build
+
 trigger-build-entity-operator: ## Trigger dedicated build pipeline for entity-operator
 	@$(SOURCE_BASHRC); $(MAKE) login; \
 	$(MAKE) _trigger-op-build PIPELINE=entity-operator-build
@@ -1741,6 +1804,7 @@ trigger-build-all-operators: ## Trigger ALL operator build pipelines concurrentl
 	           cloudoso-operator-build platformopenshift-operator-build \
 	           team-operator-build projects-operator-build assignment-operator-build \
 	           vault-plugin-operator-build aap-plugin-operator-build quay-plugin-operator-build \
+	           iaac-plugin-operator-build \
 	           sovereign-cloud-console-build; do \
 	  $(MAKE) _trigger-op-build PIPELINE=$$op; \
 	done
@@ -1751,6 +1815,7 @@ wait-build-all-operators: ## Wait for ALL operator build PipelineRuns to succeed
 	           cloudoso-operator-build platformopenshift-operator-build \
 	           team-operator-build projects-operator-build assignment-operator-build \
 	           vault-plugin-operator-build aap-plugin-operator-build quay-plugin-operator-build \
+	           iaac-plugin-operator-build \
 	           sovereign-cloud-console-build; do \
 	  $(MAKE) _wait-op-build PIPELINE=$$op || echo "WARNING: $$op build may have failed"; \
 	done

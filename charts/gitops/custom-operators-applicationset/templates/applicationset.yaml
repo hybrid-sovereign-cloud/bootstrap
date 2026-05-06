@@ -97,6 +97,10 @@ spec:
           kind: QuayOrg
           jsonPointers:
             - /status
+        - group: hybridsovereign.redhat
+          kind: Iaac
+          jsonPointers:
+            - /status
       syncPolicy:
         automated:
           prune: true

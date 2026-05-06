@@ -63,6 +63,10 @@ operators:
     repo: plugin_quay
     imageName: quay-plugin-operator
 
+  - name: iaac-plugin-operator
+    repo: plugin_iaac
+    imageName: iaac-plugin-operator
+
   - name: sovereign-cloud-console
     repo: console
     imageName: sovereign-cloud-console
