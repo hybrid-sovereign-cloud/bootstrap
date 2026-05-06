@@ -51,6 +51,10 @@ operators:
     repo: Assignment
     imageName: assignment-operator
 
+  - name: vault-plugin-operator
+    repo: plugin_vault
+    imageName: vault-plugin-operator
+
   - name: sovereign-cloud-console
     repo: console
     imageName: sovereign-cloud-console
