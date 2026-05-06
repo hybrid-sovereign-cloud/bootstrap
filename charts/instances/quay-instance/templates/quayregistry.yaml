@@ -13,10 +13,33 @@ spec:
       managed: true
       overrides:
         replicas: 1
+        resources:
+          requests:
+            memory: {{ .Values.clair.resources.requests.memory | default "512Mi" }}
+            cpu: {{ .Values.clair.resources.requests.cpu | default "250m" }}
+          limits:
+            memory: {{ .Values.clair.resources.limits.memory | default "4Gi" }}
+            cpu: {{ .Values.clair.resources.limits.cpu | default "2" }}
     - kind: postgres
       managed: true
+      overrides:
+        resources:
+          requests:
+            memory: {{ .Values.postgres.resources.requests.memory | default "512Mi" }}
+            cpu: {{ .Values.postgres.resources.requests.cpu | default "250m" }}
+          limits:
+            memory: {{ .Values.postgres.resources.limits.memory | default "4Gi" }}
+            cpu: {{ .Values.postgres.resources.limits.cpu | default "2" }}
     - kind: redis
       managed: true
+      overrides:
+        resources:
+          requests:
+            memory: {{ .Values.redis.resources.requests.memory | default "256Mi" }}
+            cpu: {{ .Values.redis.resources.requests.cpu | default "100m" }}
+          limits:
+            memory: {{ .Values.redis.resources.limits.memory | default "2Gi" }}
+            cpu: {{ .Values.redis.resources.limits.cpu | default "1" }}
     - kind: route
       managed: true
     - kind: tls
@@ -31,4 +54,21 @@ spec:
       managed: true
       overrides:
         replicas: 1
+        resources:
+          requests:
+            memory: {{ .Values.quayApp.resources.requests.memory | default "1Gi" }}
+            cpu: {{ .Values.quayApp.resources.requests.cpu | default "500m" }}
+          limits:
+            memory: {{ .Values.quayApp.resources.limits.memory | default "6Gi" }}
+            cpu: {{ .Values.quayApp.resources.limits.cpu | default "2" }}
+    - kind: clairpostgres
+      managed: true
+      overrides:
+        resources:
+          requests:
+            memory: {{ .Values.clairPostgres.resources.requests.memory | default "512Mi" }}
+            cpu: {{ .Values.clairPostgres.resources.requests.cpu | default "250m" }}
+          limits:
+            memory: {{ .Values.clairPostgres.resources.limits.memory | default "4Gi" }}
+            cpu: {{ .Values.clairPostgres.resources.limits.cpu | default "2" }}
   configBundleSecret: {{ .Values.name }}-config-bundle

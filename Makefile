@@ -7,7 +7,7 @@
 	install-gitops-instance install-gitops-instance-repos install-gitea-instance install-sovereign-cloud \
 	install-all-instances install-pipelines-bootstrap \
 	wait-openshift-gitops-csv wait-argocd-ready wait-csv-succeeded \
-	argocd-post-sync-waits verify-argocd-app-health sync-argocd-app sync-failing-apps fix-argocd-oom \
+	argocd-post-sync-waits verify-argocd-app-health sync-argocd-app sync-failing-apps fix-argocd-oom fix-registry-redirect setup-rh-registry-pull-secret \
 	apply-phase4-samples status-phase4 create-devuser \
 	vault-init vault-enable-kv vault-store-gitea-admin vault-store-github-token vault-store-keycloak-auth keycloak-config external-secrets-config fix-csv-operator-groups fix-gitea-scc gitea-setup-entity-credentials \
 	install-odf-operator install-odf-noobaa install-quay-instance \
@@ -24,7 +24,30 @@
 	validate-helm verify-pipelines-bootstrap rebuild-all \
 	enable-dynamic-plugins install-dynamic-plugins-config enable-sovereign-console-plugin \
 	trigger-build-console wait-console-build deploy-console \
-	fix-acs-consoleplugin debug-acs-consoleplugin regenerate-acs-init-bundle
+	fix-acs-consoleplugin debug-acs-consoleplugin regenerate-acs-init-bundle \
+	oci-login oci-push-all oci-push-bootstrap oci-push-operators oci-make-public \
+	uninstall-aap-operator uninstall-eso-operator uninstall-rhbk-operator \
+	uninstall-gitops-operator uninstall-quay-operator uninstall-openshift-pipelines-operator \
+	uninstall-odf-operator uninstall-odf-noobaa uninstall-quay-instance \
+	uninstall-rhacm-operator uninstall-rhacs-operator \
+	uninstall-rhacm-instance uninstall-rhacs-instance \
+	uninstall-rhacs-config uninstall-rhacm-config \
+	uninstall-sovereign-cloud uninstall-aap-instance uninstall-vault-instance \
+	uninstall-rhbk-instance uninstall-gitea-instance \
+	uninstall-vault-init uninstall-keycloak-config uninstall-external-secrets-config \
+	uninstall-service-oidc-config uninstall-dynamic-plugins-config \
+	uninstall-custom-operators-git-creds uninstall-custom-operators-pipelines \
+	uninstall-custom-operators-applicationset \
+	install-entity-operator uninstall-entity-operator \
+	install-cloudaws-operator uninstall-cloudaws-operator \
+	install-cloudoso-operator uninstall-cloudoso-operator \
+	install-platformopenshift-operator uninstall-platformopenshift-operator \
+	install-team-operator uninstall-team-operator \
+	install-projects-operator uninstall-projects-operator \
+	install-assignment-operator uninstall-assignment-operator \
+	install-plugin-rbac uninstall-plugin-rbac \
+	install-sovereign-cloud-console uninstall-sovereign-cloud-console \
+	wait-argoapp sync-wait-argoapp teardown-all-argocd-apps
 
 SHELL := /bin/bash
 
@@ -48,6 +71,20 @@ GITHUB_URL ?=
 GITHUB_TOKEN ?=
 GITHUB_REVISION ?= main
 export GITHUB_REVISION
+
+# ---------------------------------------------------------------------------
+# OCI Registry (Phase 1)
+# OCI_REGISTRY_TOKEN loaded from ~/.bashrc (export OCI_REGISTRY_TOKEN=...)
+# OCI_REGISTRY_HOST  — quay.io (no scheme, no trailing slash)
+# OCI_ORG            — quay.io organisation name
+# OCI_HELM_REGISTRY  — oci:// prefix used by helm push / ArgoCD Application source
+# CHART_VERSION      — version used when packaging and referencing charts
+# ---------------------------------------------------------------------------
+OCI_REGISTRY_HOST  ?= quay.io
+OCI_ORG            ?= sovereignhybrid
+OCI_HELM_REGISTRY  ?= oci://$(OCI_REGISTRY_HOST)/$(OCI_ORG)
+CHART_VERSION      ?= 0.1.0
+SCRIPTS_DIR        := scripts
 
 # Directories
 DESIGN_DIR    := design
@@ -169,11 +206,7 @@ enable-dynamic-plugins: ## Enable all dynamic console plugins (idempotent patch 
 	@echo "==> Current enabled plugins:"
 	@oc get consoles.operator.openshift.io cluster -o jsonpath='{.spec.plugins}' 2>/dev/null; echo ""
 
-install-dynamic-plugins-config: ## Deploy dynamic-plugins-config Helm chart directly
-	@APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}' 2>/dev/null); \
-	helm upgrade --install $(HELM_INSECURE) dynamic-plugins-config charts/config/dynamic-plugins-config \
-	  -n sovereign-cloud --create-namespace \
-	  --wait
+install-dynamic-plugins-config: ## Deploy dynamic-plugins-config via ArgoCD Application (OCI helm) — see GitOps Applications section
 
 enable-sovereign-console-plugin: ## Enable the sovereign-cloud-plugin in consoles.operator.openshift.io cluster
 	@echo "==> Adding sovereign-cloud-plugin to enabled plugins..."
@@ -182,46 +215,7 @@ enable-sovereign-console-plugin: ## Enable the sovereign-cloud-plugin in console
 	echo "Patching with plugins: $$MERGED"; \
 	oc patch consoles.operator.openshift.io cluster --type=merge -p "{\"spec\":{\"plugins\":$$MERGED}}"
 
-##@ Console Plugin Build
-
-trigger-build-console: ## Trigger OpenShift Pipeline build for sovereign-cloud-console
-	@echo "==> Triggering console plugin build pipeline..."
-	@printf '%s\n' \
-	  'apiVersion: tekton.dev/v1' \
-	  'kind: PipelineRun' \
-	  'metadata:' \
-	  '  generateName: console-build-' \
-	  '  namespace: sovereign-cloud' \
-	  'spec:' \
-	  '  pipelineRef:' \
-	  '    name: nodejs-console-build' \
-	  '  params:' \
-	  '    - name: git-url' \
-	  '      value: https://github.com/hybrid-sovereign-cloud/console.git' \
-	  '    - name: git-revision' \
-	  '      value: main' \
-	  '    - name: image-name' \
-	  '      value: sovereign-cloud-console' \
-	  '    - name: image-tag' \
-	  '      value: latest' \
-	  '  workspaces:' \
-	  '    - name: source' \
-	  '      persistentVolumeClaim:' \
-	  '        claimName: ansible-operator-build-workspace' \
-	  '    - name: git-credentials' \
-	  '      secret:' \
-	  '        secretName: github-basic-auth' \
-	| oc create -f -
-	@echo "==> Console PipelineRun created. Monitor with: oc get pipelinerun -n sovereign-cloud"
-
-wait-console-build: ## Wait for console plugin PipelineRun to succeed
-	@echo "==> Waiting for latest console-build PipelineRun..."
-	@PR=$$(oc get pipelinerun -n sovereign-cloud --no-headers -l tekton.dev/pipeline=nodejs-console-build 2>/dev/null | sort -k5 -r | head -1 | awk '{print $$1}'); \
-	if [ -z "$$PR" ]; then echo "No PipelineRun found"; exit 1; fi; \
-	echo "Watching PipelineRun: $$PR"; \
-	oc wait pipelinerun/$$PR -n sovereign-cloud --for=condition=Succeeded --timeout=600s
-
-deploy-console: trigger-build-console wait-console-build enable-sovereign-console-plugin ## Build console, wait, then enable plugin
+deploy-console: trigger-build-console wait-build-console install-sovereign-cloud-console ## Build console, wait, then deploy via ArgoCD
 
 ##@ Cluster Access
 login: ## Login to OpenShift (uses OCP_*; loads ./.env if present)
@@ -268,34 +262,26 @@ validate-helm: ## Helm-template all charts to catch YAML/chart errors
 	done; \
 	echo "All charts rendered OK."
 
-##@ Operators (OLM Subscriptions)
-install-aap-operator: ## Install AAP operator (namespace-scoped)
-	helm upgrade --install $(HELM_INSECURE) aap-operator $(AAP_OP_CHART) \
-		--namespace ansible-automation-platform --create-namespace
+##@ Operators (Phase 2 — defined in GitOps Applications section below)
+# install-gitops-operator is kept here as Phase 1 direct OCI install (bootstraps ArgoCD)
+# All other operator installs are Phase 2 ArgoCD Applications defined further below.
 
-install-eso-operator: ## Install External Secrets operator (namespace-scoped)
-	helm upgrade --install $(HELM_INSECURE) eso-operator $(ESO_OP_CHART) \
-		--namespace external-secrets-operator --create-namespace
-
-install-rhbk-operator: ## Install RHBK operator (namespace-scoped)
-	helm upgrade --install $(HELM_INSECURE) rhbk-operator $(RHBK_OP_CHART) \
-		--namespace rhbk --create-namespace
-
-install-gitops-operator: ## Install OpenShift GitOps operator (cluster-scoped OperatorGroup)
-	helm upgrade --install $(HELM_INSECURE) gitops-operator $(GITOPS_OP_CHART) \
+install-gitops-operator: ## Install OpenShift GitOps operator from OCI registry (Phase 1 direct install)
+	@$(SOURCE_BASHRC); \
+	helm upgrade --install $(HELM_INSECURE) gitops-operator \
+		$(OCI_HELM_REGISTRY)/gitops-operator \
+		--version $(CHART_VERSION) \
 		--namespace openshift-gitops --create-namespace
 
-install-quay-operator: ## Install Quay operator (namespace-scoped)
-	helm upgrade --install $(HELM_INSECURE) quay-operator $(QUAY_OP_CHART) \
-		--namespace quay --create-namespace
+uninstall-gitops-operator: ## Uninstall GitOps operator helm release
+	@$(SOURCE_BASHRC); \
+	helm uninstall gitops-operator -n openshift-gitops --ignore-not-found 2>/dev/null || true; \
+	oc delete subscription openshift-gitops-operator -n openshift-operators --ignore-not-found 2>/dev/null || true; \
+	oc delete csv -n openshift-gitops -l operators.coreos.com/openshift-gitops-operator.openshift-gitops --ignore-not-found 2>/dev/null || true
 
-install-openshift-pipelines-operator: ## Install Red Hat OpenShift Pipelines (subscription in openshift-operators)
-	helm upgrade --install $(HELM_INSECURE) openshift-pipelines-operator $(PIPELINES_OP_CHART) \
-		--namespace openshift-operators
+install-all-operators: install-aap-operator install-eso-operator install-rhbk-operator install-quay-operator install-openshift-pipelines-operator ## Install core operators via ArgoCD Applications (OCI helm)
 
-install-all-operators: install-aap-operator install-eso-operator install-rhbk-operator install-gitops-operator install-quay-operator install-openshift-pipelines-operator ## Install core operators (no ODF)
-
-install-all-operators-with-storage: install-all-operators install-odf-operator ## Core operators plus ODF
+install-all-operators-with-storage: install-all-operators install-odf-operator ## All operators plus ODF
 
 approve-rhbk-installplan: ## Legacy: approve RHBK InstallPlan only if still Manual (chart uses Automatic by default)
 	@ip=$$(oc get installplan -n rhbk -o jsonpath='{.items[?(@.spec.approved==false)].metadata.name}' 2>/dev/null); \
@@ -343,6 +329,23 @@ sync-argocd-app: ## Force ArgoCD hard-sync for APP= (replace=false by default; s
 	  sleep 10; \
 	done; echo "WARNING: $(APP) did not reach Synced+Healthy in 5m"
 
+setup-rh-registry-pull-secret: ## Copy global Red Hat Registry pull secret to sovereign-cloud namespace for pipeline builds
+	@$(SOURCE_BASHRC); \
+	echo "==> Copying global pull secret to sovereign-cloud namespace..."; \
+	DOCKER_CFG=$$(oc get secret pull-secret -n openshift-config -o jsonpath='{.data.\.dockerconfigjson}'); \
+	echo "{\"apiVersion\":\"v1\",\"kind\":\"Secret\",\"metadata\":{\"name\":\"rh-registry-pull-secret\",\"namespace\":\"sovereign-cloud\"},\"type\":\"kubernetes.io/dockerconfigjson\",\"data\":{\".dockerconfigjson\":\"$$DOCKER_CFG\"}}" | oc apply -f -; \
+	oc secrets link pipeline rh-registry-pull-secret -n sovereign-cloud 2>/dev/null || true; \
+	oc secrets link pipeline rh-registry-pull-secret --for=pull -n sovereign-cloud 2>/dev/null || true; \
+	echo "==> Red Hat Registry pull secret configured for pipeline SA"
+
+fix-registry-redirect: ## Disable internal image registry blob redirect (fixes 403 from Swift storage backend)
+	@$(SOURCE_BASHRC); \
+	echo "==> Disabling image registry blob redirect (Swift 403 workaround)..."; \
+	oc patch configs.imageregistry.operator.openshift.io/cluster --type=merge \
+	  -p '{"spec":{"disableRedirect":true,"defaultRoute":true}}'; \
+	echo "==> Waiting for registry rollout..."; \
+	oc rollout status deployment/image-registry -n openshift-image-registry --timeout=120s
+
 fix-argocd-oom: ## Increase ArgoCD application-controller memory to 6Gi (fixes OOMKill with many large operators)
 	@echo "==> Patching ArgoCD CR controller.resources to 6Gi..."
 	@oc patch argocd openshift-gitops -n openshift-gitops --type=merge \
@@ -386,60 +389,34 @@ argocd-post-sync-waits: ## Wait for vault-init, keycloak-config, external-secret
 	  echo "$$app: Healthy"; \
 	done
 
-##@ Instances (Operand CRs / Workloads)
-install-sovereign-cloud: ## Create sovereign-cloud foundation namespace
-	helm upgrade --install $(HELM_INSECURE) sovereign-cloud $(SC_CHART) \
-		--namespace sovereign-cloud --create-namespace
+##@ Instances (Phase 2 — defined in GitOps Applications section below)
+# install-gitops-instance is kept here as Phase 1 direct OCI install (bootstraps ArgoCD)
+# All other instance installs are Phase 2 ArgoCD Applications defined further below.
 
-install-aap-instance: ## Install AAP instance in aap namespace
-	helm upgrade --install $(HELM_INSECURE) aap-instance $(AAP_INST_CHART) \
-		--namespace aap --create-namespace
-
-install-vault-instance: ## Install Vault in vault namespace
-	helm upgrade --install $(HELM_INSECURE) vault-instance $(VAULT_INST_CHART) \
-		--namespace vault --create-namespace
-
-install-rhbk-instance: ## Install Keycloak instance in rhbk namespace
-	@APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}'); \
-	helm upgrade --install $(HELM_INSECURE) rhbk-instance $(RHBK_INST_CHART) \
-		--namespace rhbk --create-namespace \
-		--set "hostname=keycloak-rhbk.$$APPS_DOMAIN"
-
-install-gitops-instance: ## Apply gitops-instance chart (ArgoCD CR + repo secret). Reads GITHUB_URL/GITHUB_TOKEN from env/.env if set.
+install-gitops-instance: ## Apply gitops-instance chart from OCI (Phase 1 — direct install, sets up ArgoCD + OCI creds)
 	@set -euo pipefail; \
+	$(SOURCE_BASHRC); \
 	set -a; [ -f .env ] && . ./.env || true; set +a; \
 	APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}' 2>/dev/null || echo ""); \
-	helm upgrade --install $(HELM_INSECURE) gitops-instance $(GITOPS_INST_CHART) \
+	helm upgrade --install $(HELM_INSECURE) gitops-instance \
+		$(OCI_HELM_REGISTRY)/gitops-instance \
+		--version $(CHART_VERSION) \
 		--namespace openshift-gitops --create-namespace \
 		$${APPS_DOMAIN:+--set argocd.appsDomain="$$APPS_DOMAIN"} \
 		$${GITHUB_URL:+--set-string github.repositoryUrl="$$GITHUB_URL"} \
 		$${GITHUB_TOKEN:+--set-string github.token="$$GITHUB_TOKEN"} \
 		$${GITHUB_URL:+--set-string github.insecure="true"} \
-		$${GITHUB_URL:+--set-string github.username="git"}
+		$${GITHUB_URL:+--set-string github.username="git"} \
+		$${OCI_REGISTRY_TOKEN:+--set-string ociRegistry.token="$$OCI_REGISTRY_TOKEN"}
 
-install-gitops-instance-repos: ## Configure Argo CD repository secret (requires GITHUB_URL and GITHUB_TOKEN)
+install-gitops-instance-repos: ## Configure Argo CD repository secret via OCI gitops-instance chart (Phase 1)
 	@set -euo pipefail; \
 	$(SOURCE_BASHRC); \
 	set -a; [ -f .env ] && . ./.env; set +a; \
 	test -n "$${GITHUB_URL:-}" && test -n "$${GITHUB_TOKEN:-}" || { echo "Set GITHUB_URL and GITHUB_TOKEN (e.g. in .env)."; exit 1; }; \
 	$(MAKE) install-gitops-instance
 
-install-gitea-instance: ## Install Gitea in gitea namespace (DOMAIN/ROOT_URL from cluster ingress domain)
-	@APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}'); \
-	test -n "$$APPS_DOMAIN" || { echo "Could not read cluster apps domain."; exit 1; }; \
-	helm upgrade --install $(HELM_INSECURE) gitea-instance $(GITEA_INST_CHART) \
-		--namespace gitea --create-namespace \
-		--set-string gitea.gitea.config.server.DOMAIN=gitea.$$APPS_DOMAIN \
-		--set-string gitea.gitea.config.server.ROOT_URL=https://gitea.$$APPS_DOMAIN \
-		--set gitea.route.enabled=true \
-		--set-string gitea.route.host=gitea.$$APPS_DOMAIN \
-		--set-string gitea.route.tls.termination=edge
-
-install-pipelines-bootstrap: ## Install ImageStream + sample Tekton pipeline in sovereign-cloud (requires OpenShift Pipelines)
-	helm upgrade --install $(HELM_INSECURE) pipelines-bootstrap $(PIPELINES_BOOT_CHART) \
-		--namespace sovereign-cloud --create-namespace
-
-install-all-instances: install-sovereign-cloud install-aap-instance install-vault-instance install-rhbk-instance ## Install core instances (add pipelines-bootstrap after operators)
+install-all-instances: install-sovereign-cloud install-aap-instance install-vault-instance install-rhbk-instance ## Install core instances via ArgoCD Applications (OCI helm)
 
 ##@ Configuration
 vault-init: ## Initialize Vault, create unseal secret, central KV
@@ -530,42 +507,8 @@ external-secrets-config: ## Configure ExternalSecrets + SecretStore
 		--namespace sovereign-cloud | \
 		oc apply -f - 2>&1 | grep -v 'unchanged\|configured' || true
 
-##@ ODF & Quay
-install-odf-operator: ## Install ODF operator (object storage only)
-	helm upgrade --install $(HELM_INSECURE) odf-operator $(ODF_OP_CHART) \
-		--namespace openshift-storage --create-namespace
-
-install-odf-noobaa: ## Install NooBaa for S3-compatible object storage
-	helm upgrade --install $(HELM_INSECURE) odf-noobaa $(CHARTS_DIR)/instances/odf-noobaa \
-		--namespace openshift-storage
-
-install-quay-instance: ## Install Quay registry
-	helm upgrade --install $(HELM_INSECURE) quay-instance $(QUAY_INST_CHART) \
-		--namespace quay --create-namespace
-
-install-rhacm-operator: ## Install RHACM OLM subscription (open-cluster-management ns)
-	helm upgrade --install $(HELM_INSECURE) rhacm-operator $(RHACM_OP_CHART) \
-		--namespace open-cluster-management --create-namespace
-
-install-rhacs-operator: ## Install RHACS OLM subscription (rhacs-operator ns)
-	helm upgrade --install $(HELM_INSECURE) rhacs-operator $(RHACS_OP_CHART) \
-		--namespace rhacs-operator --create-namespace
-
-install-rhacm-instance: ## Install RHACM MultiClusterHub
-	helm upgrade --install $(HELM_INSECURE) rhacm-instance $(RHACM_INST_CHART) \
-		--namespace open-cluster-management --create-namespace
-
-install-rhacs-instance: ## Install RHACS Central + SecuredCluster
-	helm upgrade --install $(HELM_INSECURE) rhacs-instance $(RHACS_INST_CHART) \
-		--namespace stackrox --create-namespace
-
-install-rhacs-config: ## Run RHACS post-install config (init-bundle, Vault secret storage)
-	helm upgrade --install $(HELM_INSECURE) rhacs-config $(RHACS_CONFIG_CHART) \
-		--namespace stackrox
-
-install-rhacm-config: ## Run RHACM post-install config (ManagedClusterSet)
-	helm upgrade --install $(HELM_INSECURE) rhacm-config $(RHACM_CONFIG_CHART) \
-		--namespace open-cluster-management
+##@ ODF, Quay, RHACM, RHACS (Phase 2 — defined in GitOps Applications section below)
+# All installs are Phase 2 ArgoCD Applications referencing OCI Helm charts.
 
 wait-rhacm-ready: ## Wait for MultiClusterHub to reach Running phase
 	@set -e; n=0; \
@@ -587,45 +530,12 @@ wait-rhacs-ready: ## Wait for ACS Central to be deployed
 verify-pipelines-bootstrap: ## Show Pipeline + ImageStream (requires login); start runs from console/tkn
 	oc get pipeline,imagestream -n sovereign-cloud
 
-##@ Uninstall
-uninstall-pipelines-bootstrap: ## Remove pipelines-bootstrap Helm release
-	-helm uninstall pipelines-bootstrap -n sovereign-cloud
+##@ Uninstall (Phase 2 — defined in GitOps Applications section below)
+# All uninstall-* and teardown-* targets are defined in the GitOps Applications section.
 
-uninstall-all-instances: ## Uninstall all instance/config releases (reverse dependency order)
-	-helm uninstall rhacs-config -n stackrox
-	-helm uninstall rhacm-config -n open-cluster-management
-	-helm uninstall service-oidc-config -n sovereign-cloud
-	-helm uninstall external-secrets-config -n sovereign-cloud
-	-helm uninstall vault-init -n vault
-	-helm uninstall keycloak-config -n rhbk
-	-helm uninstall eso-config -n sovereign-cloud
-	-helm uninstall pipelines-bootstrap -n sovereign-cloud
-	-helm uninstall odf-noobaa -n openshift-storage
-	-helm uninstall quay-instance -n quay
-	-helm uninstall rhacs-instance -n stackrox
-	-helm uninstall rhacm-instance -n open-cluster-management
-	-helm uninstall gitea-instance -n gitea
-	-helm uninstall rhbk-instance -n rhbk
-	-helm uninstall vault-instance -n vault
-	-helm uninstall aap-instance -n aap
-	-helm uninstall gitops-instance -n openshift-gitops
-	-helm uninstall sovereign-cloud -n sovereign-cloud
-
-uninstall-all-operators: ## Uninstall all operator Helm releases
-	-helm uninstall rhacs-operator -n rhacs-operator
-	-helm uninstall rhacm-operator -n open-cluster-management
-	-helm uninstall openshift-pipelines-operator -n openshift-operators
-	-helm uninstall odf-operator -n openshift-storage
-	-helm uninstall quay-operator -n quay
-	-helm uninstall gitops-operator -n openshift-gitops
-	-helm uninstall rhbk-operator -n rhbk
-	-helm uninstall eso-operator -n external-secrets-operator
-	-helm uninstall aap-operator -n ansible-automation-platform
-
-teardown-bootstrap: uninstall-platform-applicationset uninstall-all-instances uninstall-all-operators ## Helm uninstall GitOps ApplicationSet, instances, operators
-
-uninstall-platform-applicationset: ## Remove ApplicationSet Helm release (Applications may remain until deleted)
+uninstall-platform-applicationset: ## Remove legacy ApplicationSet Helm release (if still present)
 	-helm uninstall platform-applicationset -n openshift-gitops
+	-oc delete applicationset.argoproj.io platform-gitops -n openshift-gitops --ignore-not-found
 
 delete-bootstrap-namespaces: ## Delete bootstrap namespaces (destructive; set CONFIRM_CLUSTER_RESET=1)
 	@if [ "$$CONFIRM_CLUSTER_RESET" != "1" ]; then \
@@ -662,33 +572,9 @@ delete-bootstrap-namespaces: ## Delete bootstrap namespaces (destructive; set CO
 	  fi; \
 	done
 
-##@ Custom Operators
-
-install-custom-operators-git-creds: ## Install ArgoCD org credential template for hybrid-sovereign-cloud GitHub org
-	@set -euo pipefail; \
-	$(SOURCE_BASHRC); \
-	set -a; [ -f .env ] && . ./.env; set +a; \
-	$(MAKE) login; \
-	test -n "$${GITHUB_TOKEN:-}" || { echo "GITHUB_TOKEN is required."; exit 1; }; \
-	helm upgrade --install $(HELM_INSECURE) custom-operators-git-creds $(CUSTOM_OPS_GIT_CREDS_CHART) \
-		--namespace openshift-gitops --create-namespace \
-		--set-string githubToken="$$GITHUB_TOKEN"
-
-install-custom-operators-pipelines: ## Install Tekton pipelines and ImageStreams for all 8 custom operators
-	@set -euo pipefail; \
-	$(SOURCE_BASHRC); \
-	set -a; [ -f .env ] && . ./.env; set +a; \
-	$(MAKE) login; \
-	helm upgrade --install $(HELM_INSECURE) custom-operators-pipelines $(CUSTOM_OPS_PIPELINES_CHART) \
-		--namespace sovereign-cloud --create-namespace
-
-install-custom-operators-applicationset: ## Install ArgoCD ApplicationSet for the 8 custom operators
-	@set -euo pipefail; \
-	$(SOURCE_BASHRC); \
-	set -a; [ -f .env ] && . ./.env; set +a; \
-	$(MAKE) login; \
-	helm upgrade --install $(HELM_INSECURE) custom-operators-applicationset $(CUSTOM_OPS_APPSET_CHART) \
-		--namespace openshift-gitops --create-namespace
+##@ Custom Operators (Phase 2 — defined in GitOps Applications section below)
+# install-custom-operators-git-creds, install-custom-operators-pipelines, and per-operator
+# targets are Phase 2 ArgoCD Applications defined further below.
 
 fix-gitea-scc: ## Grant anyuid SCC to Gitea default SA (needed for init-directories chmod)
 	@oc adm policy add-scc-to-user anyuid -z default -n gitea 2>&1 || true
@@ -730,7 +616,7 @@ gitea-setup-entity-credentials: ## Create Gitea org, repo, token for entity-oper
 	oc rollout restart deployment/entity-operator -n sovereign-cloud 2>/dev/null || true; \
 	echo "==> Gitea entity credentials configured"
 
-deploy-custom-operators: install-custom-operators-git-creds install-custom-operators-pipelines install-custom-operators-applicationset ## Deploy all custom operator prereqs + ApplicationSet
+deploy-custom-operators: install-custom-operators-git-creds install-custom-operators-pipelines ## Deploy git-creds + pipelines via ArgoCD Applications (OCI helm); see Phase 2 section
 
 trigger-build-all: ## Trigger Tekton PipelineRuns to build all 8 custom operator images
 	@set -euo pipefail; \
@@ -945,3 +831,805 @@ fix-acs-consoleplugin: ## Fix ACS consoleplugin backend to use central:443 (alig
 	    -p "{\"spec\":{\"backend\":{\"type\":\"Service\",\"service\":{\"name\":\"central\",\"namespace\":\"$$NS\",\"port\":443,\"basePath\":\"/static/ocp-plugin\"}}}}"; \
 	  echo "Patched."; \
 	fi
+
+# ===========================================================================
+##@ OCI Registry (Phase 1) — Package and push all Helm charts to quay.io
+# ===========================================================================
+
+oci-login: ## Login to OCI Helm registry (uses OCI_REGISTRY_TOKEN from ~/.bashrc)
+	@$(SOURCE_BASHRC); \
+	test -n "$${OCI_REGISTRY_TOKEN:-}" || { echo "ERROR: OCI_REGISTRY_TOKEN not set in ~/.bashrc"; exit 1; }; \
+	echo "==> Logging in to $(OCI_REGISTRY_HOST)..."; \
+	helm registry login $(OCI_REGISTRY_HOST) \
+		--username '$$oauthtoken' \
+		--password "$${OCI_REGISTRY_TOKEN}"; \
+	echo "==> Login successful"
+
+oci-push-bootstrap: oci-login ## Package and push all bootstrap charts to OCI registry (pre-creates repos as public)
+	@$(SOURCE_BASHRC); \
+	mkdir -p /tmp/helm-oci-push; \
+	echo "==> Pushing all bootstrap charts to $(OCI_HELM_REGISTRY)"; \
+	for chart in $$(find $(CHARTS_DIR) -name Chart.yaml -exec dirname {} \; | sort -u); do \
+		name=$$(grep '^name:' "$$chart/Chart.yaml" | awk '{print $$2}'); \
+		version=$$(grep '^version:' "$$chart/Chart.yaml" | awk '{print $$2}'); \
+		echo "--- Pre-creating public repo for $$name"; \
+		curl -sk -X POST "https://quay.io/api/v1/repository" \
+			-H "Authorization: Bearer $${OCI_REGISTRY_TOKEN}" \
+			-H "Content-Type: application/json" \
+			-d "{\"repository\":\"$${name}\",\"namespace\":\"$(OCI_ORG)\",\"description\":\"Helm chart: $${name}\",\"visibility\":\"public\",\"repo_kind\":\"image\"}" \
+			> /dev/null 2>&1 || true; \
+		echo "--- Packaging $$name v$$version from $$chart"; \
+		if grep -q '^dependencies:' "$$chart/Chart.yaml" 2>/dev/null; then \
+			helm dependency update "$$chart" 2>/dev/null || true; \
+		fi; \
+		helm package "$$chart" -d /tmp/helm-oci-push/ --version "$$version" 2>&1 | tail -1; \
+		echo "--- Pushing $$name:$$version"; \
+		helm push "/tmp/helm-oci-push/$${name}-$${version}.tgz" $(OCI_HELM_REGISTRY) 2>&1 | tail -2; \
+	done; \
+	echo "==> All bootstrap charts pushed to $(OCI_HELM_REGISTRY)"
+
+oci-push-operators: oci-login ## Package and push all operator repo charts to OCI registry (pre-creates repos as public)
+	@$(SOURCE_BASHRC); \
+	mkdir -p /tmp/helm-oci-push; \
+	OPERATOR_REPOS="Assignment CloudAWS CloudOSO PlatformOpenshift plugin_rbac Projects sovereign_tenancy Team console"; \
+	WORKSPACE=$$(dirname $$(pwd)); \
+	echo "==> Pushing operator charts from: $$OPERATOR_REPOS"; \
+	for repo in $$OPERATOR_REPOS; do \
+		REPO_DIR="$$WORKSPACE/$$repo"; \
+		[ -d "$$REPO_DIR/helm" ] || { echo "SKIP $$repo: no helm/ dir"; continue; }; \
+		for chart in $$(find "$$REPO_DIR/helm" -name Chart.yaml -exec dirname {} \; | sort -u); do \
+			name=$$(grep '^name:' "$$chart/Chart.yaml" | awk '{print $$2}'); \
+			version=$$(grep '^version:' "$$chart/Chart.yaml" | awk '{print $$2}'); \
+			echo "--- Pre-creating public repo for $$name"; \
+			curl -sk -X POST "https://quay.io/api/v1/repository" \
+				-H "Authorization: Bearer $${OCI_REGISTRY_TOKEN}" \
+				-H "Content-Type: application/json" \
+				-d "{\"repository\":\"$${name}\",\"namespace\":\"$(OCI_ORG)\",\"description\":\"Helm chart: $${name}\",\"visibility\":\"public\",\"repo_kind\":\"image\"}" \
+				> /dev/null 2>&1 || true; \
+			echo "--- Packaging $$name v$$version from $$chart"; \
+			if grep -q '^dependencies:' "$$chart/Chart.yaml" 2>/dev/null; then \
+				helm dependency update "$$chart" 2>/dev/null || true; \
+			fi; \
+			helm package "$$chart" -d /tmp/helm-oci-push/ --version "$$version" 2>&1 | tail -1; \
+			echo "--- Pushing $$name:$$version"; \
+			helm push "/tmp/helm-oci-push/$${name}-$${version}.tgz" $(OCI_HELM_REGISTRY) 2>&1 | tail -2; \
+		done; \
+	done; \
+	echo "==> All operator charts pushed to $(OCI_HELM_REGISTRY)"
+
+oci-push-all: oci-push-bootstrap oci-push-operators ## Push ALL charts (bootstrap + all operator repos) to OCI registry
+	@echo "==> All charts pushed to $(OCI_HELM_REGISTRY)"
+
+oci-make-public: ## Ensure all known charts are public in Quay (idempotent)
+	@$(SOURCE_BASHRC); \
+	test -n "$${OCI_REGISTRY_TOKEN:-}" || { echo "ERROR: OCI_REGISTRY_TOKEN not set"; exit 1; }; \
+	for name in \
+		aap-operator external-secrets-operator gitops-operator odf-operator \
+		openshift-pipelines-operator quay-operator rhacm-operator rhacs-operator rhbk-operator \
+		aap-instance custom-operators-git-creds custom-operators-pipelines gitea-instance \
+		gitops-instance odf-noobaa pipelines-bootstrap quay-instance rhacm-instance \
+		rhacs-instance rhbk-instance sovereign-cloud vault-instance \
+		argocd-init-job custom-operators-applicationset platform-applicationset \
+		dynamic-plugins-config external-secrets-config keycloak-config rhacm-config \
+		rhacs-config service-oidc-config vault-init \
+		assignment-operator assignment-operator-imagestreams assignment-operator-samples \
+		cloudaws-operator cloudaws-operator-imagestreams cloudaws-operator-samples \
+		cloudoso-operator cloudoso-operator-imagestreams cloudoso-operator-samples \
+		platformopenshift-operator platformopenshift-operator-imagestreams platformopenshift-operator-samples \
+		rbac-plugin-operator rbac-plugin-imagestream \
+		projects-operator projects-operator-imagestreams projects-operator-samples \
+		entity-operator entity-operator-imagestreams entity-operator-samples \
+		team-operator team-operator-imagestreams team-operator-samples \
+		sovereign-cloud-plugin sovereign-cloud-image; do \
+		STATUS=$$(curl -sk -o /dev/null -w "%{http_code}" -X POST \
+			"https://quay.io/api/v1/repository/$(OCI_ORG)/$${name}/changevisibility" \
+			-H "Authorization: Bearer $${OCI_REGISTRY_TOKEN}" \
+			-H "Content-Type: application/json" \
+			-d '{"visibility":"public"}'); \
+		echo "  $$name → HTTP $$STATUS"; \
+	done
+
+# ===========================================================================
+##@ GitOps Applications (Phase 2) — ArgoCD Applications using OCI Helm charts
+# All install-* targets deploy an ArgoCD Application pointing to the OCI chart.
+# All uninstall-* targets delete the Application (and prune its resources).
+# ===========================================================================
+
+# Internal helper — wait for an ArgoCD Application to become Synced+Healthy
+wait-argoapp: ## Wait for ArgoCD Application APP= to become Synced+Healthy (up to 10m)
+	@test -n "$(APP)" || { echo "Usage: make wait-argoapp APP=<name>"; exit 1; }; \
+	echo "==> Waiting for Application $(APP) Synced+Healthy (up to 10m)..."; \
+	for i in $$(seq 1 60); do \
+	  SYNC=$$(oc get application.argoproj.io "$(APP)" -n openshift-gitops \
+	    -o jsonpath='{.status.sync.status}' 2>/dev/null || echo ""); \
+	  HEALTH=$$(oc get application.argoproj.io "$(APP)" -n openshift-gitops \
+	    -o jsonpath='{.status.health.status}' 2>/dev/null || echo ""); \
+	  echo "  [$$i/60] $(APP): sync=$$SYNC health=$$HEALTH"; \
+	  [ "$$SYNC" = "Synced" ] && [ "$$HEALTH" = "Healthy" ] && \
+	    { echo "==> $(APP): Synced+Healthy"; exit 0; }; \
+	  sleep 10; \
+	done; \
+	echo "WARNING: $(APP) did not reach Synced+Healthy in 10m"
+
+sync-wait-argoapp: ## Force sync APP= and wait for Synced+Healthy
+	@test -n "$(APP)" || { echo "Usage: make sync-wait-argoapp APP=<name>"; exit 1; }; \
+	$(MAKE) sync-argocd-app APP=$(APP); \
+	$(MAKE) wait-argoapp APP=$(APP)
+
+teardown-all-argocd-apps: ## Delete ALL sovereign ArgoCD Applications (preserves gitops operator)
+	@echo "==> Deleting all sovereign ArgoCD Applications..."; \
+	oc get application.argoproj.io -n openshift-gitops \
+	  -l app.kubernetes.io/managed-by=sovereign-bootstrap \
+	  -o name 2>/dev/null | xargs -r oc delete -n openshift-gitops --ignore-not-found; \
+	echo "==> Done"
+
+##@ Operators (Phase 2 — ArgoCD Application + OCI Helm)
+
+install-aap-operator: ## Deploy AAP operator via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh aap-operator aap-operator ansible-automation-platform 10; \
+	$(MAKE) sync-wait-argoapp APP=aap-operator
+
+uninstall-aap-operator: ## Delete AAP operator ArgoCD Application (prunes OLM resources)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io aap-operator -n openshift-gitops --ignore-not-found; \
+	echo "==> aap-operator Application deleted"
+
+install-eso-operator: ## Deploy External Secrets operator via ArgoCD Application (OCI helm v0.1.1)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	CHART_VERSION=0.1.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh eso-operator external-secrets-operator external-secrets-operator 20; \
+	$(MAKE) sync-wait-argoapp APP=eso-operator
+
+uninstall-eso-operator: ## Delete External Secrets operator ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io eso-operator -n openshift-gitops --ignore-not-found; \
+	echo "==> eso-operator Application deleted"
+
+install-odf-operator: ## Deploy ODF operator via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh odf-operator odf-operator openshift-storage 30; \
+	$(MAKE) sync-wait-argoapp APP=odf-operator
+
+uninstall-odf-operator: ## Delete ODF operator ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io odf-operator -n openshift-gitops --ignore-not-found; \
+	echo "==> odf-operator Application deleted"
+
+install-openshift-pipelines-operator: ## Deploy OpenShift Pipelines operator via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh openshift-pipelines-operator openshift-pipelines-operator openshift-operators 40; \
+	$(MAKE) sync-wait-argoapp APP=openshift-pipelines-operator
+
+uninstall-openshift-pipelines-operator: ## Delete OpenShift Pipelines operator ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io openshift-pipelines-operator -n openshift-gitops --ignore-not-found; \
+	echo "==> openshift-pipelines-operator Application deleted"
+
+install-quay-operator: ## Deploy Quay operator via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh quay-operator quay-operator quay 50; \
+	$(MAKE) sync-wait-argoapp APP=quay-operator
+
+uninstall-quay-operator: ## Delete Quay operator ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io quay-operator -n openshift-gitops --ignore-not-found; \
+	echo "==> quay-operator Application deleted"
+
+install-rhbk-operator: ## Deploy RHBK operator via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh rhbk-operator rhbk-operator rhbk 60; \
+	$(MAKE) sync-wait-argoapp APP=rhbk-operator
+
+uninstall-rhbk-operator: ## Delete RHBK operator ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io rhbk-operator -n openshift-gitops --ignore-not-found; \
+	echo "==> rhbk-operator Application deleted"
+
+install-rhacm-operator: ## Deploy RHACM operator via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh rhacm-operator rhacm-operator open-cluster-management 65; \
+	$(MAKE) sync-wait-argoapp APP=rhacm-operator
+
+uninstall-rhacm-operator: ## Delete RHACM operator ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io rhacm-operator -n openshift-gitops --ignore-not-found; \
+	echo "==> rhacm-operator Application deleted"
+
+install-rhacs-operator: ## Deploy RHACS operator via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh rhacs-operator rhacs-operator rhacs-operator 70; \
+	$(MAKE) sync-wait-argoapp APP=rhacs-operator
+
+uninstall-rhacs-operator: ## Delete RHACS operator ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io rhacs-operator -n openshift-gitops --ignore-not-found; \
+	echo "==> rhacs-operator Application deleted"
+
+install-all-operators: ## Deploy all core operators via ArgoCD Applications (OCI helm)
+	@$(MAKE) install-aap-operator
+	@$(MAKE) install-eso-operator
+	@$(MAKE) install-rhbk-operator
+	@$(MAKE) install-quay-operator
+	@$(MAKE) install-openshift-pipelines-operator
+
+install-all-operators-with-storage: install-all-operators install-odf-operator ## All operators plus ODF
+
+##@ Instances (Phase 2 — ArgoCD Application + OCI Helm)
+
+install-sovereign-cloud: ## Deploy sovereign-cloud namespace/config via ArgoCD Application (OCI helm v0.1.1)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	CHART_VERSION=0.1.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh sovereign-cloud sovereign-cloud sovereign-cloud 100; \
+	$(MAKE) sync-wait-argoapp APP=sovereign-cloud
+
+uninstall-sovereign-cloud: ## Delete sovereign-cloud ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io sovereign-cloud -n openshift-gitops --ignore-not-found; \
+	echo "==> sovereign-cloud Application deleted"
+
+install-vault-instance: ## Deploy Vault instance via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh vault-instance vault-instance vault 110; \
+	$(MAKE) sync-wait-argoapp APP=vault-instance
+
+uninstall-vault-instance: ## Delete Vault instance ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io vault-instance -n openshift-gitops --ignore-not-found; \
+	echo "==> vault-instance Application deleted"
+
+install-rhbk-instance: ## Deploy RHBK/Keycloak instance via ArgoCD Application (OCI helm, sets hostname)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}'); \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh rhbk-instance rhbk-instance rhbk 120 \
+		"hostname=keycloak-rhbk.$$APPS_DOMAIN"; \
+	$(MAKE) sync-wait-argoapp APP=rhbk-instance
+
+uninstall-rhbk-instance: ## Delete RHBK instance ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io rhbk-instance -n openshift-gitops --ignore-not-found; \
+	echo "==> rhbk-instance Application deleted"
+
+install-gitea-instance: ## Deploy Gitea instance via ArgoCD Application (OCI helm, sets domain/route)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}'); \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh gitea-instance gitea-instance gitea 125 \
+		"gitea.gitea.config.server.DOMAIN=gitea.$$APPS_DOMAIN" \
+		"gitea.gitea.config.server.ROOT_URL=https://gitea.$$APPS_DOMAIN" \
+		"gitea.route.enabled=true" \
+		"gitea.route.host=gitea.$$APPS_DOMAIN" \
+		"gitea.route.tls.termination=edge"; \
+	$(MAKE) sync-wait-argoapp APP=gitea-instance
+
+uninstall-gitea-instance: ## Delete Gitea instance ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io gitea-instance -n openshift-gitops --ignore-not-found; \
+	echo "==> gitea-instance Application deleted"
+
+install-odf-noobaa: ## Deploy ODF NooBaa instance via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	CHART_VERSION=0.1.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh odf-noobaa odf-noobaa openshift-storage 130; \
+	$(MAKE) sync-wait-argoapp APP=odf-noobaa
+
+uninstall-odf-noobaa: ## Delete ODF NooBaa ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io odf-noobaa -n openshift-gitops --ignore-not-found; \
+	echo "==> odf-noobaa Application deleted"
+
+install-pipelines-bootstrap: ## Deploy Pipelines bootstrap (ImageStreams + Pipeline) via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh pipelines-bootstrap pipelines-bootstrap sovereign-cloud 135; \
+	$(MAKE) sync-wait-argoapp APP=pipelines-bootstrap
+
+uninstall-pipelines-bootstrap: ## Delete pipelines-bootstrap ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io pipelines-bootstrap -n openshift-gitops --ignore-not-found; \
+	echo "==> pipelines-bootstrap Application deleted"
+
+install-quay-instance: ## Deploy Quay registry instance via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	CHART_VERSION=0.1.2 bash $(SCRIPTS_DIR)/apply-argoapp.sh quay-instance quay-instance quay 140; \
+	$(MAKE) sync-wait-argoapp APP=quay-instance
+
+uninstall-quay-instance: ## Delete Quay instance ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io quay-instance -n openshift-gitops --ignore-not-found; \
+	echo "==> quay-instance Application deleted"
+
+install-rhacm-instance: ## Deploy RHACM MultiClusterHub via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh rhacm-instance rhacm-instance open-cluster-management 150; \
+	$(MAKE) sync-wait-argoapp APP=rhacm-instance
+
+uninstall-rhacm-instance: ## Delete RHACM instance ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io rhacm-instance -n openshift-gitops --ignore-not-found; \
+	echo "==> rhacm-instance Application deleted"
+
+install-rhacs-instance: ## Deploy RHACS Central+SecuredCluster via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh rhacs-instance rhacs-instance stackrox 155; \
+	$(MAKE) sync-wait-argoapp APP=rhacs-instance
+
+uninstall-rhacs-instance: ## Delete RHACS instance ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io rhacs-instance -n openshift-gitops --ignore-not-found; \
+	echo "==> rhacs-instance Application deleted"
+
+install-all-instances: ## Deploy all core instances via ArgoCD Applications (OCI helm)
+	@$(MAKE) install-sovereign-cloud
+	@$(MAKE) install-aap-instance
+	@$(MAKE) install-vault-instance
+	@$(MAKE) install-rhbk-instance
+
+##@ Config (Phase 2 — ArgoCD Application + OCI Helm)
+
+install-vault-init: ## Deploy vault-init config job via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh vault-init vault-init vault 200; \
+	$(MAKE) sync-wait-argoapp APP=vault-init
+
+uninstall-vault-init: ## Delete vault-init ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io vault-init -n openshift-gitops --ignore-not-found; \
+	echo "==> vault-init Application deleted"
+
+install-keycloak-config: ## Deploy keycloak-config job via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}'); \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh keycloak-config keycloak-config rhbk 210 \
+		"keycloakUrl=https://keycloak-rhbk.$$APPS_DOMAIN"; \
+	$(MAKE) sync-wait-argoapp APP=keycloak-config
+
+uninstall-keycloak-config: ## Delete keycloak-config ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io keycloak-config -n openshift-gitops --ignore-not-found; \
+	echo "==> keycloak-config Application deleted"
+
+install-external-secrets-config: ## Deploy external-secrets-config via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh external-secrets-config external-secrets-config sovereign-cloud 220; \
+	$(MAKE) sync-wait-argoapp APP=external-secrets-config
+
+uninstall-external-secrets-config: ## Delete external-secrets-config ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io external-secrets-config -n openshift-gitops --ignore-not-found; \
+	echo "==> external-secrets-config Application deleted"
+
+install-service-oidc-config: ## Deploy service-oidc-config via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}'); \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh service-oidc-config service-oidc-config sovereign-cloud 230 \
+		"keycloakUrl=https://keycloak-rhbk.$$APPS_DOMAIN"; \
+	$(MAKE) sync-wait-argoapp APP=service-oidc-config
+
+uninstall-service-oidc-config: ## Delete service-oidc-config ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io service-oidc-config -n openshift-gitops --ignore-not-found; \
+	echo "==> service-oidc-config Application deleted"
+
+install-rhacs-config: ## Deploy rhacs-config job via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}'); \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh rhacs-config rhacs-config stackrox 240 \
+		"keycloakUrl=https://keycloak-rhbk.$$APPS_DOMAIN"; \
+	$(MAKE) sync-wait-argoapp APP=rhacs-config
+
+uninstall-rhacs-config: ## Delete rhacs-config ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io rhacs-config -n openshift-gitops --ignore-not-found; \
+	echo "==> rhacs-config Application deleted"
+
+install-rhacm-config: ## Deploy rhacm-config job via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh rhacm-config rhacm-config open-cluster-management 245; \
+	$(MAKE) sync-wait-argoapp APP=rhacm-config
+
+uninstall-rhacm-config: ## Delete rhacm-config ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io rhacm-config -n openshift-gitops --ignore-not-found; \
+	echo "==> rhacm-config Application deleted"
+
+install-dynamic-plugins-config: ## Deploy dynamic-plugins-config via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	CHART_VERSION=0.1.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh dynamic-plugins-config dynamic-plugins-config sovereign-cloud 290; \
+	$(MAKE) sync-wait-argoapp APP=dynamic-plugins-config
+
+uninstall-dynamic-plugins-config: ## Delete dynamic-plugins-config ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io dynamic-plugins-config -n openshift-gitops --ignore-not-found; \
+	echo "==> dynamic-plugins-config Application deleted"
+
+##@ Custom Operators GitOps (Phase 2 — ArgoCD Application + OCI Helm)
+
+install-custom-operators-git-creds: ## Deploy custom-operators-git-creds via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	test -n "$${GITHUB_TOKEN:-}" || { echo "GITHUB_TOKEN is required."; exit 1; }; \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh custom-operators-git-creds custom-operators-git-creds openshift-gitops 275 \
+		"githubToken=$${GITHUB_TOKEN}"; \
+	$(MAKE) sync-wait-argoapp APP=custom-operators-git-creds
+
+uninstall-custom-operators-git-creds: ## Delete custom-operators-git-creds ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io custom-operators-git-creds -n openshift-gitops --ignore-not-found; \
+	echo "==> custom-operators-git-creds Application deleted"
+
+install-custom-operators-pipelines: ## Deploy custom-operators-pipelines via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	CHART_VERSION=0.1.2 bash $(SCRIPTS_DIR)/apply-argoapp.sh custom-operators-pipelines custom-operators-pipelines sovereign-cloud 280; \
+	$(MAKE) sync-wait-argoapp APP=custom-operators-pipelines
+
+uninstall-custom-operators-pipelines: ## Delete custom-operators-pipelines ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io custom-operators-pipelines -n openshift-gitops --ignore-not-found; \
+	echo "==> custom-operators-pipelines Application deleted"
+
+install-custom-operators-applicationset: ## DEPRECATED: replaced by per-operator Application targets
+	@echo "NOTICE: install-custom-operators-applicationset is replaced by per-operator install targets."; \
+	echo "Use: make install-plugin-rbac install-entity-operator install-cloudaws-operator ..."; \
+	echo "or:  make deploy-custom-operators"
+
+uninstall-custom-operators-applicationset: ## Delete the legacy custom-operators ApplicationSet if present
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete applicationset.argoproj.io custom-operators-appset -n openshift-gitops --ignore-not-found; \
+	echo "==> custom-operators-appset ApplicationSet deleted (if present)"
+
+deploy-custom-operators: install-custom-operators-git-creds install-custom-operators-pipelines ## Deploy git-creds + pipelines (triggers builds; then install per-operator)
+	@echo "==> Custom operator prerequisites deployed."
+	@echo "==> Trigger builds with: make trigger-build-all"
+	@echo "==> After builds complete, deploy operators with: make install-plugin-rbac install-entity-operator ..."
+
+##@ Custom Operator Deployments (Phase 2 — ArgoCD Application + OCI Helm from operator repos)
+
+install-plugin-rbac: ## Deploy plugin-rbac operator via ArgoCD Application (OCI helm v0.2.1)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	CHART_VERSION=0.2.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-rbac rbac-plugin-operator sovereign-cloud-plugins 300; \
+	$(MAKE) sync-wait-argoapp APP=plugin-rbac
+
+uninstall-plugin-rbac: ## Delete plugin-rbac ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io plugin-rbac -n openshift-gitops --ignore-not-found; \
+	echo "==> plugin-rbac Application deleted"
+
+install-entity-operator: ## Deploy entity-operator via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh entity-operator entity-operator sovereign-cloud 310; \
+	$(MAKE) sync-wait-argoapp APP=entity-operator
+
+uninstall-entity-operator: ## Delete entity-operator ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io entity-operator -n openshift-gitops --ignore-not-found; \
+	echo "==> entity-operator Application deleted"
+
+install-cloudaws-operator: ## Deploy CloudAWS operator via ArgoCD Application (OCI helm v0.1.1)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	CHART_VERSION=0.1.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh cloudaws-operator cloudaws-operator sovereign-cloud 320; \
+	$(MAKE) sync-wait-argoapp APP=cloudaws-operator
+
+uninstall-cloudaws-operator: ## Delete CloudAWS operator ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io cloudaws-operator -n openshift-gitops --ignore-not-found; \
+	echo "==> cloudaws-operator Application deleted"
+
+install-cloudoso-operator: ## Deploy CloudOSO operator via ArgoCD Application (OCI helm v0.1.1)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	CHART_VERSION=0.1.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh cloudoso-operator cloudoso-operator sovereign-cloud 320; \
+	$(MAKE) sync-wait-argoapp APP=cloudoso-operator
+
+uninstall-cloudoso-operator: ## Delete CloudOSO operator ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io cloudoso-operator -n openshift-gitops --ignore-not-found; \
+	echo "==> cloudoso-operator Application deleted"
+
+install-platformopenshift-operator: ## Deploy PlatformOpenshift operator via ArgoCD Application (OCI helm v0.1.1)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	CHART_VERSION=0.1.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh platformopenshift-operator platformopenshift-operator sovereign-cloud 330; \
+	$(MAKE) sync-wait-argoapp APP=platformopenshift-operator
+
+uninstall-platformopenshift-operator: ## Delete PlatformOpenshift operator ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io platformopenshift-operator -n openshift-gitops --ignore-not-found; \
+	echo "==> platformopenshift-operator Application deleted"
+
+install-team-operator: ## Deploy Team operator via ArgoCD Application (OCI helm v0.1.1)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	CHART_VERSION=0.1.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh team-operator team-operator sovereign-cloud 330; \
+	$(MAKE) sync-wait-argoapp APP=team-operator
+
+uninstall-team-operator: ## Delete Team operator ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io team-operator -n openshift-gitops --ignore-not-found; \
+	echo "==> team-operator Application deleted"
+
+install-projects-operator: ## Deploy Projects operator via ArgoCD Application (OCI helm v0.1.1)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	CHART_VERSION=0.1.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh projects-operator projects-operator sovereign-cloud 340; \
+	$(MAKE) sync-wait-argoapp APP=projects-operator
+
+uninstall-projects-operator: ## Delete Projects operator ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io projects-operator -n openshift-gitops --ignore-not-found; \
+	echo "==> projects-operator Application deleted"
+
+install-assignment-operator: ## Deploy Assignment operator via ArgoCD Application (OCI helm v0.1.1)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	CHART_VERSION=0.1.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh assignment-operator assignment-operator sovereign-cloud 340; \
+	$(MAKE) sync-wait-argoapp APP=assignment-operator
+
+uninstall-assignment-operator: ## Delete Assignment operator ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io assignment-operator -n openshift-gitops --ignore-not-found; \
+	echo "==> assignment-operator Application deleted"
+
+install-sovereign-cloud-console: ## Deploy console plugin via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh sovereign-cloud-console sovereign-cloud-plugin sovereign-cloud 350; \
+	$(MAKE) sync-wait-argoapp APP=sovereign-cloud-console
+
+uninstall-sovereign-cloud-console: ## Delete sovereign-cloud-console ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io sovereign-cloud-console -n openshift-gitops --ignore-not-found; \
+	echo "==> sovereign-cloud-console Application deleted"
+
+##@ Uninstall All (Phase 2)
+
+uninstall-all-operators: ## Delete all operator ArgoCD Applications (prune via ArgoCD)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	for app in rhacs-operator rhacm-operator openshift-pipelines-operator odf-operator \
+	           quay-operator rhbk-operator eso-operator aap-operator; do \
+	  oc delete application.argoproj.io $$app -n openshift-gitops --ignore-not-found 2>/dev/null; \
+	  echo "  Deleted: $$app"; \
+	done
+
+uninstall-all-instances: ## Delete all instance/config ArgoCD Applications (reverse order)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	for app in sovereign-cloud-console assignment-operator projects-operator team-operator \
+	           platformopenshift-operator cloudoso-operator cloudaws-operator entity-operator \
+	           plugin-rbac dynamic-plugins-config custom-operators-pipelines custom-operators-git-creds \
+	           rhacm-config rhacs-config service-oidc-config external-secrets-config \
+	           keycloak-config vault-init rhacs-instance rhacm-instance quay-instance \
+	           pipelines-bootstrap odf-noobaa gitea-instance rhbk-instance aap-instance \
+	           vault-instance sovereign-cloud; do \
+	  oc delete application.argoproj.io $$app -n openshift-gitops --ignore-not-found 2>/dev/null; \
+	  echo "  Deleted: $$app"; \
+	done
+
+teardown-bootstrap: uninstall-all-instances uninstall-all-operators ## Delete all ArgoCD Applications (instances + operators)
+
+# ===========================================================================
+##@ Operator Build Pipelines (Phase 3) — Dedicated Tekton Pipelines per operator
+# Each operator has its own named Pipeline in sovereign-cloud namespace.
+# trigger-build-<name> creates a PipelineRun; wait-build-<name> waits for it.
+# ===========================================================================
+
+_trigger-op-build: ## Internal: create a PipelineRun for pipeline PIPELINE= in NS= with TAG=
+	@test -n "$(PIPELINE)" || { echo "PIPELINE= required"; exit 1; }; \
+	NS=$${NS:-sovereign-cloud}; \
+	TAG=$${TAG:-latest}; \
+	TMPF=$$(mktemp /tmp/pr-XXXXXX.yaml); \
+	bash $(SCRIPTS_DIR)/make-pipelinerun.sh "$(PIPELINE)" "$$NS" "$$TAG" > "$$TMPF"; \
+	oc create -n $$NS -f "$$TMPF" && echo "PipelineRun created for $(PIPELINE)"; \
+	rm -f "$$TMPF"
+
+_wait-op-build: ## Internal: wait for most recent PipelineRun for PIPELINE= in NS=
+	@test -n "$(PIPELINE)" || { echo "PIPELINE= required"; exit 1; }; \
+	NS=$${NS:-sovereign-cloud}; \
+	PR=$$(oc get pipelinerun -n $$NS -l operator-pipeline=$(PIPELINE) \
+	  --no-headers 2>/dev/null | sort -k5 -r | head -1 | awk '{print $$1}'); \
+	if [ -z "$$PR" ]; then echo "No PipelineRun found for $(PIPELINE)"; exit 1; fi; \
+	echo "==> Waiting for PipelineRun $$PR ($(PIPELINE))..."; \
+	oc wait pipelinerun/$$PR -n $$NS --for=condition=Succeeded --timeout=900s
+
+trigger-build-plugin-rbac: ## Trigger dedicated build pipeline for plugin-rbac
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _trigger-op-build PIPELINE=plugin-rbac-build
+
+wait-build-plugin-rbac: ## Wait for plugin-rbac build PipelineRun to succeed
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _wait-op-build PIPELINE=plugin-rbac-build
+
+trigger-build-entity-operator: ## Trigger dedicated build pipeline for entity-operator
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _trigger-op-build PIPELINE=entity-operator-build
+
+wait-build-entity-operator: ## Wait for entity-operator build PipelineRun to succeed
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _wait-op-build PIPELINE=entity-operator-build
+
+trigger-build-cloudaws: ## Trigger dedicated build pipeline for cloudaws-operator
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _trigger-op-build PIPELINE=cloudaws-operator-build
+
+wait-build-cloudaws: ## Wait for cloudaws-operator build PipelineRun to succeed
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _wait-op-build PIPELINE=cloudaws-operator-build
+
+trigger-build-cloudoso: ## Trigger dedicated build pipeline for cloudoso-operator
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _trigger-op-build PIPELINE=cloudoso-operator-build
+
+wait-build-cloudoso: ## Wait for cloudoso-operator build PipelineRun to succeed
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _wait-op-build PIPELINE=cloudoso-operator-build
+
+trigger-build-platformopenshift: ## Trigger dedicated build pipeline for platformopenshift-operator
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _trigger-op-build PIPELINE=platformopenshift-operator-build
+
+wait-build-platformopenshift: ## Wait for platformopenshift-operator build PipelineRun to succeed
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _wait-op-build PIPELINE=platformopenshift-operator-build
+
+trigger-build-team: ## Trigger dedicated build pipeline for team-operator
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _trigger-op-build PIPELINE=team-operator-build
+
+wait-build-team: ## Wait for team-operator build PipelineRun to succeed
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _wait-op-build PIPELINE=team-operator-build
+
+trigger-build-projects: ## Trigger dedicated build pipeline for projects-operator
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _trigger-op-build PIPELINE=projects-operator-build
+
+wait-build-projects: ## Wait for projects-operator build PipelineRun to succeed
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _wait-op-build PIPELINE=projects-operator-build
+
+trigger-build-assignment: ## Trigger dedicated build pipeline for assignment-operator
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _trigger-op-build PIPELINE=assignment-operator-build
+
+wait-build-assignment: ## Wait for assignment-operator build PipelineRun to succeed
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _wait-op-build PIPELINE=assignment-operator-build
+
+trigger-build-console: ## Trigger dedicated build pipeline for sovereign-cloud-console
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _trigger-op-build PIPELINE=sovereign-cloud-console-build
+
+wait-build-console: ## Wait for sovereign-cloud-console build PipelineRun to succeed
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _wait-op-build PIPELINE=sovereign-cloud-console-build
+
+trigger-build-all-operators: ## Trigger ALL operator build pipelines concurrently
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	for op in plugin-rbac-build entity-operator-build cloudaws-operator-build \
+	           cloudoso-operator-build platformopenshift-operator-build \
+	           team-operator-build projects-operator-build assignment-operator-build \
+	           sovereign-cloud-console-build; do \
+	  $(MAKE) _trigger-op-build PIPELINE=$$op; \
+	done
+
+wait-build-all-operators: ## Wait for ALL operator build PipelineRuns to succeed
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	for op in plugin-rbac-build entity-operator-build cloudaws-operator-build \
+	           cloudoso-operator-build platformopenshift-operator-build \
+	           team-operator-build projects-operator-build assignment-operator-build \
+	           sovereign-cloud-console-build; do \
+	  $(MAKE) _wait-op-build PIPELINE=$$op || echo "WARNING: $$op build may have failed"; \
+	done
+
+# ===========================================================================
+##@ AAP with EDA (Phase 4) — Ansible Automation Platform + Event-Driven Ansible
+# ===========================================================================
+
+install-aap-instance: ## Deploy AAP instance (controller + EDA) via ArgoCD Application (OCI helm)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	APPS_DOMAIN=$$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}'); \
+	bash $(SCRIPTS_DIR)/apply-argoapp.sh aap-instance aap-instance ansible-automation-platform 115 \
+		"appsDomain=$$APPS_DOMAIN"; \
+	$(MAKE) sync-wait-argoapp APP=aap-instance
+
+uninstall-aap-instance: ## Delete AAP instance ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io aap-instance -n openshift-gitops --ignore-not-found; \
+	echo "==> aap-instance Application deleted"
+
+wait-aap-controller: ## Wait for AAP Controller to become Running
+	@set -e; n=0; \
+	until oc get ansibleautomationplatform central-aap -n aap \
+	  -o jsonpath='{.status.conditions[?(@.type=="Successful")].status}' 2>/dev/null | grep -qi true; do \
+	  n=$$((n+1)); echo "waiting AAP Controller ($$n/$(WAIT_ATTEMPTS))"; \
+	  [ $$n -gt $(WAIT_ATTEMPTS) ] && exit 1; sleep $(WAIT_INTERVAL); \
+	done; echo "AAP: Controller Successful"
+
+wait-aap-eda: ## Wait for AAP EDA to become Running
+	@set -e; n=0; \
+	until oc get eda -n aap -o name 2>/dev/null | grep -q eda; do \
+	  n=$$((n+1)); echo "waiting AAP EDA deployment ($$n/$(WAIT_ATTEMPTS))"; \
+	  [ $$n -gt $(WAIT_ATTEMPTS) ] && exit 1; sleep $(WAIT_INTERVAL); \
+	done; \
+	EDA_NAME=$$(oc get eda -n aap -o name 2>/dev/null | head -1 | cut -d/ -f2); \
+	until oc get eda $$EDA_NAME -n aap \
+	  -o jsonpath='{.status.conditions[?(@.type=="Successful")].status}' 2>/dev/null | grep -qi true; do \
+	  n=$$((n+1)); echo "waiting EDA Successful ($$n/$(WAIT_ATTEMPTS))"; \
+	  [ $$n -gt $(WAIT_ATTEMPTS) ] && exit 1; sleep $(WAIT_INTERVAL); \
+	done; echo "AAP EDA: Successful"
+
+wait-aap-ready: wait-aap-controller ## Wait for AAP controller + EDA (EDA may take longer)
+	@echo "==> AAP Controller is ready. EDA startup may take 10-15 min extra."
+	@echo "==> Check EDA with: oc get eda -n aap"
+
+status-aap: ## Show AAP and EDA status
+	@echo "=== AnsibleAutomationPlatform ==="
+	@oc get ansibleautomationplatform -n aap 2>&1 | head -10
+	@echo "=== EDA (EventDrivenAnsible) ==="
+	@oc get eda -n aap 2>&1 | head -10
+	@echo "=== AAP Pods ==="
+	@oc get pods -n aap 2>&1 | grep -E "Running|Error|Crash|Pending" | head -20
+	@echo "=== AAP Routes ==="
+	@oc get route -n aap 2>&1 | head -10
