@@ -16,7 +16,7 @@ GitOps-oriented bootstrap: Argo CD instances, identity, secrets (Vault / ESO), o
 
 ## Helm / platform checklist
 
-- [ ] **Remove or externalize** default Gitea admin password; sync from Vault before sync wave reaches Gitea.
+- [x] **Remove or externalize** default Gitea admin password — FIXED: using existingSecret from Vault/ESO (chart v0.1.3)
 - [ ] Replace Argo CD `cluster-admin` bindings with narrow aggregates where technically feasible; document exceptions.
 - [ ] Pin every runtime image to digest or explicit semver (no `:latest` in prod values).
 - [ ] Add default **deny-all** NetworkPolicy templates for sensitive namespaces (Vault, GitOps, identity) with explicit egress allowlists.
