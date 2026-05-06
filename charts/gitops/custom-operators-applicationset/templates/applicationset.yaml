@@ -89,6 +89,14 @@ spec:
           kind: RbacConfig
           jsonPointers:
             - /status
+        - group: hybridsovereign.redhat
+          kind: QuayConfig
+          jsonPointers:
+            - /status
+        - group: hybridsovereign.redhat
+          kind: QuayOrg
+          jsonPointers:
+            - /status
       syncPolicy:
         automated:
           prune: true

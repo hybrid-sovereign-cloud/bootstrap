@@ -54,6 +54,10 @@
 	aap-store-admin-token uninstall-aap-store-admin-token \
 	create-aapconfig-cr \
 	trigger-build-aap-plugin wait-build-aap-plugin \
+	install-plugin-quay uninstall-plugin-quay \
+	quay-store-admin-token uninstall-quay-store-admin-token \
+	create-quayconfig-cr \
+	trigger-build-quay-plugin wait-build-quay-plugin \
 	install-sovereign-cloud-console uninstall-sovereign-cloud-console \
 	wait-argoapp sync-wait-argoapp teardown-all-argocd-apps
 
@@ -879,7 +883,7 @@ oci-push-bootstrap: oci-login ## Package and push all bootstrap charts to OCI re
 oci-push-operators: oci-login ## Package and push all operator repo charts to OCI registry (pre-creates repos as public)
 	@$(SOURCE_BASHRC); \
 	mkdir -p /tmp/helm-oci-push; \
-	OPERATOR_REPOS="Assignment CloudAWS CloudOSO PlatformOpenshift plugin_rbac Projects sovereign_tenancy Team console"; \
+	OPERATOR_REPOS="Assignment CloudAWS CloudOSO PlatformOpenshift plugin_rbac plugin_vault plugin_aap plugin_quay Projects sovereign_tenancy Team console"; \
 	WORKSPACE=$$(dirname $$(pwd)); \
 	echo "==> Pushing operator charts from: $$OPERATOR_REPOS"; \
 	for repo in $$OPERATOR_REPOS; do \
@@ -925,6 +929,7 @@ oci-make-public: ## Ensure all known charts are public in Quay (idempotent)
 		cloudoso-operator cloudoso-operator-imagestreams cloudoso-operator-samples \
 		platformopenshift-operator platformopenshift-operator-imagestreams platformopenshift-operator-samples \
 		rbac-plugin-operator rbac-plugin-imagestream \
+		quay-plugin-operator quay-plugin-imagestream \
 		projects-operator projects-operator-imagestreams projects-operator-samples \
 		entity-operator entity-operator-imagestreams entity-operator-samples \
 		team-operator team-operator-imagestreams team-operator-samples \
@@ -1503,7 +1508,7 @@ uninstall-all-instances: ## Delete all instance/config ArgoCD Applications (reve
 	$(MAKE) login; \
 	for app in sovereign-cloud-console assignment-operator projects-operator team-operator \
 	           platformopenshift-operator cloudoso-operator cloudaws-operator entity-operator \
-	           plugin-rbac dynamic-plugins-config custom-operators-pipelines custom-operators-git-creds \
+	           plugin-quay plugin-rbac dynamic-plugins-config custom-operators-pipelines custom-operators-git-creds \
 	           rhacm-config rhacs-config service-oidc-config external-secrets-config \
 	           keycloak-config vault-init rhacs-instance rhacm-instance quay-instance \
 	           pipelines-bootstrap odf-noobaa gitea-instance rhbk-instance aap-instance \
@@ -1557,7 +1562,7 @@ wait-build-vault-plugin: ## Wait for vault-plugin-operator build PipelineRun to 
 install-plugin-aap: ## Deploy aap-plugin-operator via ArgoCD Application (OCI helm v0.1.0)
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
-	CHART_VERSION=0.1.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-aap aap-plugin-operator sovereign-cloud-plugins 360; \
+	CHART_VERSION=0.1.4 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-aap aap-plugin-operator sovereign-cloud-plugins 360; \
 	$(MAKE) sync-wait-argoapp APP=plugin-aap
 
 uninstall-plugin-aap: ## Delete aap-plugin-operator ArgoCD Application
@@ -1609,6 +1614,62 @@ trigger-build-aap-plugin: ## Trigger dedicated build pipeline for aap-plugin-ope
 wait-build-aap-plugin: ## Wait for aap-plugin-operator build PipelineRun to succeed
 	@$(SOURCE_BASHRC); $(MAKE) login; \
 	$(MAKE) _wait-op-build PIPELINE=aap-plugin-operator-build
+
+install-plugin-quay: ## Deploy quay-plugin-operator via ArgoCD Application (OCI helm v0.1.0)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	CHART_VERSION=0.1.0 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-quay quay-plugin-operator sovereign-cloud-plugins 365; \
+	$(MAKE) sync-wait-argoapp APP=plugin-quay
+
+uninstall-plugin-quay: ## Delete quay-plugin-operator ArgoCD Application
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete application.argoproj.io plugin-quay -n openshift-gitops --ignore-not-found; \
+	echo "==> plugin-quay Application deleted"
+
+quay-store-admin-token: ## Copy Quay admin token to sovereign-cloud-plugins Secret (requires QUAY_URL and QUAY_TOKEN)
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	set -a; [ -f .env ] && . ./.env || true; set +a; \
+	test -n "$${QUAY_URL:-}" || { echo "ERROR: QUAY_URL not set"; exit 1; }; \
+	test -n "$${QUAY_TOKEN:-}" || { echo "ERROR: QUAY_TOKEN not set"; exit 1; }; \
+	QUAY_ADMIN_USER="$${QUAY_ADMIN_USER:-initial-sovereign-admin}"; \
+	oc create namespace sovereign-cloud-plugins --dry-run=client -o yaml | oc apply -f -; \
+	oc create secret generic quay-admin-token \
+		--from-literal=QUAY_URL="$${QUAY_URL}" \
+		--from-literal=QUAY_TOKEN="$${QUAY_TOKEN}" \
+		--from-literal=QUAY_ADMIN_USER="$$QUAY_ADMIN_USER" \
+		$${QUAY_ADMIN_PASSWORD:+--from-literal=QUAY_ADMIN_PASSWORD="$${QUAY_ADMIN_PASSWORD}"} \
+		--namespace sovereign-cloud-plugins \
+		--dry-run=client -o yaml | oc apply -f -; \
+	echo "==> quay-admin-token Secret created in sovereign-cloud-plugins"
+
+uninstall-quay-store-admin-token: ## Remove quay-admin-token Secret from sovereign-cloud-plugins
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	oc delete secret quay-admin-token -n sovereign-cloud-plugins --ignore-not-found; \
+	echo "==> quay-admin-token removed"
+
+create-quayconfig-cr: ## Create the platform QuayConfig CR in sovereign-cloud-plugins
+	@$(SOURCE_BASHRC); \
+	$(MAKE) login; \
+	set -a; [ -f .env ] && . ./.env || true; set +a; \
+	QUAY_URL="$${QUAY_URL:-}"; \
+	if [ -z "$$QUAY_URL" ]; then \
+		QUAY_ROUTE=$$(oc get route -n quay -o jsonpath='{.items[?(@.metadata.name=="central-registry-quay")].spec.host}' 2>/dev/null || true); \
+		[ -n "$$QUAY_ROUTE" ] && QUAY_URL="https://$$QUAY_ROUTE"; \
+	fi; \
+	if [ -z "$$QUAY_URL" ]; then echo "ERROR: Cannot determine QUAY_URL. Set it in .env or export QUAY_URL."; exit 1; fi; \
+	printf 'apiVersion: hybridsovereign.redhat/v1alpha1\nkind: QuayConfig\nmetadata:\n  name: platform\n  namespace: sovereign-cloud-plugins\n  labels:\n    app.kubernetes.io/part-of: sovereign-quay-plugin\nspec:\n  secret: quay-admin-token\n  url: "%s"\n  rbac: sovereign-tenants\n  tlsSkipVerify: true\n' "$$QUAY_URL" | oc apply -f -; \
+	echo "==> QuayConfig/platform created in sovereign-cloud-plugins"
+
+trigger-build-quay-plugin: ## Trigger dedicated build pipeline for quay-plugin-operator
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _trigger-op-build PIPELINE=quay-plugin-operator-build
+
+wait-build-quay-plugin: ## Wait for quay-plugin-operator build PipelineRun to succeed
+	@$(SOURCE_BASHRC); $(MAKE) login; \
+	$(MAKE) _wait-op-build PIPELINE=quay-plugin-operator-build
 
 trigger-build-entity-operator: ## Trigger dedicated build pipeline for entity-operator
 	@$(SOURCE_BASHRC); $(MAKE) login; \
@@ -1679,6 +1740,7 @@ trigger-build-all-operators: ## Trigger ALL operator build pipelines concurrentl
 	for op in plugin-rbac-build entity-operator-build cloudaws-operator-build \
 	           cloudoso-operator-build platformopenshift-operator-build \
 	           team-operator-build projects-operator-build assignment-operator-build \
+	           vault-plugin-operator-build aap-plugin-operator-build quay-plugin-operator-build \
 	           sovereign-cloud-console-build; do \
 	  $(MAKE) _trigger-op-build PIPELINE=$$op; \
 	done
@@ -1688,6 +1750,7 @@ wait-build-all-operators: ## Wait for ALL operator build PipelineRuns to succeed
 	for op in plugin-rbac-build entity-operator-build cloudaws-operator-build \
 	           cloudoso-operator-build platformopenshift-operator-build \
 	           team-operator-build projects-operator-build assignment-operator-build \
+	           vault-plugin-operator-build aap-plugin-operator-build quay-plugin-operator-build \
 	           sovereign-cloud-console-build; do \
 	  $(MAKE) _wait-op-build PIPELINE=$$op || echo "WARNING: $$op build may have failed"; \
 	done

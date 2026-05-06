@@ -59,6 +59,10 @@ operators:
     repo: plugin_aap
     imageName: aap-plugin-operator
 
+  - name: quay-plugin-operator
+    repo: plugin_quay
+    imageName: quay-plugin-operator
+
   - name: sovereign-cloud-console
     repo: console
     imageName: sovereign-cloud-console
