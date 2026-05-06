@@ -1347,7 +1347,7 @@ uninstall-plugin-rbac: ## Delete plugin-rbac ArgoCD Application
 install-entity-operator: ## Deploy entity-operator via ArgoCD Application (OCI helm v0.1.1)
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
-	CHART_VERSION=0.1.2 bash $(SCRIPTS_DIR)/apply-argoapp.sh entity-operator entity-operator sovereign-cloud 310; \
+	CHART_VERSION=0.1.3 bash $(SCRIPTS_DIR)/apply-argoapp.sh entity-operator entity-operator sovereign-cloud 310; \
 	$(MAKE) sync-wait-argoapp APP=entity-operator
 
 uninstall-entity-operator: ## Delete entity-operator ArgoCD Application
