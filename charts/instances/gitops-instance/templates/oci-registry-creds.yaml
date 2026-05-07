@@ -1,4 +1,7 @@
 {{- if and .Values.ociRegistry.enabled .Values.ociRegistry.password }}
+{{- $host := .Values.ociRegistry.url | splitList "/" | first -}}
+{{- $org := .Values.ociRegistry.url | splitList "/" | rest | join "/" -}}
+# repo-creds credential template (broad registry match)
 apiVersion: v1
 kind: Secret
 metadata:
@@ -10,7 +13,26 @@ metadata:
 stringData:
   type: helm
   enableOCI: "true"
-  url: {{ .Values.ociRegistry.url | quote }}
+  url: {{ $host | quote }}
   username: {{ .Values.ociRegistry.username | quote }}
   password: {{ .Values.ociRegistry.password | quote }}
+---
+{{- range .Values.ociRegistry.repositories }}
+# Individual repository secret for ArgoCD v3.x OCI credential matching
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ printf "oci-creds-%s" . | replace "/" "-" }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "chart.labels" $ | nindent 4 }}
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  type: helm
+  enableOCI: "true"
+  url: {{ printf "oci://%s/%s/%s" $host $org . | quote }}
+  username: {{ $.Values.ociRegistry.username | quote }}
+  password: {{ $.Values.ociRegistry.password | quote }}
+---
+{{- end }}
 {{- end }}

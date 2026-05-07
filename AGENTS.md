@@ -13,6 +13,9 @@ Applies to: Cursor, Claude, and all AI agents working in this repository.
 | **GitOps first** | All cluster state after Phase 1 is driven by the Argo CD ApplicationSet (`platform-gitops`). No manual Helm installs into production cluster after Phase 2. |
 | **Secrets via Vault + ESO** | Never hardcode secrets. Store in HashiCorp Vault; pull with External Secrets Operator ExternalSecrets. |
 | **Builds via OpenShift Pipelines** | Use Tekton for all container builds; push results to Quay (`quay.signal9.gg/hybrid-sovereign`). No internal ImageStreams. |
+| **Private Quay only** | ALL Quay repos in `hybrid-sovereign` MUST stay **private**. After any push: `make oci-make-private && make oci-grant-robot-access`. Never make a repo public. |
+| **Robot credentials everywhere** | After adding a namespace run `make oci-bootstrap-pull-secrets`. Link secret to operator SAs: `oc secrets link <sa> quay-robot-pull-secret --for=pull`. |
+| **ArgoCD OCI auth** | Each OCI chart repo needs an individual `argocd.argoproj.io/secret-type: repository` Secret. Add repos to `ociRegistry.repositories` in `gitops-instance/values.yaml` then `make install-gitops-instance`. |
 | **Git freely** | `git add`, `commit`, `push` allowed at any time to keep history clean. |
 | **Update docs** | Update the relevant README, Makefile help text, and an architecture ADR on every meaningful change. |
 | **Iterate until fixed** | Deploy → test → fix loop; **`oc` read-only** (get/describe/logs); cluster **writes** via **`make`** targets; fix chart/Makefile, commit, re-sync. |

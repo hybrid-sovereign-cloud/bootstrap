@@ -101,9 +101,15 @@ OCI_REGISTRY_HOST  ?= quay.signal9.gg
 OCI_ORG            ?= hybrid-sovereign
 OCI_HELM_REGISTRY  ?= oci://$(OCI_REGISTRY_HOST)/$(OCI_ORG)
 CHART_VERSION      ?= 0.1.0
+# OCI_REGISTRY_TOKEN: Quay admin API token — set via env or ~/.bashrc
+# Exported so Make recipe sub-shells always see it.
+export OCI_REGISTRY_TOKEN
 # OCI_ROBOT_USERNAME / OCI_ROBOT_PASSWORD — robot account used by ArgoCD to pull OCI Helm
 # charts and push operator images from Tekton pipelines.
 # Set via .env or shell: OCI_ROBOT_USERNAME=hybrid-sovereign+pull OCI_ROBOT_PASSWORD=<token>
+# Policy: all Quay repos in $(OCI_ORG) MUST remain PRIVATE.
+#   Run 'make oci-grant-robot-access' after any push to ensure the robot can pull/push.
+#   Run 'make oci-bootstrap-pull-secrets' after any new namespace to distribute the pull secret.
 SCRIPTS_DIR        := scripts
 
 # Directories
@@ -869,7 +875,7 @@ oci-login: ## Login to OCI Helm registry (uses OCI_REGISTRY_TOKEN from ~/.bashrc
 		--password "$${OCI_REGISTRY_TOKEN}"; \
 	echo "==> Login successful"
 
-oci-push-bootstrap: oci-login ## Package and push all bootstrap charts to OCI registry (pre-creates repos as public)
+oci-push-bootstrap: oci-login ## Package and push all bootstrap charts to OCI registry (repos stay private; run oci-grant-robot-access after)
 	@$(SOURCE_BASHRC); \
 	mkdir -p /tmp/helm-oci-push; \
 	echo "==> Pushing all bootstrap charts to $(OCI_HELM_REGISTRY)"; \
@@ -892,7 +898,7 @@ oci-push-bootstrap: oci-login ## Package and push all bootstrap charts to OCI re
 	done; \
 	echo "==> All bootstrap charts pushed to $(OCI_HELM_REGISTRY)"
 
-oci-push-operators: oci-login ## Package and push all operator repo charts to OCI registry (pre-creates repos as public)
+oci-push-operators: oci-login ## Package and push all operator repo charts to OCI registry (repos stay private; run oci-grant-robot-access after)
 	@$(SOURCE_BASHRC); \
 	mkdir -p /tmp/helm-oci-push; \
 	OPERATOR_REPOS="Assignment CloudAWS CloudOSO PlatformOpenshift plugin_rbac plugin_vault plugin_aap plugin_quay plugin_iaac Projects sovereign_tenancy Team console"; \
@@ -921,21 +927,23 @@ oci-push-operators: oci-login ## Package and push all operator repo charts to OC
 	done; \
 	echo "==> All operator charts pushed to $(OCI_HELM_REGISTRY)"
 
-oci-push-all: oci-push-bootstrap oci-push-operators ## Push ALL charts (bootstrap + all operator repos) to OCI registry
-	@echo "==> All charts pushed to $(OCI_HELM_REGISTRY)"
+oci-push-all: oci-push-bootstrap oci-push-operators oci-grant-robot-access ## Push ALL charts (bootstrap + operator repos) to private OCI registry and grant robot access
+	@echo "==> All charts pushed to $(OCI_HELM_REGISTRY) (private); robot access granted"
 
-oci-grant-robot-access: ## Grant hybrid-sovereign+pull robot read/write access to all repos in $(OCI_ORG) (idempotent)
+oci-grant-robot-access: ## Grant $(OCI_ORG)+pull robot write access to all repos in $(OCI_ORG) (idempotent)
 	@$(SOURCE_BASHRC); \
-	test -n "$${OCI_REGISTRY_TOKEN:-}" || { echo "ERROR: OCI_REGISTRY_TOKEN not set"; exit 1; }; \
-	echo "==> Granting robot hybrid-sovereign+pull read access to all repos in $(OCI_ORG)..."; \
+	set -a; [ -f .env ] && . ./.env || true; set +a; \
+	TOKEN="$${OCI_REGISTRY_TOKEN:-}"; \
+	test -n "$$TOKEN" || { echo "ERROR: OCI_REGISTRY_TOKEN not set"; exit 1; }; \
+	echo "==> Granting robot $(OCI_ORG)+pull write access to all repos in $(OCI_ORG)..."; \
 	REPOS=$$(curl -sf \
-		-H "Authorization: Bearer $${OCI_REGISTRY_TOKEN}" \
+		-H "Authorization: Bearer $$TOKEN" \
 		"https://$(OCI_REGISTRY_HOST)/api/v1/repository?namespace=$(OCI_ORG)&limit=200" \
 		| python3 -c "import sys,json; [print(r['name']) for r in json.load(sys.stdin).get('repositories',[])]"); \
 	for repo in $$REPOS; do \
 		curl -sk -X PUT \
 			"https://$(OCI_REGISTRY_HOST)/api/v1/repository/$(OCI_ORG)/$$repo/permissions/user/$(OCI_ORG)+pull" \
-			-H "Authorization: Bearer $${OCI_REGISTRY_TOKEN}" \
+			-H "Authorization: Bearer $$TOKEN" \
 			-H "Content-Type: application/json" \
 			-d '{"role":"write"}' -o /dev/null 2>/dev/null; \
 	done; \
@@ -975,18 +983,19 @@ oci-make-public: ## Ensure all known charts are public in Quay (idempotent)
 oci-make-private: ## Set ALL repos in $(OCI_REGISTRY_HOST)/$(OCI_ORG) to private (discovers repos dynamically; idempotent)
 	@$(SOURCE_BASHRC); \
 	set -a; [ -f .env ] && . ./.env || true; set +a; \
-	test -n "$${OCI_REGISTRY_TOKEN:-}" || { echo "ERROR: OCI_REGISTRY_TOKEN not set"; exit 1; }; \
-	echo "==> Fetching repo list from $(OCI_REGISTRY_HOST)/$(OCI_ORG)..."; \
+	TOKEN="$${OCI_REGISTRY_TOKEN:-}"; \
+	test -n "$$TOKEN" || { echo "ERROR: OCI_REGISTRY_TOKEN not set"; exit 1; }; \
+	echo "==> Fetching ALL repo list from $(OCI_REGISTRY_HOST)/$(OCI_ORG)..."; \
 	REPOS=$$(curl -sf \
-		-H "Authorization: Bearer $${OCI_REGISTRY_TOKEN}" \
-		"https://$(OCI_REGISTRY_HOST)/api/v1/repository?namespace=$(OCI_ORG)&public=false" \
+		-H "Authorization: Bearer $$TOKEN" \
+		"https://$(OCI_REGISTRY_HOST)/api/v1/repository?namespace=$(OCI_ORG)&limit=200" \
 		| python3 -c "import sys,json; [print(r['name']) for r in json.load(sys.stdin)['repositories']]"); \
 	total=$$(echo "$$REPOS" | wc -w); \
 	echo "==> Found $$total repos — setting all to private"; \
 	for name in $$REPOS; do \
 		STATUS=$$(curl -sk -o /dev/null -w "%{http_code}" -X POST \
 			"https://$(OCI_REGISTRY_HOST)/api/v1/repository/$(OCI_ORG)/$${name}/changevisibility" \
-			-H "Authorization: Bearer $${OCI_REGISTRY_TOKEN}" \
+			-H "Authorization: Bearer $$TOKEN" \
 			-H "Content-Type: application/json" \
 			-d '{"visibility":"private"}'); \
 		echo "  $$name → HTTP $$STATUS"; \
