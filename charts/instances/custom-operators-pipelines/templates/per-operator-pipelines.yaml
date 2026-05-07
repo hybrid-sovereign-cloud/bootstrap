@@ -14,7 +14,7 @@ metadata:
 spec:
   description: >
     Dedicated build pipeline for {{ .name }}.
-    Clones {{ $.Values.githubOrg }}/{{ .repo }} and builds the container image.
+    Clones {{ $.Values.githubOrg }}/{{ .repo }} and pushes to {{ $.Values.quayRegistry }}/{{ $.Values.quayOrg }}/{{ .imageName }}.
   params:
     - name: git-revision
       type: string
@@ -67,7 +67,7 @@ spec:
         - git-clone
       params:
         - name: IMAGE
-          value: image-registry.openshift-image-registry.svc:5000/{{ $.Values.namespace }}/{{ .imageName }}:$(params.image-tag)
+          value: {{ $.Values.quayRegistry }}/{{ $.Values.quayOrg }}/{{ .imageName }}:$(params.image-tag)
         - name: DOCKERFILE
           value: {{ .dockerfile | default "./Dockerfile" }}
         - name: CONTEXT

@@ -1,4 +1,4 @@
-{{- if and .Values.ociRegistry.enabled .Values.ociRegistry.token }}
+{{- if and .Values.ociRegistry.enabled .Values.ociRegistry.password }}
 apiVersion: v1
 kind: Secret
 metadata:
@@ -12,5 +12,5 @@ stringData:
   enableOCI: "true"
   url: {{ .Values.ociRegistry.url | quote }}
   username: {{ .Values.ociRegistry.username | quote }}
-  password: {{ .Values.ociRegistry.token | quote }}
+  password: {{ .Values.ociRegistry.password | quote }}
 {{- end }}

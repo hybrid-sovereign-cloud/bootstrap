@@ -19,7 +19,7 @@ NAMESPACE="${3:?namespace required}"
 WAVE="${4:?wave required}"
 shift 4
 
-OCI_HELM_REGISTRY="${OCI_HELM_REGISTRY:-oci://quay.io/sovereignhybrid}"
+OCI_HELM_REGISTRY="${OCI_HELM_REGISTRY:-oci://quay.signal9.gg/hybrid-sovereign}"
 CHART_VERSION="${CHART_VERSION:-0.1.0}"
 
 # Build helm parameters block

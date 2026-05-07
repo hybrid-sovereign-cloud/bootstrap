@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 spec:
-  description: Smoke pipeline to validate Tekton after OpenShift Pipelines install. Replace with real build tasks that push to ImageStream {{ .Values.imageStream.name }}.
+  description: Smoke pipeline to validate Tekton after OpenShift Pipelines install. Operator images are pushed to Quay via the custom-operators-pipelines chart.
   tasks:
     - name: verify-toolchain
       taskSpec:

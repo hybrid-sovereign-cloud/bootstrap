@@ -1,5 +1,5 @@
 ---
-# Shared Pipeline: clone an Ansible operator repo and build+push its image to an ImageStream.
+# Shared Pipeline: clone an Ansible operator repo and build+push its image to Quay.
 # Uses the git-clone and buildah Tasks pre-installed in the openshift-pipelines namespace
 # via the Tekton cluster resolver (no custom images needed).
 apiVersion: tekton.dev/v1
@@ -12,7 +12,7 @@ metadata:
 spec:
   description: >
     Clones an Ansible Operator repository from GitHub, builds the container image
-    using buildah, and pushes it to the OpenShift internal registry ImageStream.
+    using buildah, and pushes it to Quay ({{ .Values.quayRegistry }}/{{ .Values.quayOrg }}).
     Uses openshift-pipelines Tasks via the cluster resolver.
   params:
     - name: git-url
@@ -24,15 +24,15 @@ spec:
       description: Branch or commit to build
     - name: image-registry
       type: string
-      default: "image-registry.openshift-image-registry.svc:5000"
-      description: Internal OpenShift registry host
+      default: {{ .Values.quayRegistry | quote }}
+      description: Quay registry host
     - name: image-namespace
       type: string
-      default: {{ .Values.namespace | quote }}
-      description: Namespace containing the target ImageStream
+      default: {{ .Values.quayOrg | quote }}
+      description: Quay organisation / namespace
     - name: image-name
       type: string
-      description: ImageStream name (= image name without registry prefix)
+      description: Image name (repository) in Quay
     - name: image-tag
       type: string
       default: latest

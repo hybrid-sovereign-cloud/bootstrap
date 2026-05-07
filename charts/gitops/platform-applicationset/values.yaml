@@ -118,7 +118,7 @@ applications:
     path: charts/instances/custom-operators-git-creds
     namespace: openshift-gitops
     wave: "275"
-  # OpenShift Pipelines definitions and ImageStreams for the 8 custom operators
+  # OpenShift Pipelines definitions for the custom operators (images pushed to Quay)
   - name: custom-operators-pipelines
     path: charts/instances/custom-operators-pipelines
     namespace: sovereign-cloud

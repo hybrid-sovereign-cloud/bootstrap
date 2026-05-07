@@ -42,12 +42,6 @@ spec:
         server: https://kubernetes.default.svc
         namespace: '{{ "{{ .namespace }}" }}'
       ignoreDifferences:
-        # ImageStreams are updated by the build pipeline; ignore tag/status drift
-        - group: image.openshift.io
-          kind: ImageStream
-          jsonPointers:
-            - /spec/tags
-            - /status
         # Ansible operators update status via operator_sdk.util.k8s_status
         - group: hybridsovereign.redhat
           kind: CloudAWS

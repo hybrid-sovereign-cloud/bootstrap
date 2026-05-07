@@ -68,12 +68,6 @@ spec:
           jsonPointers:
             - /spec/upgradeStrategy
             - /status
-        # ImageStreams are updated by OpenShift when images are imported
-        - group: image.openshift.io
-          kind: ImageStream
-          jsonPointers:
-            - /spec/tags
-            - /status
         # Operator-managed CRs drift as operators reconcile their own fields
         - group: quay.redhat.com
           kind: QuayRegistry

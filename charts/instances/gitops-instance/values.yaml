@@ -7,14 +7,16 @@ github:
   insecure: "true"
   username: "git"
 
-# OCI Helm registry credential template for ArgoCD (quay.io/sovereignhybrid).
+# OCI Helm registry credential template for ArgoCD (quay.signal9.gg/hybrid-sovereign).
 # ArgoCD uses this to pull OCI Helm charts for all Applications pointing to this registry.
-# Pass OCI_REGISTRY_TOKEN at install time: --set-string ociRegistry.token=$OCI_REGISTRY_TOKEN
+# Pass robot credentials at install time:
+#   --set-string ociRegistry.username=$OCI_ROBOT_USERNAME
+#   --set-string ociRegistry.password=$OCI_ROBOT_PASSWORD
 ociRegistry:
   enabled: true
-  url: "quay.io/sovereignhybrid"
-  username: "$oauthtoken"
-  token: ""
+  url: "quay.signal9.gg/hybrid-sovereign"
+  username: ""  # OCI_ROBOT_USERNAME  e.g. hybrid-sovereign+pull
+  password: ""  # OCI_ROBOT_PASSWORD  (robot token)
 
 # Optional: tighten Argo CD server behavior when using self-signed Git endpoints.
 argocd:

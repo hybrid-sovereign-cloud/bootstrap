@@ -1,6 +1,7 @@
-# Grant the Tekton pipeline ServiceAccount permission to push to ImageStreams
-# OpenShift Pipelines creates a 'pipeline' SA in each namespace; we bind the
-# built-in 'edit' ClusterRole so it can push images to the internal registry.
+# Grant the Tekton pipeline ServiceAccount edit access in the build namespace.
+# OpenShift Pipelines creates a 'pipeline' SA in each namespace; binding 'edit'
+# allows the pipeline to manage PVCs, ConfigMaps, and other build resources.
+# Image pushes target Quay (not the internal registry) via quay-push-credentials secret.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -16,36 +17,3 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: edit
----
-# Allow the pipeline SA to push to the OpenShift internal registry
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: pipeline-sa-registry-push-{{ .Values.namespace }}
-  labels:
-    {{- include "chart.labels" . | nindent 4 }}
-subjects:
-  - kind: ServiceAccount
-    name: pipeline
-    namespace: {{ .Values.namespace }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: system:image-builder
----
-# Allow sovereign-cloud-plugins namespace to pull images from sovereign-cloud ImageStreams
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: sovereign-cloud-plugins-image-puller
-  namespace: {{ .Values.namespace }}
-  labels:
-    {{- include "chart.labels" . | nindent 4 }}
-subjects:
-  - kind: Group
-    apiGroup: rbac.authorization.k8s.io
-    name: system:serviceaccounts:sovereign-cloud-plugins
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: system:image-puller

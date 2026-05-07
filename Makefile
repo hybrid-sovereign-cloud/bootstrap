@@ -25,7 +25,8 @@
 	enable-dynamic-plugins install-dynamic-plugins-config enable-sovereign-console-plugin \
 	trigger-build-console wait-console-build deploy-console \
 	fix-acs-consoleplugin debug-acs-consoleplugin regenerate-acs-init-bundle \
-	oci-login oci-push-all oci-push-bootstrap oci-push-operators oci-make-public \
+	oci-login oci-push-all oci-push-bootstrap oci-push-operators oci-make-public oci-make-private \
+	oci-bootstrap-pull-secrets setup-quay-push-secret vault-store-quay-robot-token \
 	uninstall-aap-operator uninstall-eso-operator uninstall-rhbk-operator \
 	uninstall-gitops-operator uninstall-quay-operator uninstall-openshift-pipelines-operator \
 	uninstall-odf-operator uninstall-odf-noobaa uninstall-quay-instance \
@@ -91,15 +92,18 @@ export GITHUB_REVISION
 # ---------------------------------------------------------------------------
 # OCI Registry (Phase 1)
 # OCI_REGISTRY_TOKEN loaded from ~/.bashrc (export OCI_REGISTRY_TOKEN=...)
-# OCI_REGISTRY_HOST  — quay.io (no scheme, no trailing slash)
-# OCI_ORG            — quay.io organisation name
+# OCI_REGISTRY_HOST  — Quay host (no scheme, no trailing slash)
+# OCI_ORG            — Quay organisation name
 # OCI_HELM_REGISTRY  — oci:// prefix used by helm push / ArgoCD Application source
 # CHART_VERSION      — version used when packaging and referencing charts
 # ---------------------------------------------------------------------------
-OCI_REGISTRY_HOST  ?= quay.io
-OCI_ORG            ?= sovereignhybrid
+OCI_REGISTRY_HOST  ?= quay.signal9.gg
+OCI_ORG            ?= hybrid-sovereign
 OCI_HELM_REGISTRY  ?= oci://$(OCI_REGISTRY_HOST)/$(OCI_ORG)
 CHART_VERSION      ?= 0.1.0
+# OCI_ROBOT_USERNAME / OCI_ROBOT_PASSWORD — robot account used by ArgoCD to pull OCI Helm
+# charts and push operator images from Tekton pipelines.
+# Set via .env or shell: OCI_ROBOT_USERNAME=hybrid-sovereign+pull OCI_ROBOT_PASSWORD=<token>
 SCRIPTS_DIR        := scripts
 
 # Directories
@@ -423,7 +427,8 @@ install-gitops-instance: ## Apply gitops-instance chart from OCI (Phase 1 — di
 		$${GITHUB_TOKEN:+--set-string github.token="$$GITHUB_TOKEN"} \
 		$${GITHUB_URL:+--set-string github.insecure="true"} \
 		$${GITHUB_URL:+--set-string github.username="git"} \
-		$${OCI_REGISTRY_TOKEN:+--set-string ociRegistry.token="$$OCI_REGISTRY_TOKEN"}
+		$${OCI_ROBOT_USERNAME:+--set-string ociRegistry.username="$$OCI_ROBOT_USERNAME"} \
+		$${OCI_ROBOT_PASSWORD:+--set-string ociRegistry.password="$$OCI_ROBOT_PASSWORD"}
 
 install-gitops-instance-repos: ## Configure Argo CD repository secret via OCI gitops-instance chart (Phase 1)
 	@set -euo pipefail; \
@@ -543,8 +548,8 @@ wait-rhacs-ready: ## Wait for ACS Central to be deployed
 	done; echo "ACS Central: Deployed"
 
 ##@ Pipelines verify (read-only oc)
-verify-pipelines-bootstrap: ## Show Pipeline + ImageStream (requires login); start runs from console/tkn
-	oc get pipeline,imagestream -n sovereign-cloud
+verify-pipelines-bootstrap: ## Show Pipelines in sovereign-cloud namespace (requires login)
+	oc get pipeline -n sovereign-cloud
 
 ##@ Uninstall (Phase 2 — defined in GitOps Applications section below)
 # All uninstall-* and teardown-* targets are defined in the GitOps Applications section.
@@ -852,7 +857,7 @@ fix-acs-consoleplugin: ## Fix ACS consoleplugin backend to use central:443 (alig
 	fi
 
 # ===========================================================================
-##@ OCI Registry (Phase 1) — Package and push all Helm charts to quay.io
+##@ OCI Registry (Phase 1) — Package and push all Helm charts to $(OCI_REGISTRY_HOST)
 # ===========================================================================
 
 oci-login: ## Login to OCI Helm registry (uses OCI_REGISTRY_TOKEN from ~/.bashrc)
@@ -871,11 +876,11 @@ oci-push-bootstrap: oci-login ## Package and push all bootstrap charts to OCI re
 	for chart in $$(find $(CHARTS_DIR) -name Chart.yaml -exec dirname {} \; | sort -u); do \
 		name=$$(grep '^name:' "$$chart/Chart.yaml" | awk '{print $$2}'); \
 		version=$$(grep '^version:' "$$chart/Chart.yaml" | awk '{print $$2}'); \
-		echo "--- Pre-creating public repo for $$name"; \
-		curl -sk -X POST "https://quay.io/api/v1/repository" \
+		echo "--- Pre-creating private repo for $$name"; \
+		curl -sk -X POST "https://$(OCI_REGISTRY_HOST)/api/v1/repository" \
 			-H "Authorization: Bearer $${OCI_REGISTRY_TOKEN}" \
 			-H "Content-Type: application/json" \
-			-d "{\"repository\":\"$${name}\",\"namespace\":\"$(OCI_ORG)\",\"description\":\"Helm chart: $${name}\",\"visibility\":\"public\",\"repo_kind\":\"image\"}" \
+			-d "{\"repository\":\"$${name}\",\"namespace\":\"$(OCI_ORG)\",\"description\":\"Helm chart: $${name}\",\"visibility\":\"private\",\"repo_kind\":\"image\"}" \
 			> /dev/null 2>&1 || true; \
 		echo "--- Packaging $$name v$$version from $$chart"; \
 		if grep -q '^dependencies:' "$$chart/Chart.yaml" 2>/dev/null; then \
@@ -899,11 +904,11 @@ oci-push-operators: oci-login ## Package and push all operator repo charts to OC
 		for chart in $$(find "$$REPO_DIR/helm" -name Chart.yaml -exec dirname {} \; | sort -u); do \
 			name=$$(grep '^name:' "$$chart/Chart.yaml" | awk '{print $$2}'); \
 			version=$$(grep '^version:' "$$chart/Chart.yaml" | awk '{print $$2}'); \
-			echo "--- Pre-creating public repo for $$name"; \
-			curl -sk -X POST "https://quay.io/api/v1/repository" \
+			echo "--- Pre-creating private repo for $$name"; \
+			curl -sk -X POST "https://$(OCI_REGISTRY_HOST)/api/v1/repository" \
 				-H "Authorization: Bearer $${OCI_REGISTRY_TOKEN}" \
 				-H "Content-Type: application/json" \
-				-d "{\"repository\":\"$${name}\",\"namespace\":\"$(OCI_ORG)\",\"description\":\"Helm chart: $${name}\",\"visibility\":\"public\",\"repo_kind\":\"image\"}" \
+				-d "{\"repository\":\"$${name}\",\"namespace\":\"$(OCI_ORG)\",\"description\":\"Helm chart: $${name}\",\"visibility\":\"private\",\"repo_kind\":\"image\"}" \
 				> /dev/null 2>&1 || true; \
 			echo "--- Packaging $$name v$$version from $$chart"; \
 			if grep -q '^dependencies:' "$$chart/Chart.yaml" 2>/dev/null; then \
@@ -943,12 +948,82 @@ oci-make-public: ## Ensure all known charts are public in Quay (idempotent)
 		team-operator team-operator-imagestreams team-operator-samples \
 		sovereign-cloud-plugin sovereign-cloud-image; do \
 		STATUS=$$(curl -sk -o /dev/null -w "%{http_code}" -X POST \
-			"https://quay.io/api/v1/repository/$(OCI_ORG)/$${name}/changevisibility" \
+			"https://$(OCI_REGISTRY_HOST)/api/v1/repository/$(OCI_ORG)/$${name}/changevisibility" \
 			-H "Authorization: Bearer $${OCI_REGISTRY_TOKEN}" \
 			-H "Content-Type: application/json" \
 			-d '{"visibility":"public"}'); \
 		echo "  $$name → HTTP $$STATUS"; \
 	done
+
+oci-make-private: ## Set ALL repos in $(OCI_REGISTRY_HOST)/$(OCI_ORG) to private (discovers repos dynamically; idempotent)
+	@$(SOURCE_BASHRC); \
+	set -a; [ -f .env ] && . ./.env || true; set +a; \
+	test -n "$${OCI_REGISTRY_TOKEN:-}" || { echo "ERROR: OCI_REGISTRY_TOKEN not set"; exit 1; }; \
+	echo "==> Fetching repo list from $(OCI_REGISTRY_HOST)/$(OCI_ORG)..."; \
+	REPOS=$$(curl -sf \
+		-H "Authorization: Bearer $${OCI_REGISTRY_TOKEN}" \
+		"https://$(OCI_REGISTRY_HOST)/api/v1/repository?namespace=$(OCI_ORG)&public=false" \
+		| python3 -c "import sys,json; [print(r['name']) for r in json.load(sys.stdin)['repositories']]"); \
+	total=$$(echo "$$REPOS" | wc -w); \
+	echo "==> Found $$total repos — setting all to private"; \
+	for name in $$REPOS; do \
+		STATUS=$$(curl -sk -o /dev/null -w "%{http_code}" -X POST \
+			"https://$(OCI_REGISTRY_HOST)/api/v1/repository/$(OCI_ORG)/$${name}/changevisibility" \
+			-H "Authorization: Bearer $${OCI_REGISTRY_TOKEN}" \
+			-H "Content-Type: application/json" \
+			-d '{"visibility":"private"}'); \
+		echo "  $$name → HTTP $$STATUS"; \
+	done; \
+	echo "==> Done. All $(OCI_ORG) repos are now private."
+
+oci-bootstrap-pull-secrets: ## Create quay robot imagePullSecrets in all Argo-managed namespaces (idempotent)
+	@$(SOURCE_BASHRC); \
+	set -a; [ -f .env ] && . ./.env || true; set +a; \
+	test -n "$${OCI_ROBOT_USERNAME:-}" || { echo "ERROR: OCI_ROBOT_USERNAME not set (e.g. hybrid-sovereign+pull)"; exit 1; }; \
+	test -n "$${OCI_ROBOT_PASSWORD:-}" || { echo "ERROR: OCI_ROBOT_PASSWORD not set"; exit 1; }; \
+	for ns in openshift-gitops $(BOOTSTRAP_NAMESPACES); do \
+		oc get namespace "$$ns" > /dev/null 2>&1 || { echo "  SKIP $$ns: namespace does not exist"; continue; }; \
+		echo "==> [$$ns] creating quay-robot-pull-secret"; \
+		oc create secret docker-registry quay-robot-pull-secret \
+			--docker-server=$(OCI_REGISTRY_HOST) \
+			--docker-username="$${OCI_ROBOT_USERNAME}" \
+			--docker-password="$${OCI_ROBOT_PASSWORD}" \
+			--namespace="$$ns" \
+			--dry-run=client -o yaml | oc apply -f -; \
+		for sa in default openshift-gitops-argocd-application-controller; do \
+			oc secrets link "$$sa" quay-robot-pull-secret --for=pull -n "$$ns" 2>/dev/null || true; \
+		done; \
+	done; \
+	echo "==> Robot pull secrets bootstrapped across all namespaces."
+
+setup-quay-push-secret: ## Create Quay push secret for Tekton pipeline SA in sovereign-cloud (idempotent)
+	@$(SOURCE_BASHRC); \
+	set -a; [ -f .env ] && . ./.env || true; set +a; \
+	test -n "$${OCI_ROBOT_USERNAME:-}" || { echo "ERROR: OCI_ROBOT_USERNAME not set"; exit 1; }; \
+	test -n "$${OCI_ROBOT_PASSWORD:-}" || { echo "ERROR: OCI_ROBOT_PASSWORD not set"; exit 1; }; \
+	echo "==> Creating quay-push-secret in sovereign-cloud..."; \
+	oc create secret docker-registry quay-push-secret \
+		--docker-server=$(OCI_REGISTRY_HOST) \
+		--docker-username="$${OCI_ROBOT_USERNAME}" \
+		--docker-password="$${OCI_ROBOT_PASSWORD}" \
+		--namespace=sovereign-cloud \
+		--dry-run=client -o yaml | oc apply -f -; \
+	oc secrets link pipeline quay-push-secret --for=pull,mount -n sovereign-cloud 2>/dev/null || true; \
+	echo "==> quay-push-secret linked to pipeline SA in sovereign-cloud"
+
+vault-store-quay-robot-token: ## Store Quay robot credentials in Vault (central/quay/robot)
+	@$(SOURCE_BASHRC); \
+	set -a; [ -f .env ] && . ./.env || true; set +a; \
+	test -n "$${OCI_ROBOT_USERNAME:-}" || { echo "ERROR: OCI_ROBOT_USERNAME not set"; exit 1; }; \
+	test -n "$${OCI_ROBOT_PASSWORD:-}" || { echo "ERROR: OCI_ROBOT_PASSWORD not set"; exit 1; }; \
+	VAULT_ADDR=$$(oc get route central-vault -n vault -o jsonpath='{.spec.host}' 2>/dev/null | xargs -I{} echo "https://{}"); \
+	VAULT_TOKEN=$$(oc get secret vault-init-keys -n vault -o jsonpath='{.data.root-token}' 2>/dev/null | base64 -d); \
+	echo "==> Storing Quay robot credentials in Vault central/quay/robot..."; \
+	curl -sk --fail -X POST "$$VAULT_ADDR/v1/central/data/quay/robot" \
+		-H "X-Vault-Token: $$VAULT_TOKEN" \
+		-H "Content-Type: application/json" \
+		-d "{\"data\":{\"username\":\"$${OCI_ROBOT_USERNAME}\",\"password\":\"$${OCI_ROBOT_PASSWORD}\"}}"; \
+	echo "==> Quay robot credentials stored in Vault"
 
 # ===========================================================================
 ##@ GitOps Applications (Phase 2) — ArgoCD Applications using OCI Helm charts
@@ -1356,7 +1431,7 @@ deploy-custom-operators: install-custom-operators-git-creds install-custom-opera
 install-plugin-rbac: ## Deploy plugin-rbac operator via ArgoCD Application (OCI helm v0.3.4)
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
-	CHART_VERSION=0.3.4 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-rbac rbac-plugin-operator sovereign-cloud-plugins 300; \
+	CHART_VERSION=0.3.5 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-rbac rbac-plugin-operator sovereign-cloud-plugins 300; \
 	$(MAKE) sync-wait-argoapp APP=plugin-rbac
 
 uninstall-plugin-rbac: ## Delete plugin-rbac ArgoCD Application
@@ -1368,7 +1443,7 @@ uninstall-plugin-rbac: ## Delete plugin-rbac ArgoCD Application
 install-plugin-vault: ## Deploy vault-plugin-operator via ArgoCD Application (OCI helm v0.1.5)
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
-	CHART_VERSION=0.1.5 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-vault vault-plugin-operator sovereign-cloud-plugins 350; \
+	CHART_VERSION=0.1.6 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-vault vault-plugin-operator sovereign-cloud-plugins 350; \
 	$(MAKE) sync-wait-argoapp APP=plugin-vault
 
 uninstall-plugin-vault: ## Delete vault-plugin-operator ArgoCD Application
@@ -1407,7 +1482,7 @@ create-vaultconfig-cr: ## Create the platform VaultConfig CR in sovereign-cloud-
 install-entity-operator: ## Deploy entity-operator via ArgoCD Application (OCI helm v0.1.1)
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
-	CHART_VERSION=0.1.3 bash $(SCRIPTS_DIR)/apply-argoapp.sh entity-operator entity-operator sovereign-cloud 310; \
+	CHART_VERSION=0.1.4 bash $(SCRIPTS_DIR)/apply-argoapp.sh entity-operator entity-operator sovereign-cloud 310; \
 	$(MAKE) sync-wait-argoapp APP=entity-operator
 
 uninstall-entity-operator: ## Delete entity-operator ArgoCD Application
@@ -1570,7 +1645,7 @@ wait-build-vault-plugin: ## Wait for vault-plugin-operator build PipelineRun to 
 install-plugin-aap: ## Deploy aap-plugin-operator via ArgoCD Application (OCI helm v0.1.0)
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
-	CHART_VERSION=0.1.4 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-aap aap-plugin-operator sovereign-cloud-plugins 360; \
+	CHART_VERSION=0.1.6 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-aap aap-plugin-operator sovereign-cloud-plugins 360; \
 	$(MAKE) sync-wait-argoapp APP=plugin-aap
 
 uninstall-plugin-aap: ## Delete aap-plugin-operator ArgoCD Application
@@ -1626,7 +1701,7 @@ wait-build-aap-plugin: ## Wait for aap-plugin-operator build PipelineRun to succ
 install-plugin-quay: ## Deploy quay-plugin-operator via ArgoCD Application (OCI helm v0.1.0)
 	@$(SOURCE_BASHRC); \
 	$(MAKE) login; \
-	CHART_VERSION=0.1.0 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-quay quay-plugin-operator sovereign-cloud-plugins 365; \
+	CHART_VERSION=0.1.1 bash $(SCRIPTS_DIR)/apply-argoapp.sh plugin-quay quay-plugin-operator sovereign-cloud-plugins 365; \
 	$(MAKE) sync-wait-argoapp APP=plugin-quay
 
 uninstall-plugin-quay: ## Delete quay-plugin-operator ArgoCD Application

@@ -1,5 +1,9 @@
 namespace: sovereign-cloud
 
+# Quay registry target for all operator image builds
+quayRegistry: quay.signal9.gg
+quayOrg: hybrid-sovereign
+
 # Shared pipeline name used by all operator PipelineRuns
 pipelineName: ansible-operator-image-build
 

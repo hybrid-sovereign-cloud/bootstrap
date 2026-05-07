@@ -1,5 +1,5 @@
 ---
-# Pipeline: clone the console repo and build+push its image to an ImageStream.
+# Pipeline: clone the console repo and build+push its image to Quay.
 # Uses git-clone (Tekton Hub) and buildah (OpenShift Pipelines) tasks.
 apiVersion: tekton.dev/v1
 kind: Pipeline
@@ -11,8 +11,8 @@ metadata:
 spec:
   description: >
     Clones the sovereign-cloud console repository, builds the container image
-    using buildah from the Containerfile at the repo root, and pushes it to the
-    OpenShift internal registry ImageStream.
+    using buildah from the Containerfile at the repo root, and pushes it to
+    Quay ({{ .Values.quayRegistry }}/{{ .Values.quayOrg }}).
   params:
     - name: git-url
       type: string
@@ -24,10 +24,10 @@ spec:
       description: Branch or commit to build
     - name: image-registry
       type: string
-      default: "image-registry.openshift-image-registry.svc:5000"
+      default: {{ .Values.quayRegistry | quote }}
     - name: image-namespace
       type: string
-      default: {{ .Values.namespace | quote }}
+      default: {{ .Values.quayOrg | quote }}
     - name: image-name
       type: string
       default: "sovereign-cloud-console"

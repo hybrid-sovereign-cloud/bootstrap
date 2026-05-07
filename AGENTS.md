@@ -12,7 +12,7 @@ Applies to: Cursor, Claude, and all AI agents working in this repository.
 | **Validate before done** | Run `make validate-helm` before declaring any chart work complete. |
 | **GitOps first** | All cluster state after Phase 1 is driven by the Argo CD ApplicationSet (`platform-gitops`). No manual Helm installs into production cluster after Phase 2. |
 | **Secrets via Vault + ESO** | Never hardcode secrets. Store in HashiCorp Vault; pull with External Secrets Operator ExternalSecrets. |
-| **Builds via OpenShift Pipelines** | Use Tekton for all container builds; push results to OpenShift ImageStreams. |
+| **Builds via OpenShift Pipelines** | Use Tekton for all container builds; push results to Quay (`quay.signal9.gg/hybrid-sovereign`). No internal ImageStreams. |
 | **Git freely** | `git add`, `commit`, `push` allowed at any time to keep history clean. |
 | **Update docs** | Update the relevant README, Makefile help text, and an architecture ADR on every meaningful change. |
 | **Iterate until fixed** | Deploy → test → fix loop; **`oc` read-only** (get/describe/logs); cluster **writes** via **`make`** targets; fix chart/Makefile, commit, re-sync. |
