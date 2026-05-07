@@ -251,3 +251,32 @@ spec:
     - name: git-credentials
       secret:
         secretName: github-basic-auth
+---
+# sovereign-cloud-console (requires nodejs-console-build pipeline, uses PVC workspace)
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: nodejs-console-build-
+  namespace: sovereign-cloud
+  labels:
+    operator: sovereign-cloud-console
+spec:
+  pipelineRef:
+    name: nodejs-console-build
+  params:
+    - name: git-revision
+      value: main
+    - name: image-tag
+      value: latest
+  workspaces:
+    - name: source
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 2Gi
+    - name: git-credentials
+      secret:
+        secretName: github-basic-auth
