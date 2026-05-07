@@ -26,7 +26,7 @@
 	trigger-build-console wait-console-build deploy-console \
 	fix-acs-consoleplugin debug-acs-consoleplugin regenerate-acs-init-bundle \
 	oci-login oci-push-all oci-push-bootstrap oci-push-operators oci-make-public oci-make-private \
-	oci-bootstrap-pull-secrets setup-quay-push-secret vault-store-quay-robot-token \
+	oci-bootstrap-pull-secrets oci-grant-robot-access setup-quay-push-secret vault-store-quay-robot-token \
 	uninstall-aap-operator uninstall-eso-operator uninstall-rhbk-operator \
 	uninstall-gitops-operator uninstall-quay-operator uninstall-openshift-pipelines-operator \
 	uninstall-odf-operator uninstall-odf-noobaa uninstall-quay-instance \
@@ -923,6 +923,23 @@ oci-push-operators: oci-login ## Package and push all operator repo charts to OC
 
 oci-push-all: oci-push-bootstrap oci-push-operators ## Push ALL charts (bootstrap + all operator repos) to OCI registry
 	@echo "==> All charts pushed to $(OCI_HELM_REGISTRY)"
+
+oci-grant-robot-access: ## Grant hybrid-sovereign+pull robot read/write access to all repos in $(OCI_ORG) (idempotent)
+	@$(SOURCE_BASHRC); \
+	test -n "$${OCI_REGISTRY_TOKEN:-}" || { echo "ERROR: OCI_REGISTRY_TOKEN not set"; exit 1; }; \
+	echo "==> Granting robot hybrid-sovereign+pull read access to all repos in $(OCI_ORG)..."; \
+	REPOS=$$(curl -sf \
+		-H "Authorization: Bearer $${OCI_REGISTRY_TOKEN}" \
+		"https://$(OCI_REGISTRY_HOST)/api/v1/repository?namespace=$(OCI_ORG)&limit=200" \
+		| python3 -c "import sys,json; [print(r['name']) for r in json.load(sys.stdin).get('repositories',[])]"); \
+	for repo in $$REPOS; do \
+		curl -sk -X PUT \
+			"https://$(OCI_REGISTRY_HOST)/api/v1/repository/$(OCI_ORG)/$$repo/permissions/user/$(OCI_ORG)+pull" \
+			-H "Authorization: Bearer $${OCI_REGISTRY_TOKEN}" \
+			-H "Content-Type: application/json" \
+			-d '{"role":"write"}' -o /dev/null 2>/dev/null; \
+	done; \
+	echo "==> Robot access granted to $$(echo $$REPOS | wc -w) repos"
 
 oci-make-public: ## Ensure all known charts are public in Quay (idempotent)
 	@$(SOURCE_BASHRC); \
