@@ -66,9 +66,22 @@ spec:
               if echo "$OAUTH_JSON" | grep -q '"keycloak"'; then
                 echo "Keycloak OIDC IDP already present in OAuth cluster CR – skipping"
               else
-                echo "Adding Keycloak OIDC IDP to cluster OAuth (JSON Patch append preserves htpasswd)..."
-                # Use json-patch+json with op=add and path /spec/identityProviders/-
-                # which APPENDS to the array without touching existing entries (htpasswd).
+                echo "Adding Keycloak OIDC IDP to cluster OAuth..."
+                # Check if identityProviders array exists; if not, initialise it with merge-patch.
+                # Then append with json-patch to preserve any existing providers (e.g. htpasswd).
+                HAS_IDPS=$(echo "$OAUTH_JSON" | grep -c '"identityProviders"' || true)
+                if [ "$HAS_IDPS" = "0" ]; then
+                  echo "  identityProviders array absent — initialising with merge-patch..."
+                  INIT_PATCH=$(cat <<EOINIT
+              {"spec":{"identityProviders":[]}}
+              EOINIT
+              )
+                  curl -sk -o /dev/null -w "%{http_code}\n" \
+                    -H "Authorization: Bearer $SA_TOKEN" \
+                    -H "Content-Type: application/merge-patch+json" \
+                    -X PATCH "$K8S/apis/config.openshift.io/v1/oauths/cluster" \
+                    -d "$INIT_PATCH"
+                fi
                 PATCH=$(cat <<EOPATCH
               [
                 {
