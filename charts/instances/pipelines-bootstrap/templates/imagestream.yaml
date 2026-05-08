@@ -1,1 +1,0 @@
-{{- /* ImageStream removed — operator images are pushed to Quay, not the internal registry. */ -}}

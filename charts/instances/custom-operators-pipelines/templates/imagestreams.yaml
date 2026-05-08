@@ -1,2 +1,0 @@
-{{- /* ImageStreams removed — operator images are now pushed directly to Quay.
-       See .Values.quayRegistry / .Values.quayOrg for the target registry. */ -}}

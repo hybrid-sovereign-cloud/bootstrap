@@ -1,6 +1,0 @@
-apiVersion: v2
-name: custom-operators-applicationset
-description: ArgoCD ApplicationSet for the 8 custom Sovereign Cloud operators (each sourced from its own GitHub repo)
-type: application
-version: 0.1.0
-appVersion: "0.1.0"

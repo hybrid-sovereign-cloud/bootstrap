@@ -901,7 +901,9 @@ oci-push-bootstrap: oci-login ## Package and push all bootstrap charts to OCI re
 oci-push-operators: oci-login ## Package and push all operator repo charts to OCI registry (repos stay private; run oci-grant-robot-access after)
 	@$(SOURCE_BASHRC); \
 	mkdir -p /tmp/helm-oci-push; \
-	OPERATOR_REPOS="Assignment CloudAWS CloudOSO PlatformOpenshift plugin_rbac plugin_vault plugin_aap plugin_quay plugin_iaac Projects sovereign_tenancy Team console"; \
+	# NOTE: operator repos (Assignment, CloudAWS, etc.) have been cleared as part of Phase 2 cleanup.
+	# Re-add them here once they are rebuilt with new helm/ directories.
+	OPERATOR_REPOS=""; \
 	WORKSPACE=$$(dirname $$(pwd)); \
 	echo "==> Pushing operator charts from: $$OPERATOR_REPOS"; \
 	for repo in $$OPERATOR_REPOS; do \
