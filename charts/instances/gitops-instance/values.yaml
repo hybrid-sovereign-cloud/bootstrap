@@ -22,12 +22,9 @@ ociRegistry:
   password: ""  # OCI_ROBOT_PASSWORD  (robot token)
   # OCI Helm chart repositories that ArgoCD Applications use as sources.
   # Each entry generates an individual ArgoCD repository secret (required for v3.x OCI auth).
-  repositories:
-    - external-secrets-operator
-    - aap-plugin-operator
-    - iaac-plugin-operator
-    - quay-plugin-operator
-    - vault-plugin-operator
+  # NOTE: Custom operator OCI repos (aap-plugin-operator, iaac-plugin-operator, etc.)
+  # have been removed as part of Phase 2 cleanup. Re-add here when operators are rebuilt.
+  repositories: []
 
 # Optional: tighten Argo CD server behavior when using self-signed Git endpoints.
 argocd:
