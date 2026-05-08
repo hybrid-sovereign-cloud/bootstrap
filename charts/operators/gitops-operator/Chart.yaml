@@ -1,6 +1,0 @@
-apiVersion: v2
-name: gitops-operator
-description: OLM Subscription for OpenShift GitOps operator (cluster-scoped)
-type: application
-version: 0.1.0
-appVersion: "1.20"

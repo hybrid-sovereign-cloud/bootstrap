@@ -1,3 +1,0 @@
-name: noobaa
-dbStorageClass: standard-csi
-dbVolumeSize: 50Gi

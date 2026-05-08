@@ -1,6 +1,0 @@
-apiVersion: v2
-name: service-oidc-config
-description: Configure OIDC integration for Quay, OpenShift OAuth, and Vault using Keycloak
-type: application
-version: 0.1.0
-appVersion: "1.0"

@@ -1,6 +1,0 @@
-apiVersion: v2
-name: gitops-instance
-description: OpenShift GitOps ArgoCD instance verification
-type: application
-version: 0.1.0
-appVersion: "1.20"

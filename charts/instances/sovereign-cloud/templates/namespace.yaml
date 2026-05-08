@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: sovereign-cloud
-  labels:
-    {{- include "chart.labels" . | nindent 4 }}
-    openshift.io/cluster-monitoring: "true"

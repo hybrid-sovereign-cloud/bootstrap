@@ -1,6 +1,0 @@
-apiVersion: v2
-name: external-secrets-config
-description: Namespace-scoped SecretStore for Vault and ExternalSecret resources
-type: application
-version: 0.1.2
-appVersion: "1.0"

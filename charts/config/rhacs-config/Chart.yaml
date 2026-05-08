@@ -1,6 +1,0 @@
-apiVersion: v2
-name: rhacs-config
-description: Post-install config for ACS - init bundle, SecuredCluster update, Vault secret storage
-type: application
-version: 0.1.0
-appVersion: "stable"

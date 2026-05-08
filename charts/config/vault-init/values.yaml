@@ -1,6 +1,0 @@
-vaultAddr: "http://central-vault:8200"
-kvPath: "central"
-secretShares: 5
-secretThreshold: 3
-image: docker.io/hashicorp/vault:1.21.2
-serviceAccount: central-vault
