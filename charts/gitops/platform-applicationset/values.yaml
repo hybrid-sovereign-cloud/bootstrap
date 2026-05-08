@@ -68,10 +68,6 @@ applications:
     path: charts/instances/odf-noobaa
     namespace: openshift-storage
     wave: "130"
-  - name: pipelines-bootstrap
-    path: charts/instances/pipelines-bootstrap
-    namespace: sovereign-cloud
-    wave: "135"
   - name: quay-instance
     path: charts/instances/quay-instance
     namespace: quay
@@ -112,24 +108,8 @@ applications:
     path: charts/gitops/argocd-init-job
     namespace: openshift-gitops
     wave: "250"
-  # Custom operator git credentials (org-level ArgoCD credential template)
-  # GITHUB_TOKEN must be passed at install time via make phase2-applicationset
-  - name: custom-operators-git-creds
-    path: charts/instances/custom-operators-git-creds
-    namespace: openshift-gitops
-    wave: "275"
-  # OpenShift Pipelines definitions for the custom operators (images pushed to Quay)
-  - name: custom-operators-pipelines
-    path: charts/instances/custom-operators-pipelines
-    namespace: sovereign-cloud
-    wave: "280"
-  # ApplicationSet that sources each operator from its own GitHub repo
-  - name: custom-operators-applicationset
-    path: charts/gitops/custom-operators-applicationset
-    namespace: openshift-gitops
-    wave: "285"
-  # Enable all dynamic console plugins (runs as an ArgoCD Sync hook)
-  - name: dynamic-plugins-config
-    path: charts/config/dynamic-plugins-config
-    namespace: sovereign-cloud
-    wave: "290"
+  # NOTE: custom-operators-git-creds, custom-operators-pipelines,
+  # custom-operators-applicationset, and dynamic-plugins-config
+  # are intentionally removed. Custom operators (hybridsovereign.redhat)
+  # are deployed separately via make deploy-custom-operators after the
+  # platform wave is healthy. Add them back here when rebuilding.

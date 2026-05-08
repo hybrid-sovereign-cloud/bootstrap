@@ -66,7 +66,8 @@ externalSecrets:
         k8sKey: realm
       - vaultKey: vault-hostname
         k8sKey: vault-hostname
-  # Keycloak auth config for plugin_rbac (sovereign-cloud) and other operators
+  # Keycloak auth config for custom operators in sovereign-cloud namespace
+  # (re-add plugin-specific entries when custom operators are rebuilt)
   - name: keycloak-auth-config
     remoteKey: keycloak/auth-config
     keys:
@@ -80,51 +81,3 @@ externalSecrets:
         k8sKey: KC_AUTH_REALM
       - vaultKey: KC_URL
         k8sKey: KC_URL
-  # Keycloak auth config for plugin_rbac in sovereign-cloud-plugins namespace
-  - name: keycloak-auth-config
-    namespace: sovereign-cloud-plugins
-    remoteKey: keycloak/auth-config
-    keys:
-      - vaultKey: KC_USERNAME
-        k8sKey: KC_USERNAME
-      - vaultKey: KC_PASSWORD
-        k8sKey: KC_PASSWORD
-      - vaultKey: KC_REALM
-        k8sKey: KC_REALM
-      - vaultKey: KC_AUTH_REALM
-        k8sKey: KC_AUTH_REALM
-      - vaultKey: KC_URL
-        k8sKey: KC_URL
-  # Vault admin token for plugin_vault operator
-  - name: vault-admin-token
-    namespace: sovereign-cloud-plugins
-    remoteKey: vault/admin-token
-    keys:
-      - vaultKey: VAULT_TOKEN
-        k8sKey: VAULT_TOKEN
-  # AAP admin token for plugin_aap operator
-  - name: aap-admin-token
-    namespace: sovereign-cloud-plugins
-    remoteKey: aap/admin-token
-    keys:
-      - vaultKey: AAP_CONTROLLER_TOKEN
-        k8sKey: AAP_CONTROLLER_TOKEN
-      - vaultKey: AAP_CONTROLLER_URL
-        k8sKey: AAP_CONTROLLER_URL
-      - vaultKey: AAP_GATEWAY_TOKEN
-        k8sKey: AAP_GATEWAY_TOKEN
-      - vaultKey: AAP_GATEWAY_URL
-        k8sKey: AAP_GATEWAY_URL
-  # Quay admin token for plugin_quay operator
-  - name: quay-admin-token
-    namespace: sovereign-cloud-plugins
-    remoteKey: quay/admin-token
-    keys:
-      - vaultKey: QUAY_URL
-        k8sKey: QUAY_URL
-      - vaultKey: QUAY_TOKEN
-        k8sKey: QUAY_TOKEN
-      - vaultKey: QUAY_ADMIN_USER
-        k8sKey: QUAY_ADMIN_USER
-      - vaultKey: QUAY_ADMIN_PASSWORD
-        k8sKey: QUAY_ADMIN_PASSWORD
