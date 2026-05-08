@@ -78,6 +78,18 @@ spec:
               CALLBACK_UI="https://${VAULT_HOST}/ui/vault/auth/oidc/oidc/callback"
               CALLBACK_CLI="http://localhost:8250/oidc/callback"
 
+              # Fetch the cluster ingress CA so Vault can verify the Keycloak TLS cert
+              INGRESS_CA_B64=$(curl -sfk -H "Authorization: Bearer $SA_TOKEN" \
+                "$K8S/api/v1/namespaces/openshift-ingress-operator/secrets/router-ca" | \
+                sed -n 's/.*"tls\.crt"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+              INGRESS_CA=""
+              if [ -n "$INGRESS_CA_B64" ]; then
+                INGRESS_CA=$(printf '%s' "$INGRESS_CA_B64" | base64 -d | awk '{printf "%s\\n", $0}')
+                echo "  Fetched ingress CA for Vault TLS verification"
+              else
+                echo "  WARNING: Could not fetch ingress CA — Vault may fail TLS check"
+              fi
+
               # ── Enable OIDC auth method if not already enabled ────────────────────────
               AUTH_LIST=$(curl -sfk -H "X-Vault-Token: $ROOT_TOKEN" \
                 "$VAULT_ADDR/v1/sys/auth" 2>/dev/null || echo '{}')
@@ -103,7 +115,7 @@ spec:
                   \"oidc_client_id\": \"${CLIENT_ID}\",
                   \"oidc_client_secret\": \"${CLIENT_SECRET}\",
                   \"default_role\": \"default\",
-                  \"oidc_discovery_ca_pem\": \"\"
+                  \"oidc_discovery_ca_pem\": \"${INGRESS_CA}\"
                 }")
               echo "$HTTP" | grep -qE '^2' || { echo "ERROR configuring OIDC: HTTP $HTTP"; cat /tmp/resp.txt; exit 1; }
 
