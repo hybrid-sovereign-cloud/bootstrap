@@ -74,6 +74,59 @@ Vault KV (central/) → ExternalSecret (ESO) → Kubernetes Secret → App
 
 Vault is unsealed by the `vault-init` PostSync job. The root token is stored in `vault-init-keys` Secret and read by subsequent config jobs via RBAC-scoped Service Accounts.
 
+## Known operational fixes
+
+### OLM subscription ResolutionFailed (all operators)
+
+**Symptom**: Operator ArgoCD apps show `Degraded` health; `oc get subscription -n <ns>` shows `ResolutionFailed=True` with message "clusterserviceversion ... exists and is not referenced by a subscription".
+
+**Cause**: A CSV exists in the cluster but is not linked to its subscription (typically after an operator upgrade or subscription recreation without an InstallPlan).
+
+**Fix procedure** (repeat for each affected namespace):
+```bash
+# 1. Create a stub InstallPlan for the existing CSV
+oc create -f - -n <NAMESPACE> <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: InstallPlan
+metadata:
+  name: adopt-<SUBSCRIPTION_NAME>
+spec:
+  approval: Automatic
+  approved: true
+  clusterServiceVersionNames: ["<CSV_NAME>"]
+EOF
+
+# 2. Patch the subscription status to reference the CSV and InstallPlan
+oc patch subscription.operators.coreos.com <SUBSCRIPTION_NAME> -n <NAMESPACE> \
+  --type=merge --subresource=status -p '{
+  "status": {"currentCSV": "<CSV_NAME>", "installedCSV": "<CSV_NAME>",
+    "installPlanRef": {"apiVersion": "operators.coreos.com/v1alpha1",
+      "kind": "InstallPlan", "name": "adopt-<SUBSCRIPTION_NAME>",
+      "namespace": "<NAMESPACE>"}, "state": "AtLatestKnown"}}'
+
+# 3. After ~30s, delete the stub InstallPlan (prevents InstallPlanPending)
+oc delete installplan adopt-<SUBSCRIPTION_NAME> -n <NAMESPACE>
+```
+
+### NooBaa stuck in Configuring / OBC not Binding
+
+**Cause**: ODF OperatorScaler requires `odf-dependencies` CSV to be present before scaling up the `noobaa-operator` deployment. If the MCG subscription has `ResolutionFailed`, the `noobaa-operator` stays at 0 replicas.
+
+**Fix**:
+1. Fix OLM subscriptions as above (apply to `openshift-storage` namespace for `odf-operator`)  
+2. Restart ODF operator controller: `oc rollout restart deployment/odf-operator-controller-manager -n openshift-storage`
+3. NooBaa operator scales up and reconciles NooBaa CR → BackingStore → BucketClass → OBC Bound
+
+### MCH (RHACM) stuck Uninstalling
+
+**Cause**: `ManagedClusterAddOn hypershift-addon` finalizer blocking MCH deletion.
+
+**Fix**:
+```bash
+oc patch managedclusteraddon hypershift-addon -n local-cluster \
+  --type=merge -p '{"metadata":{"finalizers":[]}}'
+```
+
 ## AI policy
 
 See [AI-POLICY.md](AI-POLICY.md) for the full governance policy applied to all AI-generated changes.
