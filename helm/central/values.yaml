@@ -27,7 +27,7 @@ rhacm:
   # These override defaults in bootstrap/helm/charts/rhacm/values.yaml.
   values:
     operator:
-      channel: release-2.11
+      channel: release-2.16
       installPlanApproval: Automatic
     multiClusterHub:
       enabled: true
