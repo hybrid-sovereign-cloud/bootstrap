@@ -29,8 +29,10 @@ sovereignNamespaces:
         enabled: true
 
 # ─── Sovereign Namespaces (services cluster) ────────────────────────────────
+# Disabled: services namespaces are created by CreateNamespace=true in RHBK app.
+# ArgoCD has a known limitation with same-named cluster-scoped resources across clusters.
 sovereignNamespacesServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.0"
   syncWave: "1"
   values:
@@ -39,8 +41,6 @@ sovereignNamespacesServices:
         enabled: true
       - name: sovereign-cloud-plugins
         enabled: true
-      - name: sovereign-cloud-jobs
-        enabled: false
 
 # ─── RHBK (Keycloak) ─────────────────────────────────────────────────────────
 rhbk:
