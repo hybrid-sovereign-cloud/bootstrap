@@ -27,11 +27,12 @@ sovereignNamespaces:
 # ─── RHBK (Keycloak) ─────────────────────────────────────────────────────────
 rhbk:
   enabled: true
-  chartVersion: "0.2.0"
+  chartVersion: "0.3.0"
   syncWave: "20"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
+    instanceName: sovereign-keycloak-central
     keycloak:
       enabled: true
       instances: 2

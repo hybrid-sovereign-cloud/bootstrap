@@ -7,6 +7,8 @@ operator:
 
 namespace: sovereign-cloud
 
+instanceName: sovereign-keycloak
+
 keycloak:
   enabled: true
   instances: 2
