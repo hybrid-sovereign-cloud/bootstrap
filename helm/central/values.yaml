@@ -362,7 +362,7 @@ vaultSecretStore:
 sovereignJobs:
   enabled: true
   chartVersion: "0.1.2"
-  syncWave: "40"
+  syncWave: "5"
   values:
     namespace: sovereign-jobs
     serviceAccount: sovereign-ansible-runner
