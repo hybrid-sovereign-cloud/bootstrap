@@ -1,0 +1,43 @@
+{{- if .Values.crunchyPostgres.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: crunchy-postgres-central
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.crunchyPostgres.syncWave | quote }}
+spec:
+  project: default
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/crunchy-postgres" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: crunchy-postgres
+    targetRevision: {{ .Values.crunchyPostgres.chartVersion | quote }}
+    helm:
+      releaseName: crunchy-postgres-central
+      values: |
+        {{- toYaml .Values.crunchyPostgres.values | nindent 8 }}
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.crunchyPostgres.destinationNamespace }}
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+{{- end }}

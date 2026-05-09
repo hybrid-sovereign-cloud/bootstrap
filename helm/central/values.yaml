@@ -124,6 +124,28 @@ acsServices:
     consolePlugin:
       enabled: true
 
+# ─── Vault (central cluster only) ──────────────────────────────────────────
+vault:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "15"
+  values:
+    vault:
+      global:
+        openshift: true
+      server:
+        ha:
+          enabled: true
+          replicas: 3
+          raft:
+            enabled: true
+        route:
+          enabled: true
+      ui:
+        enabled: true
+      injector:
+        enabled: true
+
 # ─── RHACM Application ───────────────────────────────────────────────────────
 rhacm:
   # Set to false to skip deploying RHACM via ArgoCD.
@@ -153,3 +175,87 @@ rhacm:
         cluster-lifecycle: true
         volsync: false
         cluster-backup: false
+
+# ─── AAP (services cluster only) ──────────────────────────────────────────
+aap:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "30"
+  destinationNamespace: aap
+  values:
+    namespace: aap
+    instance:
+      enabled: true
+      name: sovereign-aap
+    gateway:
+      enabled: true
+    controller:
+      enabled: true
+    eda:
+      enabled: true
+
+# ─── ODF / Noobaa (central cluster) ──────────────────────────────────────
+odf:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "12"
+  destinationNamespace: openshift-storage
+  values:
+    namespace: openshift-storage
+    noobaa:
+      enabled: true
+      name: noobaa
+
+# ─── ODF / Noobaa (services cluster) ──────────────────────────────────────
+odfServices:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "12"
+  destinationNamespace: openshift-storage
+  values:
+    namespace: openshift-storage
+    noobaa:
+      enabled: true
+      name: noobaa
+
+# ─── Quay (central cluster) ──────────────────────────────────────────────
+quay:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "35"
+  destinationNamespace: quay-enterprise
+  values:
+    namespace: quay-enterprise
+    registry:
+      enabled: true
+      name: sovereign-registry
+
+# ─── Quay (services cluster) ──────────────────────────────────────────────
+quayServices:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "35"
+  destinationNamespace: quay-enterprise
+  values:
+    namespace: quay-enterprise
+    registry:
+      enabled: true
+      name: sovereign-registry
+
+# ─── CrunchyData Postgres (central cluster) ──────────────────────────────
+crunchyPostgres:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "11"
+  destinationNamespace: openshift-operators
+  values:
+    namespace: openshift-operators
+
+# ─── CrunchyData Postgres (services cluster) ──────────────────────────────
+crunchyPostgresServices:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "11"
+  destinationNamespace: openshift-operators
+  values:
+    namespace: openshift-operators

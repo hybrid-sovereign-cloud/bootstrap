@@ -1,0 +1,21 @@
+operator:
+  channel: stable-2.5
+  installPlanApproval: Automatic
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  name: ansible-automation-platform-operator
+
+namespace: aap
+
+instance:
+  enabled: true
+  name: sovereign-aap
+
+gateway:
+  enabled: true
+
+controller:
+  enabled: true
+
+eda:
+  enabled: true

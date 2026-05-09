@@ -1,0 +1,25 @@
+operator:
+  channel: stable-3.13
+  installPlanApproval: Automatic
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+
+namespace: quay-enterprise
+
+registry:
+  enabled: true
+  name: sovereign-registry
+  components:
+    objectstorage:
+      managed: false
+    postgres:
+      managed: true
+    clair:
+      managed: true
+    redis:
+      managed: true
+    mirror:
+      managed: true
+
+objectStorage:
+  bucketName: "quay-datastorage"

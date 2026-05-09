@@ -37,6 +37,11 @@ include make/upload-rhbk-chart.mk
 include make/upload-rhbk-config-chart.mk
 include make/upload-sovereign-namespaces-chart.mk
 include make/upload-acs-chart.mk
+include make/upload-vault-chart.mk
+include make/upload-aap-chart.mk
+include make/upload-odf-chart.mk
+include make/upload-quay-chart.mk
+include make/upload-crunchy-postgres-chart.mk
 include make/ansible-runner.mk
 include make/init-central-argo.mk
 include make/help.mk

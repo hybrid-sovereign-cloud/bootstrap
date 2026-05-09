@@ -1,0 +1,33 @@
+vault:
+  global:
+    openshift: true
+  server:
+    ha:
+      enabled: true
+      replicas: 3
+      raft:
+        enabled: true
+        config: |
+          ui = true
+          listener "tcp" {
+            tls_disable = 1
+            address = "[::]:8200"
+            cluster_address = "[::]:8201"
+          }
+          storage "raft" {
+            path = "/vault/data"
+          }
+          service_registration "kubernetes" {}
+    dataStorage:
+      enabled: true
+      size: 10Gi
+    route:
+      enabled: true
+      host: ""
+    image:
+      repository: docker.io/hashicorp/vault
+      tag: "1.17.2"
+  ui:
+    enabled: true
+  injector:
+    enabled: true

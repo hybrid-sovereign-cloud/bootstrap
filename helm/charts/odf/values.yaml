@@ -1,0 +1,11 @@
+operator:
+  channel: stable-4.17
+  installPlanApproval: Automatic
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+
+namespace: openshift-storage
+
+noobaa:
+  enabled: true
+  name: noobaa

@@ -1,0 +1,43 @@
+{{- if .Values.odf.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: odf-central
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: storage
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.odf.syncWave | quote }}
+spec:
+  project: default
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/odf" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: odf
+    targetRevision: {{ .Values.odf.chartVersion | quote }}
+    helm:
+      releaseName: odf-central
+      values: |
+        {{- toYaml .Values.odf.values | nindent 8 }}
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.odf.destinationNamespace }}
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+{{- end }}

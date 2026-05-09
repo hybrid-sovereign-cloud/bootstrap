@@ -1,0 +1,6 @@
+apiVersion: v2
+name: aap
+description: Red Hat Ansible Automation Platform - operator + gateway, controller, EDA
+type: application
+version: 0.1.0
+appVersion: "2.5"

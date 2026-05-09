@@ -1,0 +1,7 @@
+operator:
+  channel: v5
+  installPlanApproval: Automatic
+  source: certified-operators
+  sourceNamespace: openshift-marketplace
+
+namespace: openshift-operators

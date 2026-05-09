@@ -1,0 +1,43 @@
+{{- if .Values.quay.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: quay-central
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: registry
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.quay.syncWave | quote }}
+spec:
+  project: default
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/quay" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: quay
+    targetRevision: {{ .Values.quay.chartVersion | quote }}
+    helm:
+      releaseName: quay-central
+      values: |
+        {{- toYaml .Values.quay.values | nindent 8 }}
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.quay.destinationNamespace }}
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+{{- end }}

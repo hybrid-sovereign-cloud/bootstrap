@@ -1,0 +1,29 @@
+{{- if .Values.registry.enabled }}
+---
+apiVersion: quay.redhat.com/v1
+kind: QuayRegistry
+metadata:
+  name: {{ .Values.registry.name }}
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  components:
+    - kind: objectstorage
+      managed: {{ .Values.registry.components.objectstorage.managed }}
+    - kind: postgres
+      managed: {{ .Values.registry.components.postgres.managed }}
+    - kind: clair
+      managed: {{ .Values.registry.components.clair.managed }}
+    - kind: redis
+      managed: {{ .Values.registry.components.redis.managed }}
+    - kind: mirror
+      managed: {{ .Values.registry.components.mirror.managed }}
+    - kind: route
+      managed: true
+    - kind: tls
+      managed: true
+    - kind: monitoring
+      managed: true
+{{- end }}

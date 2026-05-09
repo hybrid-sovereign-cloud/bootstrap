@@ -1,0 +1,21 @@
+{{- if .Values.noobaa.enabled }}
+---
+apiVersion: noobaa.io/v1alpha1
+kind: NooBaa
+metadata:
+  name: {{ .Values.noobaa.name }}
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  dbResources:
+    requests:
+      cpu: "0.1"
+      memory: 1Gi
+  dbType: postgres
+  coreResources:
+    requests:
+      cpu: "0.1"
+      memory: 1Gi
+{{- end }}
