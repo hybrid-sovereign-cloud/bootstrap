@@ -132,22 +132,10 @@ vault:
       global:
         openshift: true
       server:
-        ha:
+        standalone:
           enabled: true
-          replicas: 1
-          raft:
-            enabled: true
-            config: |
-              ui = true
-              listener "tcp" {
-                tls_disable = 1
-                address = "[::]:8200"
-                cluster_address = "[::]:8201"
-              }
-              storage "raft" {
-                path = "/vault/data"
-              }
-              service_registration "kubernetes" {}
+        ha:
+          enabled: false
         route:
           enabled: true
         image:
