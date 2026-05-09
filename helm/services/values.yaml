@@ -28,7 +28,7 @@ sovereignNamespaces:
 # ─── RHBK (Keycloak) ─────────────────────────────────────────────────────────
 rhbk:
   enabled: true
-  chartVersion: "0.3.0"
+  chartVersion: "0.4.0"
   syncWave: "5"
   destinationNamespace: sovereign-cloud
   values:
