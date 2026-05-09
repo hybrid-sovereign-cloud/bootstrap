@@ -18,6 +18,7 @@ spec:
 
   source:
     repoURL: {{ include "sovereign-central.ociURL" . | quote }}
+    chart: rhacm
     targetRevision: {{ .Values.rhacm.chartVersion | quote }}
     helm:
       releaseName: rhacm
