@@ -129,9 +129,9 @@ bootstrap/
 │   ├── charts/
 │   │   ├── rhacm/              # RHACM operator chart (OCI)
 │   │   ├── sovereign-namespaces/  # Namespace creation chart (OCI)
-│   │   └── rhbk/              # Keycloak operator chart (OCI)
-│   ├── central/               # App-of-Apps for central cluster
-│   ├── services/              # App-of-Apps for services cluster
+│   │   ├── rhbk/              # Keycloak operator + instance chart (OCI)
+│   │   └── rhbk-config/       # Keycloak config via Ansible (OCI)
+│   ├── central/               # App-of-Apps for BOTH clusters
 │   └── init/                  # Bootstrap entry-point chart
 └── ansible/
     ├── imagebuild/ansiblerunner/  # Containerfile for ansible-runner
@@ -156,7 +156,8 @@ bootstrap/
 |---|---|
 | `make upload-acm-chart` | Push RHACM chart to OCI (admin token) |
 | `make upload-sovereign-namespaces-chart` | Push namespace chart to OCI |
-| `make upload-rhbk-chart` | Push Keycloak chart to OCI |
+| `make upload-rhbk-chart` | Push Keycloak operator+instance chart to OCI |
+| `make upload-rhbk-config-chart` | Push Keycloak config chart to OCI |
 | `make ansible-runner` | Build + push ansible-runner image |
 
 ### Bootstrap Cluster
@@ -168,7 +169,6 @@ bootstrap/
 
 - `helm/charts/*` — after any change: `helm lint`, bump `Chart.yaml` version, re-run `make upload-*`.
 - `helm/central` — run `helm lint` after every change; update `values.yaml` when OCI chart is bumped.
-- `helm/services` — same as central; child apps target services cluster via `targetCluster.server`.
 - `helm/init` — bootstrap entry-point; changes affect both clusters; test with `helm template`.
 - `make/*.mk` — each target in its own file; keep root Makefile as a thin importer.
 - `ansible/roles/*` — Keycloak configuration; test with `ansible-lint` if available.
