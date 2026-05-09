@@ -5,13 +5,28 @@
   gather_facts: false
 
   vars:
-    keycloak_url: "{{ lookup('env', 'KEYCLOAK_URL') }}"
-    keycloak_admin_user: "{{ lookup('env', 'KEYCLOAK_ADMIN_USER') | default('admin', true) }}"
-    keycloak_admin_password: "{{ lookup('env', 'KEYCLOAK_ADMIN_PASSWORD') }}"
+    keycloak_url: "{{ lookup('env', 'KEYCLOAK_URL') | default('http://sovereign-keycloak-central-service.rhbk.svc:8080', true) }}"
+    keycloak_admin_secret_name: "{{ lookup('env', 'KEYCLOAK_ADMIN_SECRET') | default('sovereign-keycloak-central-initial-admin', true) }}"
+    keycloak_admin_secret_namespace: "{{ lookup('env', 'KEYCLOAK_ADMIN_SECRET_NS') | default('rhbk', true) }}"
     realm_name: "{{ lookup('env', 'REALM_NAME') | default('sovereign-central', true) }}"
     admin_group: "{{ lookup('env', 'ADMIN_GROUP') | default('sovereign-admin', true) }}"
 
   pre_tasks:
+    - name: Fetch Keycloak admin credentials from cluster
+      kubernetes.core.k8s_info:
+        kind: Secret
+        name: "{{ keycloak_admin_secret_name }}"
+        namespace: "{{ keycloak_admin_secret_namespace }}"
+      register: admin_secret
+      retries: 30
+      delay: 10
+      until: admin_secret.resources | length > 0
+
+    - name: Set admin credentials
+      ansible.builtin.set_fact:
+        keycloak_admin_user: "{{ admin_secret.resources[0].data.username | b64decode }}"
+        keycloak_admin_password: "{{ admin_secret.resources[0].data.password | b64decode }}"
+
     - name: Wait for Keycloak to be reachable
       ansible.builtin.uri:
         url: "{{ keycloak_url }}/realms/master"

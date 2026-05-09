@@ -361,7 +361,7 @@ vaultSecretStore:
 # ─── Sovereign Jobs (all Ansible jobs in one chart) ─────────────────────
 sovereignJobs:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.1.1"
   syncWave: "40"
   values:
     namespace: sovereign-jobs
@@ -390,39 +390,27 @@ sovereignJobs:
       keycloakRealms:
         enabled: true
         playbook: keycloak-realms.yml
-        activeDeadlineSeconds: 300
+        activeDeadlineSeconds: 600
         syncWave: "15"
         env:
           - name: KEYCLOAK_URL
             value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
-          - name: KEYCLOAK_ADMIN_USER
-            valueFrom:
-              secretKeyRef:
-                name: sovereign-keycloak-central-initial-admin
-                key: username
-          - name: KEYCLOAK_ADMIN_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: sovereign-keycloak-central-initial-admin
-                key: password
+          - name: KEYCLOAK_ADMIN_SECRET
+            value: "sovereign-keycloak-central-initial-admin"
+          - name: KEYCLOAK_ADMIN_SECRET_NS
+            value: "rhbk"
       keycloakGroups:
         enabled: true
         playbook: keycloak-groups.yml
-        activeDeadlineSeconds: 300
+        activeDeadlineSeconds: 600
         syncWave: "16"
         env:
           - name: KEYCLOAK_URL
             value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
-          - name: KEYCLOAK_ADMIN_USER
-            valueFrom:
-              secretKeyRef:
-                name: sovereign-keycloak-central-initial-admin
-                key: username
-          - name: KEYCLOAK_ADMIN_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: sovereign-keycloak-central-initial-admin
-                key: password
+          - name: KEYCLOAK_ADMIN_SECRET
+            value: "sovereign-keycloak-central-initial-admin"
+          - name: KEYCLOAK_ADMIN_SECRET_NS
+            value: "rhbk"
       keycloakClients:
         enabled: true
         playbook: keycloak-clients.yml
@@ -431,16 +419,10 @@ sovereignJobs:
         env:
           - name: KEYCLOAK_URL
             value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
-          - name: KEYCLOAK_ADMIN_USER
-            valueFrom:
-              secretKeyRef:
-                name: sovereign-keycloak-central-initial-admin
-                key: username
-          - name: KEYCLOAK_ADMIN_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: sovereign-keycloak-central-initial-admin
-                key: password
+          - name: KEYCLOAK_ADMIN_SECRET
+            value: "sovereign-keycloak-central-initial-admin"
+          - name: KEYCLOAK_ADMIN_SECRET_NS
+            value: "rhbk"
           - name: KEYCLOAK_CLIENTS
             value: '[{"realm":"sovereign-central","client_id":"quay-central","name":"Quay Central","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"vault","name":"Vault","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"gitea","name":"Gitea","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"openshift-central","name":"OpenShift Central","redirect_uris":["*"]}]'
       keycloakRbac:
@@ -461,22 +443,16 @@ sovereignJobs:
             value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
           - name: KEYCLOAK_SERVICES_URL
             value: "http://sovereign-keycloak-services-service.rhbk.svc:8080"
-          - name: KEYCLOAK_ADMIN_USER
-            valueFrom:
-              secretKeyRef:
-                name: sovereign-keycloak-central-initial-admin
-                key: username
-          - name: KEYCLOAK_ADMIN_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: sovereign-keycloak-central-initial-admin
-                key: password
+          - name: KEYCLOAK_ADMIN_SECRET
+            value: "sovereign-keycloak-central-initial-admin"
+          - name: KEYCLOAK_ADMIN_SECRET_NS
+            value: "rhbk"
           - name: OCP_SERVICES_SERVER
             value: "https://api.shcservices.lab.signal9.gg:6443"
       giteaInit:
         enabled: true
         playbook: gitea-init.yml
-        activeDeadlineSeconds: 300
+        activeDeadlineSeconds: 600
         syncWave: "20"
         env:
           - name: GITEA_URL
