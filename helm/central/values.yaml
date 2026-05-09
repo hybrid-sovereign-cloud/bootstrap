@@ -127,7 +127,7 @@ acsServices:
 # ─── Vault (central cluster only) ──────────────────────────────────────────
 vault:
   enabled: true
-  chartVersion: "0.2.0"
+  chartVersion: "0.3.0"
   syncWave: "15"
   values:
     vault:
@@ -142,15 +142,15 @@ vault:
         route:
           enabled: true
         image:
-          repository: registry.connect.redhat.com/hashicorp/vault
-          tag: "1.17.2-ubi"
+          repository: quay.signal9.gg/hybrid-sovereign/vault
+          tag: "1.17.2"
       ui:
         enabled: true
       injector:
         enabled: true
         image:
-          repository: registry.connect.redhat.com/hashicorp/vault-k8s
-          tag: "1.4.2-ubi"
+          repository: quay.signal9.gg/hybrid-sovereign/vault-k8s
+          tag: "1.4.2"
 
 # ─── RHACM Application ───────────────────────────────────────────────────────
 rhacm:
