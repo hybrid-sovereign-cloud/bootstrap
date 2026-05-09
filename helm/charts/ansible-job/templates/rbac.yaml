@@ -1,3 +1,4 @@
+{{- if .Values.rbac.create | default false }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -20,3 +21,4 @@ subjects:
   - kind: ServiceAccount
     name: {{ .Values.job.serviceAccount }}
     namespace: {{ .Values.namespace }}
+{{- end }}

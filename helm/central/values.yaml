@@ -361,13 +361,15 @@ vaultSecretStore:
 
 # ─── Ansible Jobs (1 per role) ───────────────────────────────────────────
 jobs:
-  chartVersion: "0.1.1"
+  chartVersion: "0.1.2"
 
   vaultInit:
     enabled: true
     syncWave: "20"
     values:
       namespace: sovereign-jobs
+      rbac:
+        create: true
       job:
         name: vault-init
         playbook: vault-init.yml

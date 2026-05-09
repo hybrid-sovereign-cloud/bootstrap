@@ -1,5 +1,8 @@
 namespace: sovereign-jobs
 
+rbac:
+  create: false
+
 job:
   name: ""
   playbook: ""
