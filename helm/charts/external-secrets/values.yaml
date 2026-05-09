@@ -1,5 +1,5 @@
 operator:
-  channel: stable-v0.12
+  channel: stable
   installPlanApproval: Automatic
   source: community-operators
   sourceNamespace: openshift-marketplace

@@ -336,11 +336,11 @@ crunchyPostgresServices:
 # ─── External Secrets Operator ───────────────────────────────────────────
 externalSecrets:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.1.1"
   syncWave: "5"
   values:
     operator:
-      channel: stable-v0.12
+      channel: stable
       installPlanApproval: Automatic
       source: community-operators
       sourceNamespace: openshift-marketplace
