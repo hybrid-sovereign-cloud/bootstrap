@@ -11,6 +11,8 @@
       type: Opaque
       stringData:
         clientSecret: "{{ keycloak_client_secrets[central_oauth_client_id] }}"
+  retries: 5
+  delay: 5
 
 - name: Add Keycloak as OAuth identity provider on central cluster
   kubernetes.core.k8s:
@@ -40,6 +42,8 @@
                   - email
                 groups:
                   - groups
+  retries: 3
+  delay: 10
 
 - name: Create OAuth secret for services cluster
   kubernetes.core.k8s:
@@ -55,6 +59,9 @@
       type: Opaque
       stringData:
         clientSecret: "{{ keycloak_client_secrets[services_oauth_client_id] }}"
+  retries: 5
+  delay: 5
+  when: ocp_services_server | length > 0
 
 - name: Add Keycloak as OAuth identity provider on services cluster
   kubernetes.core.k8s:
@@ -86,3 +93,6 @@
                   - email
                 groups:
                   - groups
+  retries: 3
+  delay: 10
+  when: ocp_services_server | length > 0

@@ -6,6 +6,9 @@
     validate_certs: false
     status_code: [200]
   register: vault_init_status
+  retries: 10
+  delay: 10
+  until: vault_init_status.status == 200
 
 - name: Initialize Vault when not initialized
   when: not vault_init_status.json.initialized
@@ -21,6 +24,9 @@
           secret_threshold: "{{ vault_key_threshold }}"
         status_code: [200]
       register: vault_init_response
+      retries: 3
+      delay: 5
+      until: vault_init_response.status == 200
 
     - name: Set init data from initialization response
       ansible.builtin.set_fact:
@@ -42,6 +48,8 @@
             root_token: "{{ vault_root_token }}"
             unseal_keys: "{{ vault_unseal_keys | to_json }}"
             unseal_keys_base64: "{{ vault_unseal_keys_base64 | to_json }}"
+      retries: 3
+      delay: 5
 
 - name: Load existing credentials when already initialized
   when: vault_init_status.json.initialized
@@ -52,11 +60,9 @@
         name: "{{ vault_secret_name }}"
         namespace: "{{ vault_namespace }}"
       register: existing_secret
-
-    - name: Fail if secret not found
-      ansible.builtin.fail:
-        msg: "Vault is initialized but no secret '{{ vault_secret_name }}' found in namespace '{{ vault_namespace }}'"
-      when: existing_secret.resources | length == 0
+      retries: 5
+      delay: 5
+      until: existing_secret.resources | length > 0
 
     - name: Load credentials from secret
       ansible.builtin.set_fact:
@@ -69,6 +75,9 @@
     method: GET
     validate_certs: false
   register: vault_seal_status
+  retries: 5
+  delay: 5
+  until: vault_seal_status.status is defined
 
 - name: Unseal Vault (threshold keys)
   ansible.builtin.uri:
@@ -81,3 +90,5 @@
     status_code: [200]
   loop: "{{ vault_unseal_keys[:vault_key_threshold | int] }}"
   when: vault_seal_status.json.sealed
+  retries: 3
+  delay: 5

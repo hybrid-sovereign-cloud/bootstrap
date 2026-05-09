@@ -1,0 +1,42 @@
+{{- if .Values.jobs.keycloakClients.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: job-keycloak-clients
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ansible-job
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.jobs.keycloakClients.syncWave | quote }}
+spec:
+  project: default
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/ansible-job" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: ansible-job
+    targetRevision: {{ .Values.jobs.chartVersion | quote }}
+    helm:
+      releaseName: job-keycloak-clients
+      values: |
+        {{- toYaml .Values.jobs.keycloakClients.values | nindent 8 }}
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sovereign-jobs
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+{{- end }}

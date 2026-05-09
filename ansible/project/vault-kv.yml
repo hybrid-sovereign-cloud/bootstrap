@@ -1,0 +1,31 @@
+---
+- name: Create Vault KV secret engines
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    vault_addr: "{{ lookup('env', 'VAULT_ADDR') | default('http://vault.vault.svc:8200', true) }}"
+    vault_namespace: "vault"
+    vault_secret_name: "vault-init-secrets"
+    vault_kv_engines:
+      - path: "central"
+        description: "Central platform secrets"
+
+  pre_tasks:
+    - name: Retrieve Vault root token from secret
+      kubernetes.core.k8s_info:
+        kind: Secret
+        name: "{{ vault_secret_name }}"
+        namespace: "{{ vault_namespace }}"
+      register: vault_secret
+      retries: 10
+      delay: 10
+      until: vault_secret.resources | length > 0
+
+    - name: Set root token fact
+      ansible.builtin.set_fact:
+        vault_root_token: "{{ (vault_secret.resources[0].data.root_token | b64decode) }}"
+
+  roles:
+    - vault-kv

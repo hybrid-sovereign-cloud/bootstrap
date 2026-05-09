@@ -1,0 +1,35 @@
+---
+- name: Create Keycloak groups
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    keycloak_url: "{{ lookup('env', 'KEYCLOAK_URL') }}"
+    keycloak_admin_user: "{{ lookup('env', 'KEYCLOAK_ADMIN_USER') | default('admin', true) }}"
+    keycloak_admin_password: "{{ lookup('env', 'KEYCLOAK_ADMIN_PASSWORD') }}"
+    realm_name: "{{ lookup('env', 'REALM_NAME') | default('sovereign-central', true) }}"
+    admin_group: "{{ lookup('env', 'ADMIN_GROUP') | default('sovereign-admin', true) }}"
+
+  pre_tasks:
+    - name: Wait for Keycloak to be reachable
+      ansible.builtin.uri:
+        url: "{{ keycloak_url }}/realms/master"
+        method: GET
+        validate_certs: false
+        status_code: [200]
+      retries: 30
+      delay: 10
+      register: kc_health
+      until: kc_health.status == 200
+
+    - name: Authenticate to Keycloak
+      ansible.builtin.include_role:
+        name: keycloak-auth
+
+  roles:
+    - role: keycloak-groups
+      vars:
+        keycloak_groups:
+          - realm: "{{ realm_name }}"
+            name: "{{ admin_group }}"

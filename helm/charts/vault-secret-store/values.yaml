@@ -1,0 +1,6 @@
+vault:
+  server: "http://vault.vault.svc:8200"
+  path: "central"
+  tokenSecretName: "vault-init-secrets"
+  tokenSecretNamespace: "vault"
+  tokenSecretKey: "root_token"

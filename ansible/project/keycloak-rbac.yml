@@ -1,0 +1,12 @@
+---
+- name: Configure Keycloak RBAC (ClusterRoleBindings)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    admin_group: "{{ lookup('env', 'ADMIN_GROUP') | default('sovereign-admin', true) }}"
+    ocp_services_server: "{{ lookup('env', 'OCP_SERVICES_SERVER') }}"
+
+  roles:
+    - keycloak-rbac

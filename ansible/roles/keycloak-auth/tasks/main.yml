@@ -6,7 +6,7 @@
     validate_certs: false
     status_code: [200]
   register: kc_health
-  retries: 5
+  retries: 30
   delay: 10
   until: kc_health.status == 200
 
@@ -23,6 +23,9 @@
     validate_certs: false
     status_code: [200]
   register: keycloak_token_result
+  retries: 5
+  delay: 10
+  until: keycloak_token_result.status == 200
 
 - name: Set bearer token fact
   ansible.builtin.set_fact:

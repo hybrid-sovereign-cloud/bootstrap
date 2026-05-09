@@ -1,0 +1,83 @@
+---
+- name: Configure OpenShift OAuth with Keycloak
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    keycloak_central_url: "{{ lookup('env', 'KEYCLOAK_CENTRAL_URL') }}"
+    keycloak_services_url: "{{ lookup('env', 'KEYCLOAK_SERVICES_URL') }}"
+    keycloak_admin_user: "{{ lookup('env', 'KEYCLOAK_ADMIN_USER') | default('admin', true) }}"
+    keycloak_admin_password: "{{ lookup('env', 'KEYCLOAK_ADMIN_PASSWORD') }}"
+    central_realm: "{{ lookup('env', 'REALM_NAME') | default('sovereign-central', true) }}"
+    services_realm: "{{ lookup('env', 'REALM_NAME') | default('sovereign-central', true) }}"
+    central_oauth_client_id: "openshift-central"
+    services_oauth_client_id: "openshift-services"
+    ocp_services_server: "{{ lookup('env', 'OCP_SERVICES_SERVER') }}"
+
+  pre_tasks:
+    - name: Wait for Keycloak central to be reachable
+      ansible.builtin.uri:
+        url: "{{ keycloak_central_url }}/realms/master"
+        method: GET
+        validate_certs: false
+        status_code: [200]
+      retries: 30
+      delay: 10
+      register: kc_health
+      until: kc_health.status == 200
+
+    - name: Authenticate to central Keycloak
+      ansible.builtin.include_role:
+        name: keycloak-auth
+      vars:
+        keycloak_url: "{{ keycloak_central_url }}"
+
+    - name: Set central token
+      ansible.builtin.set_fact:
+        central_keycloak_token: "{{ keycloak_token }}"
+
+    - name: Retrieve central client secrets
+      ansible.builtin.include_role:
+        name: keycloak-clients
+      vars:
+        keycloak_url: "{{ keycloak_central_url }}"
+        keycloak_token: "{{ central_keycloak_token }}"
+        keycloak_clients:
+          - realm: "{{ central_realm }}"
+            client_id: "{{ central_oauth_client_id }}"
+            name: "OpenShift Central"
+            redirect_uris: ["*"]
+
+    - name: Save central secrets
+      ansible.builtin.set_fact:
+        central_client_secrets: "{{ keycloak_client_secrets }}"
+
+    - name: Authenticate to services Keycloak
+      ansible.builtin.include_role:
+        name: keycloak-auth
+      vars:
+        keycloak_url: "{{ keycloak_services_url }}"
+
+    - name: Set services token
+      ansible.builtin.set_fact:
+        services_keycloak_token: "{{ keycloak_token }}"
+
+    - name: Retrieve services client secrets
+      ansible.builtin.include_role:
+        name: keycloak-clients
+      vars:
+        keycloak_url: "{{ keycloak_services_url }}"
+        keycloak_token: "{{ services_keycloak_token }}"
+        keycloak_clients:
+          - realm: "{{ services_realm }}"
+            client_id: "{{ services_oauth_client_id }}"
+            name: "OpenShift Services"
+            redirect_uris: ["*"]
+
+    - name: Merge all secrets
+      ansible.builtin.set_fact:
+        keycloak_client_secrets: "{{ central_client_secrets | combine(keycloak_client_secrets) }}"
+
+  roles:
+    - keycloak-oauth

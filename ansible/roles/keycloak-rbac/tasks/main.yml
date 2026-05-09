@@ -15,12 +15,13 @@
         - apiGroup: rbac.authorization.k8s.io
           kind: Group
           name: "{{ admin_group }}"
+  retries: 5
+  delay: 5
 
 - name: Create ClusterRoleBinding for sovereign-admin on services cluster
   kubernetes.core.k8s:
-    host: "{{ ocp_services_server }}"
-    validate_certs: false
     state: present
+    host: "{{ ocp_services_server }}"
     definition:
       apiVersion: rbac.authorization.k8s.io/v1
       kind: ClusterRoleBinding
@@ -34,3 +35,6 @@
         - apiGroup: rbac.authorization.k8s.io
           kind: Group
           name: "{{ admin_group }}"
+  retries: 5
+  delay: 5
+  when: ocp_services_server | length > 0

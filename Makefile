@@ -43,6 +43,9 @@ include make/upload-odf-chart.mk
 include make/upload-quay-chart.mk
 include make/upload-crunchy-postgres-chart.mk
 include make/upload-gitea-chart.mk
+include make/upload-external-secrets-chart.mk
+include make/upload-ansible-job-chart.mk
+include make/upload-vault-secret-store-chart.mk
 include make/ansible-runner.mk
 include make/init-central-argo.mk
 include make/help.mk

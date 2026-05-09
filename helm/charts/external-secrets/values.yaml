@@ -1,0 +1,7 @@
+operator:
+  channel: stable-v0.12
+  installPlanApproval: Automatic
+  source: community-operators
+  sourceNamespace: openshift-marketplace
+
+namespace: external-secrets

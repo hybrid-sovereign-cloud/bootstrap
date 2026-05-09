@@ -9,6 +9,8 @@
     status_code: [200]
   register: group_check
   loop: "{{ keycloak_groups }}"
+  retries: 3
+  delay: 5
 
 - name: Create groups that do not exist
   ansible.builtin.uri:
@@ -26,3 +28,5 @@
   when: item.json | length == 0
   loop_control:
     label: "{{ item.item.realm }}/{{ item.item.name }}"
+  retries: 3
+  delay: 5

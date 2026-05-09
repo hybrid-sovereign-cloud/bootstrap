@@ -9,6 +9,8 @@
     status_code: [200]
   register: client_check
   loop: "{{ keycloak_clients }}"
+  retries: 3
+  delay: 5
 
 - name: Create clients that do not exist
   ansible.builtin.uri:
@@ -28,11 +30,13 @@
       directAccessGrantsEnabled: true
       redirectUris: "{{ item.item.redirect_uris | default(['*']) }}"
     validate_certs: false
-    status_code: [201]
+    status_code: [201, 409]
   loop: "{{ client_check.results }}"
   when: item.json | length == 0
   loop_control:
     label: "{{ item.item.realm }}/{{ item.item.client_id }}"
+  retries: 3
+  delay: 5
 
 - name: Get client IDs for secret retrieval
   ansible.builtin.uri:
@@ -44,6 +48,8 @@
     status_code: [200]
   register: client_ids
   loop: "{{ keycloak_clients }}"
+  retries: 3
+  delay: 5
 
 - name: Get client secrets
   ansible.builtin.uri:
@@ -57,6 +63,8 @@
   loop: "{{ client_ids.results }}"
   loop_control:
     label: "{{ item.item.client_id }}"
+  retries: 3
+  delay: 5
 
 - name: Build client secrets dictionary
   ansible.builtin.set_fact:

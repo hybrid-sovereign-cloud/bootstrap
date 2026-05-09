@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.job.name }}
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.job.syncWave | quote }}
+spec:
+  backoffLimit: {{ .Values.job.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.job.activeDeadlineSeconds }}
+  template:
+    spec:
+      serviceAccountName: {{ .Values.job.serviceAccount }}
+      restartPolicy: OnFailure
+      {{- if .Values.job.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.job.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: ansible-runner
+          image: {{ .Values.job.image | quote }}
+          command:
+            - ansible-runner
+            - run
+            - /runner
+            - -p
+            - {{ .Values.job.playbook }}
+          {{- if .Values.job.env }}
+          env:
+            {{- toYaml .Values.job.env | nindent 12 }}
+          {{- end }}
+          {{- if .Values.job.envFrom }}
+          envFrom:
+            {{- toYaml .Values.job.envFrom | nindent 12 }}
+          {{- end }}

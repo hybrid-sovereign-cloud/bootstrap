@@ -9,6 +9,8 @@ namespace: rhbk
 
 instanceName: sovereign-keycloak
 
+pushSecretToVault: false
+
 keycloak:
   enabled: true
   instances: 2

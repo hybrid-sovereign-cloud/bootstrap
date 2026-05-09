@@ -1,0 +1,36 @@
+namespace: sovereign-jobs
+
+job:
+  name: ""
+  playbook: ""
+  image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
+  serviceAccount: sovereign-ansible-runner
+  backoffLimit: 5
+  activeDeadlineSeconds: 600
+  syncWave: "50"
+  env: []
+  envFrom: []
+  imagePullSecrets:
+    - name: quay-pull-secret
+
+# ExternalSecret resources to pull from Vault into this namespace
+externalSecrets: []
+# Example:
+#   - name: keycloak-admin-creds
+#     keys:
+#       - secretKey: username
+#         remoteKey: central/data/keycloak-admin
+#         property: username
+#       - secretKey: password
+#         remoteKey: central/data/keycloak-admin
+#         property: password
+
+# PushSecret resources to push job-produced secrets to Vault
+pushSecrets: []
+# Example:
+#   - name: push-keycloak-clients
+#     sourceSecret: keycloak-client-secrets
+#     keys:
+#       - secretKey: quay-central
+#         remoteKey: central/data/keycloak-clients
+#         property: quay-central

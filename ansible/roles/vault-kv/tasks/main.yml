@@ -8,6 +8,9 @@
       X-Vault-Token: "{{ vault_root_token }}"
     status_code: [200]
   register: vault_mounts
+  retries: 10
+  delay: 10
+  until: vault_mounts.status == 200
 
 - name: Enable KV v2 secret engines
   ansible.builtin.uri:
@@ -25,3 +28,5 @@
     status_code: [200, 204]
   loop: "{{ vault_kv_engines }}"
   when: (item.path + '/') not in vault_mounts.json
+  retries: 3
+  delay: 5

@@ -9,6 +9,8 @@
     status_code: [200, 404]
   register: realm_check
   loop: "{{ keycloak_realms }}"
+  retries: 3
+  delay: 5
 
 - name: Create realms that do not exist
   ansible.builtin.uri:
@@ -27,8 +29,10 @@
       loginWithEmailAllowed: true
       sslRequired: none
     validate_certs: false
-    status_code: [201]
+    status_code: [201, 409]
   loop: "{{ realm_check.results }}"
   when: item.status == 404
   loop_control:
     label: "{{ item.item.name }}"
+  retries: 3
+  delay: 5
