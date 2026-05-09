@@ -5,7 +5,7 @@ operator:
   sourceNamespace: openshift-marketplace
   name: rhbk-operator
 
-namespace: sovereign-cloud
+namespace: rhbk
 
 instanceName: sovereign-keycloak
 

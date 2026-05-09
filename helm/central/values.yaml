@@ -45,11 +45,11 @@ sovereignNamespacesServices:
 # ─── RHBK (Keycloak) ─────────────────────────────────────────────────────────
 rhbk:
   enabled: true
-  chartVersion: "0.5.0"
+  chartVersion: "0.6.0"
   syncWave: "20"
-  destinationNamespace: sovereign-cloud
+  destinationNamespace: rhbk
   values:
-    namespace: sovereign-cloud
+    namespace: rhbk
     instanceName: sovereign-keycloak-central
     operator:
       channel: stable-v26.4
@@ -61,11 +61,11 @@ rhbk:
 # ─── RHBK (Keycloak) — services cluster ─────────────────────────────────────
 rhbkServices:
   enabled: true
-  chartVersion: "0.5.0"
+  chartVersion: "0.6.0"
   syncWave: "20"
-  destinationNamespace: sovereign-cloud
+  destinationNamespace: rhbk
   values:
-    namespace: sovereign-cloud
+    namespace: rhbk
     instanceName: sovereign-keycloak-services
     operator:
       channel: stable-v26.4
@@ -77,11 +77,11 @@ rhbkServices:
 # ─── RHBK Config (Ansible job — runs after Keycloak is ready) ────────────────
 rhbkConfig:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   syncWave: "30"
-  destinationNamespace: sovereign-cloud
+  destinationNamespace: rhbk
   values:
-    namespace: sovereign-cloud
+    namespace: rhbk
     ansibleJob:
       enabled: true
       image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"

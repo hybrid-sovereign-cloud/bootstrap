@@ -1,4 +1,4 @@
-namespace: sovereign-cloud
+namespace: rhbk
 
 ansibleJob:
   enabled: true
