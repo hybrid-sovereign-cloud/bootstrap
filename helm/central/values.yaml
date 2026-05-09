@@ -5,10 +5,10 @@ argocd:
 # ─── OCI registry that stores platform Helm charts ───────────────────────────
 oci:
   # Registry hostname — must match the value used in make upload-acm-chart.
-  registry: "quay.io"
+  registry: "quay.signal9.gg"
   # OCI repository path prefix (without the chart name).
   # Charts are stored at oci://<registry>/<repositoryBase>/<chartName>
-  repositoryBase: "sovereign"
+  repositoryBase: "hybrid-sovereign"
 
 # ─── RHACM Application ───────────────────────────────────────────────────────
 rhacm:
