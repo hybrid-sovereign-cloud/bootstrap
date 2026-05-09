@@ -23,11 +23,11 @@ spec:
     helm:
       releaseName: rhacm
       values: |
-        multiClusterHub:
-          enabled: {{ .Values.rhacm.enableMultiClusterHub }}
         {{- with .Values.rhacm.values }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
+        multiClusterHub:
+          enabled: {{ .Values.rhacm.enableMultiClusterHub }}
 
   destination:
     server: https://kubernetes.default.svc
