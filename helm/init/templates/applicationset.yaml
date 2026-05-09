@@ -1,7 +1,7 @@
 ---
-# ApplicationSet that generates one ArgoCD Application per cluster.
-# Both app-of-apps deploy TO the central cluster (where ArgoCD lives).
-# Child Applications inside each app-of-apps set their own destination.server.
+# ApplicationSet generates the central app-of-apps only.
+# All Applications (including those targeting the services cluster) live in helm/central.
+# Central ArgoCD manages both clusters via destination.server.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -17,8 +17,6 @@ spec:
         elements:
           - cluster: central
             chartPath: helm/central
-          - cluster: {{ .Values.clusters.services.name }}
-            chartPath: helm/services
   template:
     metadata:
       name: "sovereign-{{`{{cluster}}`}}-apps"

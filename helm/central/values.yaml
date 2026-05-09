@@ -2,6 +2,10 @@
 argocd:
   namespace: openshift-gitops
 
+# ─── Services cluster (managed by central ArgoCD) ────────────────────────────
+servicesCluster:
+  server: "https://api.shcservices.lab.signal9.gg:6443"
+
 # ─── OCI registry that stores platform Helm charts ───────────────────────────
 oci:
   # Registry hostname — must match the value used in make upload-acm-chart.
@@ -24,6 +28,20 @@ sovereignNamespaces:
       - name: sovereign-cloud-jobs
         enabled: true
 
+# ─── Sovereign Namespaces (services cluster) ────────────────────────────────
+sovereignNamespacesServices:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "1"
+  values:
+    namespaces:
+      - name: sovereign-cloud
+        enabled: true
+      - name: sovereign-cloud-plugins
+        enabled: true
+      - name: sovereign-cloud-jobs
+        enabled: false
+
 # ─── RHBK (Keycloak) ─────────────────────────────────────────────────────────
 rhbk:
   enabled: true
@@ -33,6 +51,22 @@ rhbk:
   values:
     namespace: sovereign-cloud
     instanceName: sovereign-keycloak-central
+    operator:
+      channel: stable-v26.4
+    keycloak:
+      enabled: true
+      instances: 2
+      hostname: ""
+
+# ─── RHBK (Keycloak) — services cluster ─────────────────────────────────────
+rhbkServices:
+  enabled: true
+  chartVersion: "0.5.0"
+  syncWave: "20"
+  destinationNamespace: sovereign-cloud
+  values:
+    namespace: sovereign-cloud
+    instanceName: sovereign-keycloak-services
     operator:
       channel: stable-v26.4
     keycloak:

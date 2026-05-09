@@ -1,4 +1,4 @@
-{{- if .Values.rhbk.enabled }}
+{{- if .Values.rhbkServices.enabled }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -6,25 +6,26 @@ metadata:
   name: rhbk-services
   namespace: {{ .Values.argocd.namespace }}
   labels:
-    {{- include "sovereign-services.labels" . | nindent 4 }}
+    {{- include "sovereign-central.labels" . | nindent 4 }}
     app.kubernetes.io/component: keycloak
+    sovereign-cloud/target: services
   annotations:
-    argocd.argoproj.io/sync-wave: {{ .Values.rhbk.syncWave | quote }}
+    argocd.argoproj.io/sync-wave: {{ .Values.rhbkServices.syncWave | quote }}
 spec:
   project: default
 
   source:
-    repoURL: {{ printf "%s/rhbk" (include "sovereign-services.ociURL" .) | quote }}
+    repoURL: {{ printf "oci://%s/%s/rhbk" .Values.oci.registry .Values.oci.repositoryBase | quote }}
     chart: rhbk
-    targetRevision: {{ .Values.rhbk.chartVersion | quote }}
+    targetRevision: {{ .Values.rhbkServices.chartVersion | quote }}
     helm:
       releaseName: rhbk-services
       values: |
-        {{- toYaml .Values.rhbk.values | nindent 8 }}
+        {{- toYaml .Values.rhbkServices.values | nindent 8 }}
 
   destination:
-    server: {{ .Values.targetCluster.server | quote }}
-    namespace: {{ .Values.rhbk.destinationNamespace }}
+    server: {{ .Values.servicesCluster.server | quote }}
+    namespace: {{ .Values.rhbkServices.destinationNamespace }}
 
   syncPolicy:
     automated:

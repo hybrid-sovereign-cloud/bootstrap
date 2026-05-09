@@ -43,7 +43,10 @@ alwaysApply: true
 - **Prune**: all ArgoCD Applications must have `prune: true` to remove orphaned resources.
 - **Always in sync**: if any ArgoCD Application is not `Synced + Healthy`, investigate and fix immediately.
 - **Dynamic plugins**: always enable ArgoCD dynamic plugins when available (e.g., `argocd-vault-plugin`, UI plugins).
-- **All apps on central**: all ArgoCD Applications live on the central cluster (where ArgoCD runs). Services apps set their `destination.server` to the services cluster URL.
+- **All apps on central**: all ArgoCD Applications and ApplicationSets live ONLY on the central cluster. Never create any `kind: Application` or `kind: ApplicationSet` on the services cluster.
+- **No ArgoCD on services**: the services cluster does NOT run sovereign ArgoCD management. Central ArgoCD has two clusters defined (central + services) and deploys to both via `destination.server`.
+- **Single app-of-apps**: there is ONE app-of-apps chart (`helm/central`) containing ALL Applications for BOTH clusters. Services-targeting apps use `destination.server: <services-cluster-url>`.
+- **No helm/services**: the `helm/services/` directory must not exist. All services-cluster apps are defined in `helm/central/`.
 
 ## OCI / Quay rules
 
