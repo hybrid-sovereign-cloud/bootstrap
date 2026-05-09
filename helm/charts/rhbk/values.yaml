@@ -13,14 +13,17 @@ keycloak:
   enabled: true
   instances: 2
   hostname: ""
-  database:
+  db:
+    enabled: false
     vendor: postgres
+    host: ""
+    database: keycloak
     usernameSecret:
       name: keycloak-db-secret
       key: username
     passwordSecret:
       name: keycloak-db-secret
       key: password
-    host: ""
-    database: keycloak
-
+  tls:
+    enabled: false
+    secretName: keycloak-tls-secret

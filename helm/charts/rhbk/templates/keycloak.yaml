@@ -12,23 +12,36 @@ spec:
   {{- if .Values.keycloak.hostname }}
   hostname:
     hostname: {{ .Values.keycloak.hostname | quote }}
+  {{- else }}
+  hostname:
+    hostname: ""
   {{- end }}
+  {{- if .Values.keycloak.db.enabled }}
   db:
-    vendor: {{ .Values.keycloak.database.vendor }}
-    {{- if .Values.keycloak.database.host }}
-    host: {{ .Values.keycloak.database.host | quote }}
+    vendor: {{ .Values.keycloak.db.vendor }}
+    {{- if .Values.keycloak.db.host }}
+    host: {{ .Values.keycloak.db.host | quote }}
     {{- end }}
-    {{- if .Values.keycloak.database.database }}
-    database: {{ .Values.keycloak.database.database | quote }}
+    {{- if .Values.keycloak.db.database }}
+    database: {{ .Values.keycloak.db.database | quote }}
     {{- end }}
     usernameSecret:
-      name: {{ .Values.keycloak.database.usernameSecret.name }}
-      key: {{ .Values.keycloak.database.usernameSecret.key }}
+      name: {{ .Values.keycloak.db.usernameSecret.name }}
+      key: {{ .Values.keycloak.db.usernameSecret.key }}
     passwordSecret:
-      name: {{ .Values.keycloak.database.passwordSecret.name }}
-      key: {{ .Values.keycloak.database.passwordSecret.key }}
+      name: {{ .Values.keycloak.db.passwordSecret.name }}
+      key: {{ .Values.keycloak.db.passwordSecret.key }}
+  {{- end }}
   http:
-    tlsSecret: keycloak-tls-secret
+    {{- if .Values.keycloak.tls.enabled }}
+    tlsSecret: {{ .Values.keycloak.tls.secretName }}
+    {{- else }}
+    httpEnabled: true
+    {{- end }}
+  {{- if not .Values.keycloak.tls.enabled }}
+  proxy:
+    headers: xforwarded
+  {{- end }}
   features:
     enabled:
       - admin2

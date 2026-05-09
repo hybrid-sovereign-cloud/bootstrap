@@ -45,7 +45,7 @@ sovereignNamespacesServices:
 # ─── RHBK (Keycloak) ─────────────────────────────────────────────────────────
 rhbk:
   enabled: true
-  chartVersion: "0.6.0"
+  chartVersion: "0.7.0"
   syncWave: "20"
   destinationNamespace: rhbk
   values:
@@ -57,11 +57,15 @@ rhbk:
       enabled: true
       instances: 2
       hostname: ""
+      db:
+        enabled: false
+      tls:
+        enabled: false
 
 # ─── RHBK (Keycloak) — services cluster ─────────────────────────────────────
 rhbkServices:
   enabled: true
-  chartVersion: "0.6.0"
+  chartVersion: "0.7.0"
   syncWave: "20"
   destinationNamespace: rhbk
   values:
@@ -73,6 +77,10 @@ rhbkServices:
       enabled: true
       instances: 2
       hostname: ""
+      db:
+        enabled: false
+      tls:
+        enabled: false
 
 # ─── RHBK Config (Ansible job — runs after Keycloak is ready) ────────────────
 rhbkConfig:
