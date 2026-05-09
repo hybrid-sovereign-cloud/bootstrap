@@ -150,7 +150,7 @@ bootstrap/
 │   │   ├── aap/               # Ansible Automation Platform (OCI)
 │   │   ├── odf/               # ODF Noobaa object storage (OCI)
 │   │   ├── quay/              # Red Hat Quay registry (OCI)
-│   │   ├── crunchy-postgres/  # CrunchyData PGO operator (OCI)
+│   │   ├── crunchy-postgres/  # Crunchy Postgres for Kubernetes (OCI)
 │   │   └── gitea/             # Gitea self-hosted Git (OCI, subchart)
 │   ├── central/               # App-of-Apps for BOTH clusters
 │   └── init/                  # Bootstrap entry-point chart
@@ -192,7 +192,7 @@ bootstrap/
 | `make upload-aap-chart` | Push AAP chart to OCI |
 | `make upload-odf-chart` | Push ODF chart to OCI |
 | `make upload-quay-chart` | Push Quay chart to OCI |
-| `make upload-crunchy-postgres-chart` | Push CrunchyData PGO chart to OCI |
+| `make upload-crunchy-postgres-chart` | Push Crunchy Postgres for Kubernetes chart to OCI |
 | `make upload-gitea-chart` | Push Gitea chart to OCI |
 | `make ansible-runner` | Build + push ansible-runner image |
 
