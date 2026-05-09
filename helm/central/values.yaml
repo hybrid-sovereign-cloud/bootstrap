@@ -127,7 +127,7 @@ acsServices:
 # ─── Vault (central cluster only) ──────────────────────────────────────────
 vault:
   enabled: true
-  chartVersion: "0.3.0"
+  chartVersion: "0.4.0"
   syncWave: "15"
   values:
     vault:
@@ -143,14 +143,14 @@ vault:
           enabled: true
         image:
           repository: quay.signal9.gg/hybrid-sovereign/vault
-          tag: "1.17.2"
+          tag: "1.21.2"
       ui:
         enabled: true
       injector:
         enabled: true
         image:
           repository: quay.signal9.gg/hybrid-sovereign/vault-k8s
-          tag: "1.4.2"
+          tag: "1.5.0"
 
 # ─── RHACM Application ───────────────────────────────────────────────────────
 rhacm:
@@ -185,7 +185,7 @@ rhacm:
 # ─── AAP (services cluster only) ──────────────────────────────────────────
 aap:
   enabled: true
-  chartVersion: "0.2.0"
+  chartVersion: "0.3.0"
   syncWave: "30"
   destinationNamespace: aap
   values:
@@ -203,7 +203,7 @@ aap:
 # ─── ODF / Noobaa (central cluster) ──────────────────────────────────────
 odf:
   enabled: true
-  chartVersion: "0.2.0"
+  chartVersion: "0.3.0"
   syncWave: "12"
   destinationNamespace: openshift-storage
   values:
@@ -215,7 +215,7 @@ odf:
 # ─── ODF / Noobaa (services cluster) ──────────────────────────────────────
 odfServices:
   enabled: true
-  chartVersion: "0.2.0"
+  chartVersion: "0.3.0"
   syncWave: "12"
   destinationNamespace: openshift-storage
   values:
@@ -227,7 +227,7 @@ odfServices:
 # ─── Quay (central cluster) ──────────────────────────────────────────────
 quay:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   syncWave: "35"
   destinationNamespace: quay-enterprise
   values:
@@ -239,7 +239,7 @@ quay:
 # ─── Quay (services cluster) ──────────────────────────────────────────────
 quayServices:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   syncWave: "35"
   destinationNamespace: quay-enterprise
   values:
@@ -247,6 +247,75 @@ quayServices:
     registry:
       enabled: true
       name: sovereign-registry
+
+# ─── Gitea (central cluster only) ─────────────────────────────────────────
+gitea:
+  enabled: true
+  chartVersion: "0.3.0"
+  syncWave: "18"
+  values:
+    gitea:
+      global:
+        security:
+          allowInsecureImages: true
+        imagePullSecrets:
+          - quay-pull-secret
+      replicaCount: 1
+      image:
+        registry: quay.signal9.gg
+        repository: hybrid-sovereign/gitea
+        tag: "1.25.5"
+        rootless: true
+      gitea:
+        config:
+          server:
+            DOMAIN: ""
+            ROOT_URL: ""
+          database:
+            DB_TYPE: postgres
+          session:
+            PROVIDER: memory
+          cache:
+            ADAPTER: memory
+          queue:
+            TYPE: level
+      postgresql:
+        enabled: true
+        image:
+          registry: quay.signal9.gg
+          repository: hybrid-sovereign/postgresql
+          tag: "17.6.0-debian-12-r4"
+        volumePermissions:
+          image:
+            registry: quay.signal9.gg
+            repository: hybrid-sovereign/os-shell
+            tag: "12-debian-12-r51"
+      postgresql-ha:
+        enabled: false
+      redis:
+        enabled: false
+      redis-cluster:
+        enabled: false
+      valkey-cluster:
+        enabled: true
+        image:
+          registry: quay.signal9.gg
+          repository: hybrid-sovereign/valkey-cluster
+          tag: "8.1.3-debian-12-r3"
+        volumePermissions:
+          image:
+            registry: quay.signal9.gg
+            repository: hybrid-sovereign/os-shell
+            tag: "12-debian-12-r51"
+        sysctlImage:
+          registry: quay.signal9.gg
+          repository: hybrid-sovereign/os-shell
+          tag: "12-debian-12-r51"
+      persistence:
+        enabled: true
+        size: 10Gi
+      route:
+        enabled: true
 
 # ─── CrunchyData Postgres (central cluster) ──────────────────────────────
 crunchyPostgres:

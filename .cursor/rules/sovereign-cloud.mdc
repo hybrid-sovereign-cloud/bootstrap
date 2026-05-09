@@ -56,6 +56,20 @@ These rules are absolute and must never be violated under any circumstances:
 4. **Central ArgoCD has two clusters defined**: `https://kubernetes.default.svc` (central) and the services cluster URL. All deployments to services go through this mechanism.
 5. **ACM is ONLY on the central cluster** — never install ACM on the services cluster.
 
+## Base-config charts
+
+- **Do NOT sync `base-config-chart` or `base-configs`**: this project does not own them. Never modify, sync, or troubleshoot these ArgoCD applications. Ignore their `OutOfSync` status.
+
+## Ansible playbook development
+
+- **Test locally first**: always test Ansible playbooks locally from this agent (using `ansible-playbook` or `ansible-runner`) before packaging them into a Job or container image.
+- **Roles-only playbooks**: playbooks in `bootstrap/ansible/project/` must ONLY call roles. All task logic lives in `bootstrap/ansible/roles/`.
+- **Promote to Job after success**: once a playbook is fully functional locally, create a Kubernetes Job (via Helm chart) to run it in-cluster via ArgoCD.
+
+## Credential storage
+
+- **NEVER store credentials locally**: no secrets, tokens, passwords, or keys may be written to the local filesystem. All credentials must be stored in Kubernetes Secrets or HashiCorp Vault. Environment variables are acceptable for session-scoped usage only.
+
 ## OCI / Quay rules
 
 - **Robot read-only**: the Quay robot account (`hybrid-sovereign+pull`) must have **read-only** access on all repositories in the `hybrid-sovereign` organization. Use the admin token (`OCI_REGISTRY_TOKEN`) for write operations (repo creation, chart push).
@@ -136,17 +150,26 @@ bootstrap/
 │   │   ├── aap/               # Ansible Automation Platform (OCI)
 │   │   ├── odf/               # ODF Noobaa object storage (OCI)
 │   │   ├── quay/              # Red Hat Quay registry (OCI)
-│   │   └── crunchy-postgres/  # CrunchyData PGO operator (OCI)
+│   │   ├── crunchy-postgres/  # CrunchyData PGO operator (OCI)
+│   │   └── gitea/             # Gitea self-hosted Git (OCI, subchart)
 │   ├── central/               # App-of-Apps for BOTH clusters
 │   └── init/                  # Bootstrap entry-point chart
 └── ansible/
     ├── imagebuild/ansiblerunner/  # Containerfile for ansible-runner
-    ├── roles/                 # Ansible roles for platform config
+    ├── roles/                 # Ansible roles (ALL task logic here)
+    │   ├── keycloak-auth/
     │   ├── keycloak-realms/
+    │   ├── keycloak-groups/
     │   ├── keycloak-clients/
     │   ├── keycloak-oauth/
-    │   └── keycloak-rbac/
-    └── project/               # Playbooks
+    │   ├── keycloak-rbac/
+    │   ├── vault-init/
+    │   ├── vault-kv/
+    │   ├── vault-secrets/
+    │   └── gitea-init/
+    └── project/               # Playbooks (role calls ONLY)
+        ├── initialize-vault.yml
+        └── configure-keycloak.yml
 ```
 
 ## Make Targets (grouped by section)
@@ -170,6 +193,7 @@ bootstrap/
 | `make upload-odf-chart` | Push ODF chart to OCI |
 | `make upload-quay-chart` | Push Quay chart to OCI |
 | `make upload-crunchy-postgres-chart` | Push CrunchyData PGO chart to OCI |
+| `make upload-gitea-chart` | Push Gitea chart to OCI |
 | `make ansible-runner` | Build + push ansible-runner image |
 
 ### Bootstrap Cluster
@@ -183,6 +207,7 @@ bootstrap/
 - `helm/central` — run `helm lint` after every change; update `values.yaml` when OCI chart is bumped.
 - `helm/init` — bootstrap entry-point; changes affect both clusters; test with `helm template`.
 - `make/*.mk` — each target in its own file; keep root Makefile as a thin importer.
-- `ansible/roles/*` — Keycloak configuration; test with `ansible-lint` if available.
+- `ansible/roles/*` — all task logic; playbooks only call roles. Test with `ansible-playbook` locally before packaging.
+- `ansible/project/*` — playbooks that ONLY call roles from `ansible/roles/`.
 - `architecture/docs/` — keep diagrams small, one concept per file.
 - `architecture/hardeningcheck/` — update after any security-impacting change.

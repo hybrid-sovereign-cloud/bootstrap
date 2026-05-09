@@ -1,0 +1,15 @@
+---
+- name: Store secrets in Vault KV
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/{{ vault_kv_path }}/data/{{ item.key }}"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_token }}"
+    body_format: json
+    body:
+      data: "{{ item.value }}"
+    validate_certs: false
+    status_code: [200, 204]
+  loop: "{{ vault_secrets | dict2items }}"
+  loop_control:
+    label: "{{ vault_kv_path }}/{{ item.key }}"

@@ -1,0 +1,9 @@
+---
+vault_addr: ""
+vault_token: ""
+vault_kv_path: "central"
+vault_secrets: {}
+# Example:
+#   keycloak-clients:
+#     quay-central-secret: "xxx"
+#     vault-secret: "xxx"

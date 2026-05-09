@@ -1,0 +1,6 @@
+---
+vault_addr: "http://vault.vault.svc:8200"
+vault_root_token: ""
+vault_kv_engines:
+  - path: "central"
+    description: "Central platform secrets"

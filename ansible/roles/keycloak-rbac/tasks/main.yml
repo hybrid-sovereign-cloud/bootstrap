@@ -1,26 +1,4 @@
 ---
-- name: Create sovereign-admin group in central realm
-  middleware_automation.keycloak.keycloak_group:
-    auth_keycloak_url: "{{ keycloak_central_url }}"
-    auth_realm: master
-    auth_username: "{{ keycloak_admin_user }}"
-    auth_password: "{{ keycloak_admin_password }}"
-    validate_certs: false
-    realm: "{{ central_realm }}"
-    name: "{{ admin_group }}"
-    state: present
-
-- name: Create sovereign-admin group in services realm
-  middleware_automation.keycloak.keycloak_group:
-    auth_keycloak_url: "{{ keycloak_services_url }}"
-    auth_realm: master
-    auth_username: "{{ keycloak_admin_user }}"
-    auth_password: "{{ keycloak_admin_password }}"
-    validate_certs: false
-    realm: "{{ services_realm }}"
-    name: "{{ admin_group }}"
-    state: present
-
 - name: Create ClusterRoleBinding for sovereign-admin on central cluster
   kubernetes.core.k8s:
     state: present

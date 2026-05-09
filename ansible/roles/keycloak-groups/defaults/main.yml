@@ -1,0 +1,6 @@
+---
+keycloak_url: ""
+keycloak_token: ""
+keycloak_groups:
+  - realm: sovereign-central
+    name: sovereign-admin

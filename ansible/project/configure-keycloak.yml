@@ -1,131 +1,189 @@
 ---
-- name: Configure Sovereign Cloud Keycloak
+- name: Configure Sovereign Cloud Identity & Secrets
   hosts: localhost
   connection: local
   gather_facts: false
 
   vars:
-    keycloak_url: "{{ lookup('env', 'KEYCLOAK_URL') }}"
-    keycloak_admin_user: "{{ lookup('env', 'KEYCLOAK_ADMIN_USER') }}"
+    # Keycloak endpoints
+    keycloak_central_url: "{{ lookup('env', 'KEYCLOAK_CENTRAL_URL') }}"
+    keycloak_services_url: "{{ lookup('env', 'KEYCLOAK_SERVICES_URL') }}"
+    keycloak_admin_user: "{{ lookup('env', 'KEYCLOAK_ADMIN_USER') | default('admin', true) }}"
     keycloak_admin_password: "{{ lookup('env', 'KEYCLOAK_ADMIN_PASSWORD') }}"
 
+    # Vault
+    vault_addr: "{{ lookup('env', 'VAULT_ADDR') | default('http://vault.vault.svc:8200', true) }}"
+    vault_token: "{{ lookup('env', 'VAULT_TOKEN') }}"
+
+    # Gitea
+    gitea_url: "{{ lookup('env', 'GITEA_URL') }}"
+
+    # Cluster endpoints
+    ocp_services_server: "{{ lookup('env', 'OCP_SERVICES_SERVER') }}"
+
+    # Realm configuration
+    realm_name: "sovereign-central"
+    admin_group: "sovereign-admin"
+
+    # Central cluster clients (in central RHBK)
+    central_clients:
+      - realm: "sovereign-central"
+        client_id: "quay-central"
+        name: "Quay Central Registry"
+        redirect_uris: ["*"]
+      - realm: "sovereign-central"
+        client_id: "vault"
+        name: "HashiCorp Vault"
+        redirect_uris: ["*"]
+      - realm: "sovereign-central"
+        client_id: "gitea"
+        name: "Gitea"
+        redirect_uris: ["*"]
+      - realm: "sovereign-central"
+        client_id: "openshift-central"
+        name: "OpenShift Central"
+        redirect_uris:
+          - "https://oauth-openshift.apps.shcstack-3.lab.signal9.gg/oauth2callback/*"
+
+    # Services cluster clients (in services RHBK)
+    services_clients:
+      - realm: "sovereign-central"
+        client_id: "quay-services"
+        name: "Quay Services Registry"
+        redirect_uris: ["*"]
+      - realm: "sovereign-central"
+        client_id: "aap-services"
+        name: "Ansible Automation Platform"
+        redirect_uris: ["*"]
+      - realm: "sovereign-central"
+        client_id: "openshift-services"
+        name: "OpenShift Services"
+        redirect_uris:
+          - "https://oauth-openshift.apps.shcservices.lab.signal9.gg/oauth2callback/*"
+
   tasks:
-    - name: Verify Keycloak is accessible
-      ansible.builtin.uri:
-        url: "{{ keycloak_url }}/realms/master"
-        method: GET
-        validate_certs: false
-        status_code: 200
-      register: kc_health
-      retries: 5
-      delay: 10
-      until: kc_health.status == 200
+    # --- Central RHBK configuration ---
+    - name: Authenticate to central Keycloak
+      ansible.builtin.include_role:
+        name: keycloak-auth
+      vars:
+        keycloak_url: "{{ keycloak_central_url }}"
 
-    - name: Display Keycloak info
-      ansible.builtin.debug:
-        msg: "Keycloak is running at {{ keycloak_url }} - realm: {{ kc_health.json.realm }}"
+    - name: Set central token
+      ansible.builtin.set_fact:
+        central_keycloak_token: "{{ keycloak_token }}"
 
-    - name: Obtain admin token for realm operations
-      ansible.builtin.uri:
-        url: "{{ keycloak_url }}/realms/master/protocol/openid-connect/token"
-        method: POST
-        body_format: form-urlencoded
-        body:
-          client_id: admin-cli
-          username: "{{ keycloak_admin_user }}"
-          password: "{{ keycloak_admin_password }}"
-          grant_type: password
-        validate_certs: false
-        status_code: 200
-      register: token_result
+    - name: Create realm on central Keycloak
+      ansible.builtin.include_role:
+        name: keycloak-realms
+      vars:
+        keycloak_url: "{{ keycloak_central_url }}"
+        keycloak_token: "{{ central_keycloak_token }}"
+        keycloak_realms:
+          - name: "{{ realm_name }}"
+            display_name: "Sovereign Central"
 
-    - name: Check if sovereign-central realm exists
-      ansible.builtin.uri:
-        url: "{{ keycloak_url }}/admin/realms/sovereign-central"
-        method: GET
-        headers:
-          Authorization: "Bearer {{ token_result.json.access_token }}"
-        validate_certs: false
-        status_code: [200, 404]
-      register: realm_check
+    - name: Create sovereign-admin group on central Keycloak
+      ansible.builtin.include_role:
+        name: keycloak-groups
+      vars:
+        keycloak_url: "{{ keycloak_central_url }}"
+        keycloak_token: "{{ central_keycloak_token }}"
+        keycloak_groups:
+          - realm: "{{ realm_name }}"
+            name: "{{ admin_group }}"
 
-    - name: Create sovereign-central realm
-      ansible.builtin.uri:
-        url: "{{ keycloak_url }}/admin/realms"
-        method: POST
-        headers:
-          Authorization: "Bearer {{ token_result.json.access_token }}"
-          Content-Type: "application/json"
-        body_format: json
-        body:
-          id: sovereign-central
-          realm: sovereign-central
-          enabled: true
-          registrationAllowed: false
-          loginWithEmailAllowed: true
-          duplicateEmailsAllowed: false
-          sslRequired: none
-        validate_certs: false
-        status_code: [201]
-      when: realm_check.status == 404
+    - name: Create clients on central Keycloak
+      ansible.builtin.include_role:
+        name: keycloak-clients
+      vars:
+        keycloak_url: "{{ keycloak_central_url }}"
+        keycloak_token: "{{ central_keycloak_token }}"
+        keycloak_clients: "{{ central_clients }}"
 
-    - name: Display realm result
-      ansible.builtin.debug:
-        msg: "Realm sovereign-central: {{ 'already exists' if realm_check.status == 200 else 'created' }}"
+    - name: Save central client secrets
+      ansible.builtin.set_fact:
+        central_client_secrets: "{{ keycloak_client_secrets }}"
 
-    - name: Obtain fresh token for client operations
-      ansible.builtin.uri:
-        url: "{{ keycloak_url }}/realms/master/protocol/openid-connect/token"
-        method: POST
-        body_format: form-urlencoded
-        body:
-          client_id: admin-cli
-          username: "{{ keycloak_admin_user }}"
-          password: "{{ keycloak_admin_password }}"
-          grant_type: password
-        validate_certs: false
-        status_code: 200
-      register: token_result2
+    # --- Services RHBK configuration ---
+    - name: Authenticate to services Keycloak
+      ansible.builtin.include_role:
+        name: keycloak-auth
+      vars:
+        keycloak_url: "{{ keycloak_services_url }}"
 
-    - name: Check if sovereign-central client exists
-      ansible.builtin.uri:
-        url: "{{ keycloak_url }}/admin/realms/sovereign-central/clients?clientId=sovereign-central"
-        method: GET
-        headers:
-          Authorization: "Bearer {{ token_result2.json.access_token }}"
-        validate_certs: false
-        status_code: [200]
-      register: client_check
+    - name: Set services token
+      ansible.builtin.set_fact:
+        services_keycloak_token: "{{ keycloak_token }}"
 
-    - name: Create sovereign-central client
-      ansible.builtin.uri:
-        url: "{{ keycloak_url }}/admin/realms/sovereign-central/clients"
-        method: POST
-        headers:
-          Authorization: "Bearer {{ token_result2.json.access_token }}"
-          Content-Type: "application/json"
-        body_format: json
-        body:
-          clientId: sovereign-central
-          name: "Sovereign Central"
-          enabled: true
-          clientAuthenticatorType: client-secret
-          serviceAccountsEnabled: true
-          standardFlowEnabled: true
-          directAccessGrantsEnabled: true
-          redirectUris:
-            - "*"
-        validate_certs: false
-        status_code: [201]
-      when: client_check.json | length == 0
+    - name: Create realm on services Keycloak
+      ansible.builtin.include_role:
+        name: keycloak-realms
+      vars:
+        keycloak_url: "{{ keycloak_services_url }}"
+        keycloak_token: "{{ services_keycloak_token }}"
+        keycloak_realms:
+          - name: "{{ realm_name }}"
+            display_name: "Sovereign Central"
 
-    - name: Display client result
-      ansible.builtin.debug:
-        msg: "Client sovereign-central: {{ 'already exists' if (client_check.json | length > 0) else 'created' }}"
+    - name: Create sovereign-admin group on services Keycloak
+      ansible.builtin.include_role:
+        name: keycloak-groups
+      vars:
+        keycloak_url: "{{ keycloak_services_url }}"
+        keycloak_token: "{{ services_keycloak_token }}"
+        keycloak_groups:
+          - realm: "{{ realm_name }}"
+            name: "{{ admin_group }}"
 
-    - name: Configuration complete
-      ansible.builtin.debug:
-        msg: >-
-          Keycloak configuration completed successfully.
-          Realm: sovereign-central (enabled),
-          Client: sovereign-central (service account enabled)
+    - name: Create clients on services Keycloak
+      ansible.builtin.include_role:
+        name: keycloak-clients
+      vars:
+        keycloak_url: "{{ keycloak_services_url }}"
+        keycloak_token: "{{ services_keycloak_token }}"
+        keycloak_clients: "{{ services_clients }}"
+
+    - name: Save services client secrets
+      ansible.builtin.set_fact:
+        services_client_secrets: "{{ keycloak_client_secrets }}"
+
+    # --- RBAC ---
+    - name: Configure cluster RBAC for sovereign-admin
+      ansible.builtin.include_role:
+        name: keycloak-rbac
+
+    # --- OAuth ---
+    - name: Merge all client secrets for OAuth
+      ansible.builtin.set_fact:
+        all_client_secrets: "{{ central_client_secrets | combine(services_client_secrets) }}"
+
+    - name: Configure OpenShift OAuth on both clusters
+      ansible.builtin.include_role:
+        name: keycloak-oauth
+      vars:
+        central_realm: "{{ realm_name }}"
+        services_realm: "{{ realm_name }}"
+        central_oauth_client_id: "openshift-central"
+        services_oauth_client_id: "openshift-services"
+        keycloak_client_secrets: "{{ all_client_secrets }}"
+
+    # --- Gitea Initialization ---
+    - name: Initialize Gitea
+      ansible.builtin.include_role:
+        name: gitea-init
+      vars:
+        gitea_url: "{{ gitea_url }}"
+      when: gitea_url | length > 0
+
+    # --- Store all secrets in Vault ---
+    - name: Store client secrets and admin credentials in Vault
+      ansible.builtin.include_role:
+        name: vault-secrets
+      vars:
+        vault_kv_path: "central"
+        vault_secrets:
+          keycloak-clients: "{{ all_client_secrets }}"
+          gitea: "{{ gitea_credentials | default({}) }}"
+          admin-credentials:
+            vault_root_token: "{{ vault_token }}"

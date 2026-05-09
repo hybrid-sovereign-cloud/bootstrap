@@ -1,5 +1,5 @@
 operator:
-  channel: stable-4.20
+  channel: stable-4.21
   installPlanApproval: Automatic
   source: redhat-operators
   sourceNamespace: openshift-marketplace

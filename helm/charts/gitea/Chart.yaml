@@ -1,0 +1,10 @@
+apiVersion: v2
+name: gitea
+description: Gitea self-hosted Git service via Helm subchart
+type: application
+version: 0.3.0
+appVersion: "1.25"
+dependencies:
+  - name: gitea
+    version: "12.5.3"
+    repository: "https://dl.gitea.com/charts/"

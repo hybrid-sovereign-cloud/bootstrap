@@ -1,0 +1,51 @@
+---
+- name: Check if Gitea admin user exists
+  ansible.builtin.uri:
+    url: "{{ gitea_url }}/api/v1/users/{{ gitea_admin_user }}"
+    method: GET
+    validate_certs: false
+    status_code: [200, 404]
+  register: gitea_user_check
+
+- name: Get Gitea admin credentials from secret
+  kubernetes.core.k8s_info:
+    kind: Secret
+    name: gitea-admin-credentials
+    namespace: gitea
+  register: gitea_secret
+  when: gitea_user_check.status == 200
+
+- name: Set admin password from existing secret
+  ansible.builtin.set_fact:
+    gitea_admin_password: "{{ (gitea_secret.resources[0].data.password | b64decode) }}"
+  when:
+    - gitea_user_check.status == 200
+    - gitea_secret.resources | length > 0
+
+- name: Generate admin API token
+  ansible.builtin.uri:
+    url: "{{ gitea_url }}/api/v1/users/{{ gitea_admin_user }}/tokens"
+    method: POST
+    user: "{{ gitea_admin_user }}"
+    password: "{{ gitea_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    body_format: json
+    body:
+      name: "sovereign-admin-token"
+      scopes:
+        - "all"
+    status_code: [201, 422]
+  register: gitea_token_result
+
+- name: Set Gitea admin token
+  ansible.builtin.set_fact:
+    gitea_admin_token: "{{ gitea_token_result.json.sha1 | default('') }}"
+  when: gitea_token_result.status == 201
+
+- name: Set Gitea credentials fact
+  ansible.builtin.set_fact:
+    gitea_credentials:
+      admin_user: "{{ gitea_admin_user }}"
+      admin_password: "{{ gitea_admin_password }}"
+      admin_token: "{{ gitea_admin_token | default('existing-token') }}"

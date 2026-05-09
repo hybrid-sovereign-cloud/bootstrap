@@ -1,0 +1,27 @@
+---
+- name: Check existing secret engines
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/sys/mounts"
+    method: GET
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    status_code: [200]
+  register: vault_mounts
+
+- name: Enable KV v2 secret engines
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/sys/mounts/{{ item.path }}"
+    method: POST
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      type: kv
+      options:
+        version: "2"
+      description: "{{ item.description }}"
+    status_code: [200, 204]
+  loop: "{{ vault_kv_engines }}"
+  when: (item.path + '/') not in vault_mounts.json

@@ -1,0 +1,78 @@
+gitea:
+  global:
+    storageClass: ""
+    security:
+      allowInsecureImages: true
+    imagePullSecrets:
+      - quay-pull-secret
+
+  replicaCount: 1
+
+  image:
+    registry: quay.signal9.gg
+    repository: hybrid-sovereign/gitea
+    tag: "1.25.5"
+    rootless: true
+
+  gitea:
+    admin:
+      existingSecret: ""
+    config:
+      server:
+        DOMAIN: ""
+        ROOT_URL: ""
+      database:
+        DB_TYPE: postgres
+      session:
+        PROVIDER: memory
+      cache:
+        ADAPTER: memory
+      queue:
+        TYPE: level
+
+  postgresql:
+    enabled: true
+    image:
+      registry: quay.signal9.gg
+      repository: hybrid-sovereign/postgresql
+      tag: "17.6.0-debian-12-r4"
+    volumePermissions:
+      image:
+        registry: quay.signal9.gg
+        repository: hybrid-sovereign/os-shell
+        tag: "12-debian-12-r51"
+
+  postgresql-ha:
+    enabled: false
+
+  redis:
+    enabled: false
+
+  redis-cluster:
+    enabled: false
+
+  valkey-cluster:
+    enabled: true
+    image:
+      registry: quay.signal9.gg
+      repository: hybrid-sovereign/valkey-cluster
+      tag: "8.1.3-debian-12-r3"
+    volumePermissions:
+      image:
+        registry: quay.signal9.gg
+        repository: hybrid-sovereign/os-shell
+        tag: "12-debian-12-r51"
+    sysctlImage:
+      registry: quay.signal9.gg
+      repository: hybrid-sovereign/os-shell
+      tag: "12-debian-12-r51"
+
+  persistence:
+    enabled: true
+    size: 10Gi
+
+  ingress:
+    enabled: false
+
+  route:
+    enabled: true
