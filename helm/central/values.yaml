@@ -314,19 +314,19 @@ gitea:
       route:
         enabled: true
 
-# ─── CrunchyData Postgres (central cluster) ──────────────────────────────
+# ─── Crunchy Postgres for Kubernetes (central cluster) ────────────────────
 crunchyPostgres:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   syncWave: "11"
   destinationNamespace: openshift-operators
   values:
     namespace: openshift-operators
 
-# ─── CrunchyData Postgres (services cluster) ──────────────────────────────
+# ─── Crunchy Postgres for Kubernetes (services cluster) ───────────────────
 crunchyPostgresServices:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   syncWave: "11"
   destinationNamespace: openshift-operators
   values:

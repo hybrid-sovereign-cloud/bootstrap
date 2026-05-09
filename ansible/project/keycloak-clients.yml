@@ -44,7 +44,7 @@
 
     - name: Parse clients from environment
       ansible.builtin.set_fact:
-        keycloak_clients: "{{ clients_json | from_json }}"
+        keycloak_clients: "{{ clients_json if clients_json is not string else (clients_json | from_json) }}"
 
   roles:
     - keycloak-clients
