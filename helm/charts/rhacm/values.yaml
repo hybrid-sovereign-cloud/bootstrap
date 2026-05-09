@@ -58,27 +58,13 @@ multiClusterHub:
   #   effect: "NoSchedule"
 
   # Enable or disable specific ACM components.
-  # Keys match the component names in the MCH spec.components map.
+  # Valid names for ACM 2.16: console, search, cluster-lifecycle, volsync, cluster-backup
   components:
-    # Console and search
     console: true
     search: true
-    # Governance / policy engine
-    governance: true
-    # Cluster lifecycle
-    hive: true
-    # Observability stack (Prometheus/Grafana federation)
-    observability: false
-    # Submariner networking add-on
-    submariner: false
-    # Application lifecycle (AppSub / Subscription)
-    applicationManager: true
-    # Cert manager integration
-    certPolicyController: true
-    # IAM policy controller
-    iamPolicyController: true
-    # Config policy controller
-    configPolicyController: true
+    cluster-lifecycle: true
+    volsync: false
+    cluster-backup: false
 
   # Persistent storage class for MCH observability (used only when observability: true).
   storageClass: ""
