@@ -1,8 +1,5 @@
 {{- if .Values.multiClusterHub.enabled }}
 ---
-# MultiClusterHub is the primary ACM instance CRD.
-# The operator must be Running before this resource is applied;
-# ArgoCD sync-wave annotations (via commonAnnotations) handle ordering.
 apiVersion: operator.open-cluster-management.io/v1
 kind: MultiClusterHub
 metadata:
@@ -10,10 +7,12 @@ metadata:
   namespace: {{ include "rhacm.namespace" . }}
   labels:
     {{- include "rhacm.labels" . | nindent 4 }}
-  {{- with .Values.commonAnnotations }}
   annotations:
+    argocd.argoproj.io/sync-wave: "5"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    {{- with .Values.commonAnnotations }}
     {{- toYaml . | nindent 4 }}
-  {{- end }}
+    {{- end }}
 spec:
   availabilityConfig: {{ .Values.multiClusterHub.availabilityConfig | quote }}
   disableHubSelfManagement: {{ .Values.multiClusterHub.disableHubSelfManagement }}

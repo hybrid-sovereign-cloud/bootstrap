@@ -15,7 +15,7 @@ rhacm:
   # Set to false to skip deploying RHACM via ArgoCD.
   enabled: true
   # Chart version to deploy — must match the version pushed by make upload-acm-chart.
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   # Namespace on the central cluster where RHACM is installed.
   destinationNamespace: open-cluster-management
   # Sync wave — RHACM runs early so other platform components can register.
