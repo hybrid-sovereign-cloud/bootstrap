@@ -96,6 +96,34 @@ rhbkConfig:
       adminSecretName: "sovereign-keycloak-central-initial-admin"
       keycloakUrl: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
 
+# ─── ACS (Advanced Cluster Security) ────────────────────────────────────────
+acs:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "25"
+  destinationNamespace: rhacs-operator
+  values:
+    namespace: rhacs-operator
+    central:
+      enabled: true
+      namespace: stackrox
+      instanceName: stackrox-central-services
+    consolePlugin:
+      enabled: true
+
+# ─── ACS — services cluster ────────────────────────────────────────────────
+acsServices:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "25"
+  destinationNamespace: rhacs-operator
+  values:
+    namespace: rhacs-operator
+    central:
+      enabled: false
+    consolePlugin:
+      enabled: true
+
 # ─── RHACM Application ───────────────────────────────────────────────────────
 rhacm:
   # Set to false to skip deploying RHACM via ArgoCD.

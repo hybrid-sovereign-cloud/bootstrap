@@ -36,6 +36,7 @@ include make/upload-acm-chart.mk
 include make/upload-rhbk-chart.mk
 include make/upload-rhbk-config-chart.mk
 include make/upload-sovereign-namespaces-chart.mk
+include make/upload-acs-chart.mk
 include make/ansible-runner.mk
 include make/init-central-argo.mk
 include make/help.mk

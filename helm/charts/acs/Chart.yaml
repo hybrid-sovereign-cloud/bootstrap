@@ -1,0 +1,6 @@
+apiVersion: v2
+name: acs
+description: Red Hat Advanced Cluster Security (RHACS) - operator + Central instance
+type: application
+version: 0.1.0
+appVersion: "4.7"

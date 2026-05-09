@@ -1,0 +1,44 @@
+{{- if .Values.acsServices.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: acs-services
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: security
+    sovereign-cloud/target: services
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.acsServices.syncWave | quote }}
+spec:
+  project: default
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/acs" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: acs
+    targetRevision: {{ .Values.acsServices.chartVersion | quote }}
+    helm:
+      releaseName: acs-services
+      values: |
+        {{- toYaml .Values.acsServices.values | nindent 8 }}
+
+  destination:
+    server: {{ .Values.servicesCluster.server | quote }}
+    namespace: {{ .Values.acsServices.destinationNamespace }}
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+{{- end }}

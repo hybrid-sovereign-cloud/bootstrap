@@ -1,0 +1,16 @@
+operator:
+  channel: stable
+  installPlanApproval: Automatic
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  name: rhacs-operator
+
+namespace: rhacs-operator
+
+central:
+  enabled: true
+  namespace: stackrox
+  instanceName: stackrox-central-services
+
+consolePlugin:
+  enabled: true
