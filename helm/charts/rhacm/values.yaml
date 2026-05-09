@@ -28,9 +28,9 @@ namespace:
 
 # ─── OperatorGroup ────────────────────────────────────────────────────────────
 operatorGroup:
-  # Target all namespaces (AllNamespaces).
-  # Set to ["open-cluster-management"] for SingleNamespace mode.
-  targetNamespaces: []
+  # ACM requires SingleNamespace mode — target its own namespace.
+  targetNamespaces:
+    - open-cluster-management
 
 # ─── MultiClusterHub ──────────────────────────────────────────────────────────
 multiClusterHub:

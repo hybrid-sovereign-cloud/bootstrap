@@ -15,7 +15,7 @@ rhacm:
   # Set to false to skip deploying RHACM via ArgoCD.
   enabled: true
   # Chart version to deploy — must match the version pushed by make upload-acm-chart.
-  chartVersion: "0.2.0"
+  chartVersion: "0.3.0"
   # Set to false on first deployment (before ACM operator installs the CRD).
   # Enable after the operator is running.
   enableMultiClusterHub: false
