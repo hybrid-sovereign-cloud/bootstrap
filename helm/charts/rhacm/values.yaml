@@ -43,9 +43,6 @@ multiClusterHub:
   # Disable hub self-management (recommended for dedicated hub clusters).
   disableHubSelfManagement: false
 
-  # Override the image pull policy: Always | IfNotPresent | Never
-  imagePullPolicy: IfNotPresent
-
   # Pull secret name in the ACM namespace (must exist before install).
   # Leave empty when using the default cluster pull secret.
   imagePullSecret: ""

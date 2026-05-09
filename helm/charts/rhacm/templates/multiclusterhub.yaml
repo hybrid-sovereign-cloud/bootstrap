@@ -16,7 +16,6 @@ metadata:
 spec:
   availabilityConfig: {{ .Values.multiClusterHub.availabilityConfig | quote }}
   disableHubSelfManagement: {{ .Values.multiClusterHub.disableHubSelfManagement }}
-  imagePullPolicy: {{ .Values.multiClusterHub.imagePullPolicy | quote }}
 
   {{- if .Values.multiClusterHub.imagePullSecret }}
   imagePullSecret: {{ .Values.multiClusterHub.imagePullSecret | quote }}
