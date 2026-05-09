@@ -26,6 +26,15 @@ spec:
     server: https://kubernetes.default.svc
     namespace: gitea
 
+  ignoreDifferences:
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /spec/volumeClaimTemplates/0/spec
+        - /spec/template/spec/containers/0/securityContext
+        - /spec/template/spec/initContainers
+        - /spec/template/spec/containers/0/resources
+
   syncPolicy:
     automated:
       prune: true
@@ -33,6 +42,7 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+      - RespectIgnoreDifferences=true
     retry:
       limit: 5
       backoff:

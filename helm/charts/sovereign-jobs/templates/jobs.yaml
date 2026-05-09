@@ -8,8 +8,6 @@ metadata:
   namespace: {{ $.Values.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: {{ $job.syncWave | quote }}
-    argocd.argoproj.io/hook: Sync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   backoffLimit: {{ $.Values.backoffLimit }}
   activeDeadlineSeconds: {{ $job.activeDeadlineSeconds }}
