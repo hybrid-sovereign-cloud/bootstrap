@@ -28,15 +28,15 @@ sovereignNamespaces:
 # ─── RHBK (Keycloak) ─────────────────────────────────────────────────────────
 rhbk:
   enabled: true
-  chartVersion: "0.4.0"
+  chartVersion: "0.5.0"
   syncWave: "5"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     instanceName: sovereign-keycloak-services
+    operator:
+      channel: stable-v26.4
     keycloak:
       enabled: true
       instances: 2
       hostname: ""
-    ansibleJob:
-      enabled: false

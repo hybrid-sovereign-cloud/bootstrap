@@ -1,0 +1,36 @@
+{{- if .Values.rhbkConfig.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rhbk-config
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: keycloak-config
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.rhbkConfig.syncWave | quote }}
+spec:
+  project: default
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/rhbk-config" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: rhbk-config
+    targetRevision: {{ .Values.rhbkConfig.chartVersion | quote }}
+    helm:
+      releaseName: rhbk-config
+      values: |
+        {{- toYaml .Values.rhbkConfig.values | nindent 8 }}
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.rhbkConfig.destinationNamespace }}
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+{{- end }}

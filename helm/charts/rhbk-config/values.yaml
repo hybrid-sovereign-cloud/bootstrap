@@ -1,0 +1,6 @@
+namespace: sovereign-cloud
+
+ansibleJob:
+  enabled: true
+  image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
+  serviceAccount: sovereign-ansible-runner

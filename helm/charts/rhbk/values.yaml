@@ -1,5 +1,5 @@
 operator:
-  channel: stable-v24
+  channel: stable-v26.4
   installPlanApproval: Automatic
   source: redhat-operators
   sourceNamespace: openshift-marketplace
@@ -24,7 +24,3 @@ keycloak:
     host: ""
     database: keycloak
 
-ansibleJob:
-  enabled: false
-  image: ""
-  serviceAccount: sovereign-ansible-runner
