@@ -69,26 +69,11 @@
         vault_root_token: "{{ (existing_secret.resources[0].data.root_token | b64decode) }}"
         vault_unseal_keys: "{{ (existing_secret.resources[0].data.unseal_keys | b64decode) | from_json }}"
 
-- name: Check Vault seal status
-  ansible.builtin.uri:
-    url: "{{ vault_addr }}/v1/sys/seal-status"
-    method: GET
-    validate_certs: false
-  register: vault_seal_status
-  retries: 5
-  delay: 5
-  until: vault_seal_status.status is defined
-
-- name: Unseal Vault (threshold keys)
-  ansible.builtin.uri:
-    url: "{{ vault_addr }}/v1/sys/unseal"
-    method: PUT
-    validate_certs: false
-    body_format: json
-    body:
-      key: "{{ item }}"
-    status_code: [200]
-  loop: "{{ vault_unseal_keys[:vault_key_threshold | int] }}"
-  when: vault_seal_status.json.sealed
-  retries: 3
-  delay: 5
+- name: Unseal each Vault pod directly
+  ansible.builtin.include_tasks: unseal-pod.yml
+  loop:
+    - "http://vault-0.vault-internal.{{ vault_namespace }}.svc:8200"
+    - "http://vault-1.vault-internal.{{ vault_namespace }}.svc:8200"
+    - "http://vault-2.vault-internal.{{ vault_namespace }}.svc:8200"
+  loop_control:
+    loop_var: pod_addr

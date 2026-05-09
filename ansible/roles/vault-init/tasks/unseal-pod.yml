@@ -1,0 +1,47 @@
+---
+- name: "Check seal status of {{ pod_addr }}"
+  ansible.builtin.uri:
+    url: "{{ pod_addr }}/v1/sys/seal-status"
+    method: GET
+    validate_certs: false
+    status_code: [200, 000]
+  register: pod_seal_status
+  retries: 10
+  delay: 10
+  until: pod_seal_status.status == 200
+  ignore_errors: true
+
+- name: "Join raft cluster from {{ pod_addr }}"
+  ansible.builtin.uri:
+    url: "{{ pod_addr }}/v1/sys/storage/raft/join"
+    method: POST
+    validate_certs: false
+    body_format: json
+    body:
+      leader_api_addr: "http://vault-0.vault-internal.{{ vault_namespace }}.svc:8200"
+    status_code: [200, 204, 400]
+  when:
+    - pod_seal_status.status is defined
+    - pod_seal_status.status == 200
+    - pod_seal_status.json.sealed | default(true)
+    - pod_addr != ("http://vault-0.vault-internal." + vault_namespace + ".svc:8200")
+  retries: 3
+  delay: 5
+  ignore_errors: true
+
+- name: "Unseal {{ pod_addr }} with threshold keys"
+  ansible.builtin.uri:
+    url: "{{ pod_addr }}/v1/sys/unseal"
+    method: PUT
+    validate_certs: false
+    body_format: json
+    body:
+      key: "{{ item }}"
+    status_code: [200]
+  loop: "{{ vault_unseal_keys[:vault_key_threshold | int] }}"
+  when:
+    - pod_seal_status.status is defined
+    - pod_seal_status.status == 200
+    - pod_seal_status.json.sealed | default(true)
+  retries: 3
+  delay: 5

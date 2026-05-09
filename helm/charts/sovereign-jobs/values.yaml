@@ -1,0 +1,126 @@
+namespace: sovereign-jobs
+serviceAccount: sovereign-ansible-runner
+image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
+backoffLimit: 5
+
+imagePullSecrets:
+  - name: quay-pull-secret
+
+jobs:
+  vaultInit:
+    enabled: true
+    playbook: vault-init.yml
+    activeDeadlineSeconds: 600
+    syncWave: "5"
+    env:
+      - name: VAULT_ADDR
+        value: "http://vault.vault.svc:8200"
+
+  vaultKv:
+    enabled: true
+    playbook: vault-kv.yml
+    activeDeadlineSeconds: 300
+    syncWave: "10"
+    env:
+      - name: VAULT_ADDR
+        value: "http://vault.vault.svc:8200"
+
+  keycloakRealms:
+    enabled: true
+    playbook: keycloak-realms.yml
+    activeDeadlineSeconds: 300
+    syncWave: "15"
+    env:
+      - name: KEYCLOAK_URL
+        value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
+      - name: KEYCLOAK_ADMIN_USER
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-admin-creds
+            key: username
+      - name: KEYCLOAK_ADMIN_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-admin-creds
+            key: password
+
+  keycloakGroups:
+    enabled: true
+    playbook: keycloak-groups.yml
+    activeDeadlineSeconds: 300
+    syncWave: "16"
+    env:
+      - name: KEYCLOAK_URL
+        value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
+      - name: KEYCLOAK_ADMIN_USER
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-admin-creds
+            key: username
+      - name: KEYCLOAK_ADMIN_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-admin-creds
+            key: password
+
+  keycloakClients:
+    enabled: true
+    playbook: keycloak-clients.yml
+    activeDeadlineSeconds: 600
+    syncWave: "17"
+    env:
+      - name: KEYCLOAK_URL
+        value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
+      - name: KEYCLOAK_ADMIN_USER
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-admin-creds
+            key: username
+      - name: KEYCLOAK_ADMIN_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-admin-creds
+            key: password
+      - name: KEYCLOAK_CLIENTS
+        value: '[{"realm":"sovereign-central","client_id":"quay-central","name":"Quay Central","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"vault","name":"HashiCorp Vault","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"gitea","name":"Gitea","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"openshift-central","name":"OpenShift Central","redirect_uris":["*"]}]'
+
+  keycloakRbac:
+    enabled: true
+    playbook: keycloak-rbac.yml
+    activeDeadlineSeconds: 300
+    syncWave: "18"
+    env:
+      - name: OCP_SERVICES_SERVER
+        value: "https://api.shcservices.lab.signal9.gg:6443"
+
+  keycloakOauth:
+    enabled: true
+    playbook: keycloak-oauth.yml
+    activeDeadlineSeconds: 600
+    syncWave: "19"
+    env:
+      - name: KEYCLOAK_CENTRAL_URL
+        value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
+      - name: KEYCLOAK_SERVICES_URL
+        value: "http://sovereign-keycloak-services-service.rhbk.svc:8080"
+      - name: KEYCLOAK_ADMIN_USER
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-admin-creds
+            key: username
+      - name: KEYCLOAK_ADMIN_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-admin-creds
+            key: password
+      - name: OCP_SERVICES_SERVER
+        value: "https://api.shcservices.lab.signal9.gg:6443"
+
+  giteaInit:
+    enabled: true
+    playbook: gitea-init.yml
+    activeDeadlineSeconds: 300
+    syncWave: "20"
+    env:
+      - name: GITEA_URL
+        value: "http://gitea-http.gitea.svc:3000"

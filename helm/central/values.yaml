@@ -359,223 +359,104 @@ vaultSecretStore:
       tokenSecretNamespace: "vault"
       tokenSecretKey: "root_token"
 
-# ─── Ansible Jobs (1 per role) ───────────────────────────────────────────
-jobs:
-  chartVersion: "0.1.2"
-
-  vaultInit:
-    enabled: true
-    syncWave: "20"
-    values:
-      namespace: sovereign-jobs
-      rbac:
-        create: true
-      job:
-        name: vault-init
+# ─── Sovereign Jobs (all Ansible jobs in one chart) ─────────────────────
+sovereignJobs:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "40"
+  values:
+    namespace: sovereign-jobs
+    serviceAccount: sovereign-ansible-runner
+    image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
+    backoffLimit: 5
+    imagePullSecrets:
+      - name: quay-pull-secret
+    jobs:
+      vaultInit:
+        enabled: true
         playbook: vault-init.yml
-        image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
-        serviceAccount: sovereign-ansible-runner
-        backoffLimit: 5
         activeDeadlineSeconds: 600
         syncWave: "5"
         env:
           - name: VAULT_ADDR
             value: "http://vault.vault.svc:8200"
-        imagePullSecrets:
-          - name: quay-pull-secret
-
-  vaultKv:
-    enabled: true
-    syncWave: "21"
-    values:
-      namespace: sovereign-jobs
-      job:
-        name: vault-kv
+      vaultKv:
+        enabled: true
         playbook: vault-kv.yml
-        image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
-        serviceAccount: sovereign-ansible-runner
-        backoffLimit: 5
         activeDeadlineSeconds: 300
-        syncWave: "5"
+        syncWave: "10"
         env:
           - name: VAULT_ADDR
             value: "http://vault.vault.svc:8200"
-        imagePullSecrets:
-          - name: quay-pull-secret
-
-  keycloakRealms:
-    enabled: true
-    syncWave: "40"
-    values:
-      namespace: sovereign-jobs
-      externalSecrets:
-        - name: keycloak-admin-creds
-          keys:
-            - secretKey: username
-              remoteKey: central/data/keycloak-admin
-              property: username
-            - secretKey: password
-              remoteKey: central/data/keycloak-admin
-              property: password
-      job:
-        name: keycloak-realms
+      keycloakRealms:
+        enabled: true
         playbook: keycloak-realms.yml
-        image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
-        serviceAccount: sovereign-ansible-runner
-        backoffLimit: 5
         activeDeadlineSeconds: 300
-        syncWave: "5"
+        syncWave: "15"
         env:
           - name: KEYCLOAK_URL
             value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
           - name: KEYCLOAK_ADMIN_USER
             valueFrom:
               secretKeyRef:
-                name: keycloak-admin-creds
+                name: sovereign-keycloak-central-initial-admin
                 key: username
           - name: KEYCLOAK_ADMIN_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: keycloak-admin-creds
+                name: sovereign-keycloak-central-initial-admin
                 key: password
-        imagePullSecrets:
-          - name: quay-pull-secret
-
-  keycloakGroups:
-    enabled: true
-    syncWave: "41"
-    values:
-      namespace: sovereign-jobs
-      externalSecrets:
-        - name: keycloak-admin-creds
-          keys:
-            - secretKey: username
-              remoteKey: central/data/keycloak-admin
-              property: username
-            - secretKey: password
-              remoteKey: central/data/keycloak-admin
-              property: password
-      job:
-        name: keycloak-groups
+      keycloakGroups:
+        enabled: true
         playbook: keycloak-groups.yml
-        image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
-        serviceAccount: sovereign-ansible-runner
-        backoffLimit: 5
         activeDeadlineSeconds: 300
-        syncWave: "5"
+        syncWave: "16"
         env:
           - name: KEYCLOAK_URL
             value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
           - name: KEYCLOAK_ADMIN_USER
             valueFrom:
               secretKeyRef:
-                name: keycloak-admin-creds
+                name: sovereign-keycloak-central-initial-admin
                 key: username
           - name: KEYCLOAK_ADMIN_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: keycloak-admin-creds
+                name: sovereign-keycloak-central-initial-admin
                 key: password
-        imagePullSecrets:
-          - name: quay-pull-secret
-
-  keycloakClients:
-    enabled: true
-    syncWave: "42"
-    values:
-      namespace: sovereign-jobs
-      externalSecrets:
-        - name: keycloak-admin-creds
-          keys:
-            - secretKey: username
-              remoteKey: central/data/keycloak-admin
-              property: username
-            - secretKey: password
-              remoteKey: central/data/keycloak-admin
-              property: password
-      pushSecrets:
-        - name: push-keycloak-client-secrets
-          sourceSecret: keycloak-client-secrets
-          keys:
-            - secretKey: quay-central
-              remoteKey: central/data/keycloak-clients
-              property: quay-central
-            - secretKey: vault
-              remoteKey: central/data/keycloak-clients
-              property: vault
-            - secretKey: gitea
-              remoteKey: central/data/keycloak-clients
-              property: gitea
-            - secretKey: openshift-central
-              remoteKey: central/data/keycloak-clients
-              property: openshift-central
-      job:
-        name: keycloak-clients
+      keycloakClients:
+        enabled: true
         playbook: keycloak-clients.yml
-        image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
-        serviceAccount: sovereign-ansible-runner
-        backoffLimit: 5
         activeDeadlineSeconds: 600
-        syncWave: "5"
+        syncWave: "17"
         env:
           - name: KEYCLOAK_URL
             value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
           - name: KEYCLOAK_ADMIN_USER
             valueFrom:
               secretKeyRef:
-                name: keycloak-admin-creds
+                name: sovereign-keycloak-central-initial-admin
                 key: username
           - name: KEYCLOAK_ADMIN_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: keycloak-admin-creds
+                name: sovereign-keycloak-central-initial-admin
                 key: password
           - name: KEYCLOAK_CLIENTS
-            value: '[{"realm":"sovereign-central","client_id":"quay-central","name":"Quay Central","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"vault","name":"HashiCorp Vault","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"gitea","name":"Gitea","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"openshift-central","name":"OpenShift Central","redirect_uris":["*"]}]'
-        imagePullSecrets:
-          - name: quay-pull-secret
-
-  keycloakRbac:
-    enabled: true
-    syncWave: "43"
-    values:
-      namespace: sovereign-jobs
-      job:
-        name: keycloak-rbac
+            value: '[{"realm":"sovereign-central","client_id":"quay-central","name":"Quay Central","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"vault","name":"Vault","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"gitea","name":"Gitea","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"openshift-central","name":"OpenShift Central","redirect_uris":["*"]}]'
+      keycloakRbac:
+        enabled: true
         playbook: keycloak-rbac.yml
-        image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
-        serviceAccount: sovereign-ansible-runner
-        backoffLimit: 5
         activeDeadlineSeconds: 300
-        syncWave: "5"
+        syncWave: "18"
         env:
           - name: OCP_SERVICES_SERVER
             value: "https://api.shcservices.lab.signal9.gg:6443"
-        imagePullSecrets:
-          - name: quay-pull-secret
-
-  keycloakOauth:
-    enabled: true
-    syncWave: "44"
-    values:
-      namespace: sovereign-jobs
-      externalSecrets:
-        - name: keycloak-admin-creds
-          keys:
-            - secretKey: username
-              remoteKey: central/data/keycloak-admin
-              property: username
-            - secretKey: password
-              remoteKey: central/data/keycloak-admin
-              property: password
-      job:
-        name: keycloak-oauth
+      keycloakOauth:
+        enabled: true
         playbook: keycloak-oauth.yml
-        image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
-        serviceAccount: sovereign-ansible-runner
-        backoffLimit: 5
         activeDeadlineSeconds: 600
-        syncWave: "5"
+        syncWave: "19"
         env:
           - name: KEYCLOAK_CENTRAL_URL
             value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
@@ -584,33 +465,20 @@ jobs:
           - name: KEYCLOAK_ADMIN_USER
             valueFrom:
               secretKeyRef:
-                name: keycloak-admin-creds
+                name: sovereign-keycloak-central-initial-admin
                 key: username
           - name: KEYCLOAK_ADMIN_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: keycloak-admin-creds
+                name: sovereign-keycloak-central-initial-admin
                 key: password
           - name: OCP_SERVICES_SERVER
             value: "https://api.shcservices.lab.signal9.gg:6443"
-        imagePullSecrets:
-          - name: quay-pull-secret
-
-  giteaInit:
-    enabled: true
-    syncWave: "45"
-    values:
-      namespace: sovereign-jobs
-      job:
-        name: gitea-init
+      giteaInit:
+        enabled: true
         playbook: gitea-init.yml
-        image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
-        serviceAccount: sovereign-ansible-runner
-        backoffLimit: 5
         activeDeadlineSeconds: 300
-        syncWave: "5"
+        syncWave: "20"
         env:
           - name: GITEA_URL
             value: "http://gitea-http.gitea.svc:3000"
-        imagePullSecrets:
-          - name: quay-pull-secret
