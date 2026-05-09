@@ -34,6 +34,12 @@ RUN curl -sL https://get.helm.sh/helm-v3.14.0-linux-amd64.tar.gz | \
     tar -xz -C /tmp && mv /tmp/linux-amd64/helm /usr/local/bin/helm && \
     chmod +x /usr/local/bin/helm && rm -rf /tmp/linux-amd64
 
+# Copy ansible project and roles into the runner structure
+COPY project/ /runner/project/
+COPY roles/ /runner/project/roles/
+
+RUN chmod -R 755 /runner
+
 USER 1001
 
 ENTRYPOINT ["ansible-runner"]

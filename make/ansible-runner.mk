@@ -19,7 +19,7 @@ ansible-runner: check-env ## Build ansible-runner image and push to Quay
 	$(call ok,Logged in to $(IMAGE_REGISTRY))
 	@echo "$(BOLD)Building ansible-runner image...$(RESET)"
 	@podman build -t "$(ANSIBLE_RUNNER_IMAGE):$(ANSIBLE_RUNNER_TAG)" \
-	  ansible/imagebuild/ansiblerunner
+	  -f ansible/imagebuild/ansiblerunner/Containerfile ansible/
 	$(call ok,Image built: $(ANSIBLE_RUNNER_IMAGE):$(ANSIBLE_RUNNER_TAG))
 	@echo "$(BOLD)Pushing ansible-runner image to Quay...$(RESET)"
 	@echo "$(OCI_REGISTRY_TOKEN)" | podman login "$(OCI_HOST)" \
