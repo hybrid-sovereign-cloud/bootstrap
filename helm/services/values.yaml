@@ -1,0 +1,37 @@
+# ─── ArgoCD namespace ─────────────────────────────────────────────────────────
+argocd:
+  namespace: openshift-gitops
+
+# ─── OCI registry that stores platform Helm charts ───────────────────────────
+oci:
+  registry: "quay.signal9.gg"
+  repositoryBase: "hybrid-sovereign"
+
+# ─── Sovereign Namespaces ────────────────────────────────────────────────────
+sovereignNamespaces:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "1"
+  values:
+    namespaces:
+      - name: sovereign-cloud-plugins
+        enabled: true
+      - name: sovereign-cloud
+        enabled: false
+      - name: sovereign-cloud-jobs
+        enabled: false
+
+# ─── RHBK (Keycloak) ─────────────────────────────────────────────────────────
+rhbk:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "5"
+  destinationNamespace: sovereign-cloud
+  values:
+    namespace: sovereign-cloud
+    keycloak:
+      enabled: true
+      instances: 2
+      hostname: ""
+    ansibleJob:
+      enabled: false

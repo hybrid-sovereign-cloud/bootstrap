@@ -1,0 +1,11 @@
+---
+- name: Configure Sovereign Cloud Keycloak
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  roles:
+    - role: keycloak-realms
+    - role: keycloak-clients
+    - role: keycloak-oauth
+    - role: keycloak-rbac

@@ -1,0 +1,11 @@
+keycloak_central_url: "{{ lookup('env', 'KEYCLOAK_CENTRAL_URL') }}"
+keycloak_services_url: "{{ lookup('env', 'KEYCLOAK_SERVICES_URL') }}"
+
+central_realm: sovereign-central
+services_realm: sovereign-tenants
+
+central_client_id: sovereign-central
+services_client_id: sovereign-tenants-services
+
+ocp_central_server: "{{ lookup('env', 'OCP_CENTRAL_SERVER') }}"
+ocp_services_server: "{{ lookup('env', 'OCP_SERVICES_SERVER') }}"

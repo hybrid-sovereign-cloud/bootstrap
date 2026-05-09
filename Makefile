@@ -6,11 +6,10 @@ REQUIRED_VARS := \
   OCP_SERVICES_SERVER OCP_SERVICES_USERNAME OCP_SERVICES_PASSWORD \
   OCI_REGISTRY OCI_REGISTRY_TOKEN \
   OCI_ROBOT_USERNAME OCI_ROBOT_PASSWORD \
-  GITHUB_URL GITHUB_TOKEN
+  GITHUB_URL GITHUB_TOKEN \
+  IMAGE_REGISTRY IMAGE_REGISTRY_USERNAME IMAGE_REGISTRY_PASSWORD
 
 # ─── Derived OCI values ──────────────────────────────────────────────────────
-# OCI_REGISTRY can be a hostname (quay.io) or a full URL (https://quay.io/organization/myorg)
-# We extract the hostname and namespace automatically.
 OCI_HOST := $(shell echo "$(OCI_REGISTRY)" | sed -E 's|^https?://||' | cut -d'/' -f1)
 OCI_NAMESPACE := $(shell echo "$(OCI_REGISTRY)" | sed -E 's|^https?://||' | sed -n 's|.*/organization/||p' | cut -d'/' -f1)
 ifeq ($(OCI_NAMESPACE),)
@@ -32,6 +31,10 @@ endef
 
 # ─── Import targets from make/ ───────────────────────────────────────────────
 include make/check-env.mk
+include make/add-docker-repo.mk
 include make/upload-acm-chart.mk
+include make/upload-rhbk-chart.mk
+include make/upload-sovereign-namespaces-chart.mk
+include make/ansible-runner.mk
 include make/init-central-argo.mk
 include make/help.mk

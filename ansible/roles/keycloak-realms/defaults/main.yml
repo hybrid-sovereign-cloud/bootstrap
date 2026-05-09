@@ -1,0 +1,7 @@
+keycloak_central_url: "{{ lookup('env', 'KEYCLOAK_CENTRAL_URL') }}"
+keycloak_services_url: "{{ lookup('env', 'KEYCLOAK_SERVICES_URL') }}"
+keycloak_admin_user: "{{ lookup('env', 'KEYCLOAK_ADMIN_USER') | default('admin', true) }}"
+keycloak_admin_password: "{{ lookup('env', 'KEYCLOAK_ADMIN_PASSWORD') }}"
+
+central_realm: sovereign-central
+services_realm: sovereign-tenants

@@ -1,0 +1,88 @@
+---
+- name: Create OAuth secret for sovereign-central on central cluster
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: sovereign-central-oauth-secret
+        namespace: openshift-config
+      type: Opaque
+      stringData:
+        clientSecret: "{{ central_client_secret.clientsecret_info.value }}"
+
+- name: Add sovereign-central as OAuth identity provider on central cluster
+  kubernetes.core.k8s:
+    state: present
+    merge_type: merge
+    definition:
+      apiVersion: config.openshift.io/v1
+      kind: OAuth
+      metadata:
+        name: cluster
+      spec:
+        identityProviders:
+          - name: sovereign-central
+            type: OpenID
+            mappingMethod: claim
+            openID:
+              clientID: "{{ central_client_id }}"
+              clientSecret:
+                name: sovereign-central-oauth-secret
+              issuer: "{{ keycloak_central_url }}/realms/{{ central_realm }}"
+              claims:
+                preferredUsername:
+                  - preferred_username
+                name:
+                  - name
+                email:
+                  - email
+                groups:
+                  - groups
+
+- name: Create OAuth secret for sovereign-tenants-services on services cluster
+  kubernetes.core.k8s:
+    host: "{{ ocp_services_server }}"
+    validate_certs: false
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: sovereign-tenants-oauth-secret
+        namespace: openshift-config
+      type: Opaque
+      stringData:
+        clientSecret: "{{ services_client_secret.clientsecret_info.value }}"
+
+- name: Add sovereign-tenants-services as OAuth identity provider on services cluster
+  kubernetes.core.k8s:
+    host: "{{ ocp_services_server }}"
+    validate_certs: false
+    state: present
+    merge_type: merge
+    definition:
+      apiVersion: config.openshift.io/v1
+      kind: OAuth
+      metadata:
+        name: cluster
+      spec:
+        identityProviders:
+          - name: sovereign-tenants
+            type: OpenID
+            mappingMethod: claim
+            openID:
+              clientID: "{{ services_client_id }}"
+              clientSecret:
+                name: sovereign-tenants-oauth-secret
+              issuer: "{{ keycloak_services_url }}/realms/{{ services_realm }}"
+              claims:
+                preferredUsername:
+                  - preferred_username
+                name:
+                  - name
+                email:
+                  - email
+                groups:
+                  - groups

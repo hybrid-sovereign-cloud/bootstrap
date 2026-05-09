@@ -1,0 +1,16 @@
+apiVersion: v2
+name: sovereign-services
+description: >
+  App-of-Apps chart for the services cluster. Each ArgoCD Application
+  represents one platform component deployed to the services cluster.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - argocd
+  - app-of-apps
+  - gitops
+  - services
+home: https://github.com/hybrid-sovereign/bootstrap
+maintainers:
+  - name: platform-team

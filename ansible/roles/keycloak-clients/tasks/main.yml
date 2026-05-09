@@ -1,0 +1,128 @@
+---
+- name: Create sovereign-central client in sovereign-central realm
+  middleware_automation.keycloak.keycloak_client:
+    auth_keycloak_url: "{{ keycloak_central_url }}"
+    auth_realm: master
+    auth_username: "{{ keycloak_admin_user }}"
+    auth_password: "{{ keycloak_admin_password }}"
+    validate_certs: false
+    realm: "{{ central_realm }}"
+    client_id: "{{ central_client_id }}"
+    name: "Sovereign Central"
+    enabled: true
+    client_authenticator_type: client-secret
+    service_accounts_enabled: true
+    authorization_services_enabled: true
+    standard_flow_enabled: true
+    direct_access_grants_enabled: true
+    redirect_uris:
+      - "{{ ocp_central_server }}/*"
+      - "https://oauth-openshift.apps.*/oauth2callback/*"
+    state: present
+  register: central_client_result
+
+- name: Get central client secret
+  middleware_automation.keycloak.keycloak_clientsecret_info:
+    auth_keycloak_url: "{{ keycloak_central_url }}"
+    auth_realm: master
+    auth_username: "{{ keycloak_admin_user }}"
+    auth_password: "{{ keycloak_admin_password }}"
+    validate_certs: false
+    realm: "{{ central_realm }}"
+    client_id: "{{ central_client_id }}"
+  register: central_client_secret
+
+- name: Create sovereign-tenants-services client in sovereign-tenants realm
+  middleware_automation.keycloak.keycloak_client:
+    auth_keycloak_url: "{{ keycloak_services_url }}"
+    auth_realm: master
+    auth_username: "{{ keycloak_admin_user }}"
+    auth_password: "{{ keycloak_admin_password }}"
+    validate_certs: false
+    realm: "{{ services_realm }}"
+    client_id: "{{ services_client_id }}"
+    name: "Sovereign Tenants Services"
+    enabled: true
+    client_authenticator_type: client-secret
+    service_accounts_enabled: true
+    authorization_services_enabled: true
+    standard_flow_enabled: true
+    direct_access_grants_enabled: true
+    redirect_uris:
+      - "{{ ocp_services_server }}/*"
+      - "https://oauth-openshift.apps.*/oauth2callback/*"
+    state: present
+  register: services_client_result
+
+- name: Get services client secret
+  middleware_automation.keycloak.keycloak_clientsecret_info:
+    auth_keycloak_url: "{{ keycloak_services_url }}"
+    auth_realm: master
+    auth_username: "{{ keycloak_admin_user }}"
+    auth_password: "{{ keycloak_admin_password }}"
+    validate_certs: false
+    realm: "{{ services_realm }}"
+    client_id: "{{ services_client_id }}"
+  register: services_client_secret
+
+- name: Assign realm-management roles to central client service account
+  middleware_automation.keycloak.keycloak_client_rolemapping:
+    auth_keycloak_url: "{{ keycloak_central_url }}"
+    auth_realm: master
+    auth_username: "{{ keycloak_admin_user }}"
+    auth_password: "{{ keycloak_admin_password }}"
+    validate_certs: false
+    realm: "{{ central_realm }}"
+    client_id: "{{ central_client_id }}"
+    service_account_user_client_id: "{{ central_client_id }}"
+    roles:
+      - name: realm-admin
+        client_id: realm-management
+    state: present
+
+- name: Assign realm-management roles to services client service account
+  middleware_automation.keycloak.keycloak_client_rolemapping:
+    auth_keycloak_url: "{{ keycloak_services_url }}"
+    auth_realm: master
+    auth_username: "{{ keycloak_admin_user }}"
+    auth_password: "{{ keycloak_admin_password }}"
+    validate_certs: false
+    realm: "{{ services_realm }}"
+    client_id: "{{ services_client_id }}"
+    service_account_user_client_id: "{{ services_client_id }}"
+    roles:
+      - name: realm-admin
+        client_id: realm-management
+    state: present
+
+- name: Copy client secrets to central cluster sovereign-cloud namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: sovereign-keycloak-clients
+        namespace: "{{ central_namespace }}"
+      type: Opaque
+      stringData:
+        central-client-id: "{{ central_client_id }}"
+        central-client-secret: "{{ central_client_secret.clientsecret_info.value }}"
+        services-client-id: "{{ services_client_id }}"
+        services-client-secret: "{{ services_client_secret.clientsecret_info.value }}"
+
+- name: Copy services client secret to services cluster sovereign-cloud namespace
+  kubernetes.core.k8s:
+    host: "{{ ocp_services_server }}"
+    validate_certs: false
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: sovereign-keycloak-clients
+        namespace: "{{ services_namespace }}"
+      type: Opaque
+      stringData:
+        services-client-id: "{{ services_client_id }}"
+        services-client-secret: "{{ services_client_secret.clientsecret_info.value }}"

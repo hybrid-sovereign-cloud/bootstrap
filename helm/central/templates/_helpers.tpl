@@ -22,3 +22,10 @@ ArgoCD v3.x resolves against the full repo path.
 {{- define "sovereign-central.ociURL" -}}
 {{- printf "oci://%s/%s/rhacm" .Values.oci.registry .Values.oci.repositoryBase }}
 {{- end }}
+
+{{/*
+Generic OCI base URL helper: oci://<registry>/<repositoryBase>
+*/}}
+{{- define "sovereign-central.ociBase" -}}
+{{- printf "oci://%s/%s" .Values.oci.registry .Values.oci.repositoryBase }}
+{{- end }}

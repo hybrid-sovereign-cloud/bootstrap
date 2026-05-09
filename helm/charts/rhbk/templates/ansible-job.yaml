@@ -1,0 +1,83 @@
+{{- if .Values.ansibleJob.enabled }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.ansibleJob.serviceAccount }}
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: sovereign-ansible-runner-admin
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.ansibleJob.serviceAccount }}
+    namespace: {{ .Values.namespace }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sovereign-keycloak-config
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "15"
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      serviceAccountName: {{ .Values.ansibleJob.serviceAccount }}
+      restartPolicy: OnFailure
+      containers:
+        - name: ansible-runner
+          image: {{ .Values.ansibleJob.image | quote }}
+          command:
+            - ansible-runner
+            - run
+            - /runner
+            - -p
+            - configure-keycloak.yml
+          env:
+            - name: OCP_CENTRAL_SERVER
+              valueFrom:
+                secretKeyRef:
+                  name: sovereign-cluster-credentials
+                  key: central-server
+            - name: OCP_SERVICES_SERVER
+              valueFrom:
+                secretKeyRef:
+                  name: sovereign-cluster-credentials
+                  key: services-server
+            - name: KEYCLOAK_CENTRAL_URL
+              valueFrom:
+                secretKeyRef:
+                  name: sovereign-keycloak-config
+                  key: central-url
+            - name: KEYCLOAK_SERVICES_URL
+              valueFrom:
+                secretKeyRef:
+                  name: sovereign-keycloak-config
+                  key: services-url
+            - name: KEYCLOAK_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: sovereign-keycloak-initial-admin
+                  key: username
+                  optional: true
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sovereign-keycloak-initial-admin
+                  key: password
+                  optional: true
+{{- end }}

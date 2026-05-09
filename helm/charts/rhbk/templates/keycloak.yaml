@@ -1,0 +1,36 @@
+{{- if .Values.keycloak.enabled }}
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: sovereign-keycloak
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  instances: {{ .Values.keycloak.instances }}
+  {{- if .Values.keycloak.hostname }}
+  hostname:
+    hostname: {{ .Values.keycloak.hostname | quote }}
+  {{- end }}
+  db:
+    vendor: {{ .Values.keycloak.database.vendor }}
+    {{- if .Values.keycloak.database.host }}
+    host: {{ .Values.keycloak.database.host | quote }}
+    {{- end }}
+    {{- if .Values.keycloak.database.database }}
+    database: {{ .Values.keycloak.database.database | quote }}
+    {{- end }}
+    usernameSecret:
+      name: {{ .Values.keycloak.database.usernameSecret.name }}
+      key: {{ .Values.keycloak.database.usernameSecret.key }}
+    passwordSecret:
+      name: {{ .Values.keycloak.database.passwordSecret.name }}
+      key: {{ .Values.keycloak.database.passwordSecret.key }}
+  http:
+    tlsSecret: keycloak-tls-secret
+  features:
+    enabled:
+      - admin2
+      - token-exchange
+{{- end }}

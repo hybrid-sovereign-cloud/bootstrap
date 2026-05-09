@@ -1,0 +1,43 @@
+{{- if .Values.rhbk.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rhbk-central
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.rhbk.syncWave | quote }}
+spec:
+  project: default
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/rhbk" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: rhbk
+    targetRevision: {{ .Values.rhbk.chartVersion | quote }}
+    helm:
+      releaseName: rhbk-central
+      values: |
+        {{- toYaml .Values.rhbk.values | nindent 8 }}
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.rhbk.destinationNamespace }}
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+{{- end }}

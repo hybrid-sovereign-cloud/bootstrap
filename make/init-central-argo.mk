@@ -1,4 +1,4 @@
-##@ ArgoCD Bootstrap
+##@ Bootstrap Cluster
 
 .PHONY: init-central-argo
 init-central-argo: check-env ## Bootstrap ArgoCD on central cluster: install init chart and trigger app-of-apps

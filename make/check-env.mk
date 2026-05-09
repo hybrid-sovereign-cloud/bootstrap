@@ -1,4 +1,4 @@
-##@ Environment
+##@ Check Bastion Configs
 
 .PHONY: check-env
 check-env: ## Verify all 12 required environment variables are set and test logins (OCP + OCI)

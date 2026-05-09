@@ -1,0 +1,28 @@
+operator:
+  channel: stable-v24
+  installPlanApproval: Automatic
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  name: rhbk-operator
+
+namespace: sovereign-cloud
+
+keycloak:
+  enabled: true
+  instances: 2
+  hostname: ""
+  database:
+    vendor: postgres
+    usernameSecret:
+      name: keycloak-db-secret
+      key: username
+    passwordSecret:
+      name: keycloak-db-secret
+      key: password
+    host: ""
+    database: keycloak
+
+ansibleJob:
+  enabled: false
+  image: ""
+  serviceAccount: sovereign-ansible-runner

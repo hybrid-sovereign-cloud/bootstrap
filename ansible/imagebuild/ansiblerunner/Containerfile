@@ -1,0 +1,40 @@
+ARG IMAGE_REGISTRY=registry.redhat.io
+ARG IMAGE_REGISTRY_USERNAME
+ARG IMAGE_REGISTRY_PASSWORD
+
+FROM ${IMAGE_REGISTRY}/ansible-automation-platform-26/ee-supported-rhel9:2.0-1777391447
+
+USER root
+
+# Install Ansible collections
+RUN ansible-galaxy collection install \
+  infra.aap_configuration \
+  community.aws \
+  openstack.cloud \
+  community.general \
+  kubernetes.core \
+  --force
+
+# Install Keycloak collection (community)
+RUN pip3 install python-keycloak && \
+    ansible-galaxy collection install \
+      middleware_automation.keycloak \
+      --force
+
+# Install CLI tools
+RUN curl -sL https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz | \
+    tar -xz -C /usr/local/bin oc kubectl && \
+    chmod +x /usr/local/bin/oc /usr/local/bin/kubectl
+
+# Install OpenStack CLI
+RUN pip3 install python-openstackclient
+
+# Install Helm
+RUN curl -sL https://get.helm.sh/helm-v3.14.0-linux-amd64.tar.gz | \
+    tar -xz -C /tmp && mv /tmp/linux-amd64/helm /usr/local/bin/helm && \
+    chmod +x /usr/local/bin/helm && rm -rf /tmp/linux-amd64
+
+USER 1001
+
+ENTRYPOINT ["ansible-runner"]
+CMD ["run", "/runner"]

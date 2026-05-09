@@ -1,0 +1,12 @@
+{{- range .Values.namespaces }}
+{{- if .enabled }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .name }}
+  labels:
+    app.kubernetes.io/part-of: sovereign-cloud
+    app.kubernetes.io/managed-by: Helm
+{{- end }}
+{{- end }}

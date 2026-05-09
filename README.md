@@ -9,7 +9,7 @@ OpenShift platform bootstrap repository — provisions two sovereign clusters en
 ### 1. Environment Variables
 
 All variables below **must** be exported in your shell before running any `make` target.
-Run `make check-env` to verify all 12 are set and test logins.
+Run `make check-env` to verify they are set and test logins.
 
 #### Central Cluster (OpenShift)
 
@@ -32,14 +32,22 @@ Run `make check-env` to verify all 12 are set and test logins.
 | Variable | Description |
 |---|---|
 | `OCI_REGISTRY` | Registry URL or hostname (e.g. `https://quay.io/organization/myorg` or `quay.io`) |
-| `OCI_REGISTRY_TOKEN` | Admin bearer token — used to create OCI repositories |
+| `OCI_REGISTRY_TOKEN` | Admin bearer token — used to create OCI repositories and push |
 
-#### OCI / Quay Registry — Robot (Pull/Push) Account
+#### OCI / Quay Registry — Robot (Read-Only)
 
 | Variable | Description |
 |---|---|
-| `OCI_ROBOT_USERNAME` | Robot account username (e.g. `myorg+pull`) |
+| `OCI_ROBOT_USERNAME` | Robot account username (e.g. `myorg+pull`) — read-only |
 | `OCI_ROBOT_PASSWORD` | Robot account token |
+
+#### Image Registry (Red Hat)
+
+| Variable | Description |
+|---|---|
+| `IMAGE_REGISTRY` | Container image registry (e.g. `registry.redhat.io`) |
+| `IMAGE_REGISTRY_USERNAME` | Registry login username |
+| `IMAGE_REGISTRY_PASSWORD` | Registry login password/token |
 
 #### Git
 
@@ -61,39 +69,52 @@ Each OpenShift cluster must have the following installed **before** running the 
 
 ### 3. Quay Robot Account
 
-The OCI robot account must exist in your Quay organization with **admin** permissions on the chart repository. `make upload-acm-chart` will create the repository if it doesn't exist. A default permission prototype in the org ensures the robot gets access to new repos automatically.
-
----
-
-## Quick Start
-
-```bash
-# 1. Export all 12 required env vars
-export OCP_CENTRAL_SERVER=https://api.central.example.com:6443
-export OCP_CENTRAL_USERNAME=admin
-export OCP_CENTRAL_PASSWORD=...
-# ... (remaining vars)
-
-# 2. Verify all env vars + test logins
-make check-env
-
-# 3. Push the RHACM Helm chart to the OCI registry
-make upload-acm-chart
-
-# 4. Bootstrap ArgoCD on the central cluster
-make init-central-argo
-```
+The OCI robot account (`hybrid-sovereign+pull`) has **read-only** access on all repositories in the organization. The admin token (`OCI_REGISTRY_TOKEN`) is used for all write operations.
 
 ---
 
 ## Make Targets
 
+### Check Bastion Configs
+
 | Target | Description |
 |---|---|
-| `make check-env` | Verify all 12 env vars + test OCP and OCI logins |
-| `make upload-acm-chart` | Create the OCI repository and push the RHACM Helm chart |
-| `make init-central-argo` | Log in to central cluster, deploy `helm/init`, trigger the ApplicationSet |
-| `make help` | Show all targets with descriptions |
+| `make check-env` | Verify all required env vars + test OCP and OCI logins |
+| `make add-docker-repo` | Trust `IMAGE_REGISTRY` on both clusters (create pull secret) |
+
+### Build Artifacts
+
+| Target | Description |
+|---|---|
+| `make upload-acm-chart` | Create OCI repo + push RHACM Helm chart |
+| `make upload-sovereign-namespaces-chart` | Create OCI repo + push sovereign-namespaces chart |
+| `make upload-rhbk-chart` | Create OCI repo + push RHBK (Keycloak) chart |
+| `make ansible-runner` | Build ansible-runner image + push to Quay |
+
+### Bootstrap Cluster
+
+| Target | Description |
+|---|---|
+| `make init-central-argo` | Deploy `helm/init`, trigger ApplicationSet for both clusters |
+
+---
+
+## Execution Order
+
+```
+# 1. Check bastion configs
+make check-env              ← validate env vars + test logins
+make add-docker-repo        ← trust image registry on both clusters
+
+# 2. Build artifacts
+make upload-acm-chart       ← push RHACM chart to OCI
+make upload-sovereign-namespaces-chart  ← push namespace chart to OCI
+make upload-rhbk-chart      ← push Keycloak chart to OCI
+make ansible-runner         ← build and push ansible-runner image
+
+# 3. Bootstrap cluster
+make init-central-argo      ← deploy init chart → ArgoCD takes over
+```
 
 ---
 
@@ -104,25 +125,32 @@ bootstrap/
 ├── Makefile              # Thin importer — includes all make/*.mk
 ├── make/                 # Individual make target files
 │   ├── check-env.mk
+│   ├── add-docker-repo.mk
 │   ├── upload-acm-chart.mk
+│   ├── upload-sovereign-namespaces-chart.mk
+│   ├── upload-rhbk-chart.mk
+│   ├── ansible-runner.mk
 │   ├── init-central-argo.mk
 │   └── help.mk
-└── helm/
-    ├── charts/
-    │   └── rhacm/        # Standalone RHACM operator chart — pushed to OCI
-    ├── central/          # App-of-Apps chart for the central cluster
-    └── init/             # Bootstrap entry-point chart
-                          #   creates: ApplicationSet, git secret, services cluster secret
+├── helm/
+│   ├── charts/
+│   │   ├── rhacm/                  # RHACM operator chart (OCI)
+│   │   ├── sovereign-namespaces/   # Namespace creation chart (OCI)
+│   │   └── rhbk/                   # Keycloak operator chart (OCI)
+│   ├── central/                    # App-of-Apps for central cluster
+│   ├── services/                   # App-of-Apps for services cluster
+│   └── init/                       # Bootstrap entry-point chart
+└── ansible/
+    ├── imagebuild/
+    │   └── ansiblerunner/          # Containerfile for ansible-runner image
+    ├── roles/
+    │   ├── keycloak-realms/        # Create realms in Keycloak
+    │   ├── keycloak-clients/       # Create clients + copy secrets
+    │   ├── keycloak-oauth/         # Configure OAuth on clusters
+    │   └── keycloak-rbac/          # Create admin group + RBAC bindings
+    └── project/
+        └── configure-keycloak.yml  # Main playbook
 ```
-
-### Directory Details
-
-| Path | Purpose |
-|---|---|
-| `make/` | Each make target in its own `.mk` file for maintainability |
-| `helm/charts/rhacm` | Self-contained Helm chart for RHACM. Pushed to OCI by `make upload-acm-chart`. |
-| `helm/central` | App-of-Apps chart for the **central** cluster. Contains an ArgoCD `Application` per platform component. |
-| `helm/init` | Bootstrap entry-point. Creates the ArgoCD `ApplicationSet` that renders app-of-apps, registers the git repo credential, and registers the services cluster with ArgoCD. |
 
 ---
 
@@ -142,8 +170,8 @@ If `OCI_REGISTRY` is just a hostname (no path), `OCI_NAMESPACE` defaults to `sov
 ## Architecture
 
 See [`architecture/docs/architecture.md`](../architecture/docs/architecture.md) for:
-- Cluster topology diagram (Mermaid)
-- Bootstrap sequence diagram (Mermaid)
+- Cluster topology diagrams
+- Bootstrap sequence
 - Component responsibilities
 - Secrets strategy
 

@@ -1,4 +1,4 @@
-##@ OCI / Quay
+##@ Build Artifacts
 
 .PHONY: upload-acm-chart
 upload-acm-chart: check-env ## Create Quay OCI repo and push the RHACM Helm chart (uses admin token)

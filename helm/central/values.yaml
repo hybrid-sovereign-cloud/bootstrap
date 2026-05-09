@@ -10,6 +10,36 @@ oci:
   # Charts are stored at oci://<registry>/<repositoryBase>/<chartName>
   repositoryBase: "hybrid-sovereign"
 
+# ─── Sovereign Namespaces ────────────────────────────────────────────────────
+sovereignNamespaces:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "1"
+  values:
+    namespaces:
+      - name: sovereign-cloud
+        enabled: true
+      - name: sovereign-cloud-plugins
+        enabled: true
+      - name: sovereign-cloud-jobs
+        enabled: true
+
+# ─── RHBK (Keycloak) ─────────────────────────────────────────────────────────
+rhbk:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "20"
+  destinationNamespace: sovereign-cloud
+  values:
+    namespace: sovereign-cloud
+    keycloak:
+      enabled: true
+      instances: 2
+      hostname: ""
+    ansibleJob:
+      enabled: true
+      image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
+
 # ─── RHACM Application ───────────────────────────────────────────────────────
 rhacm:
   # Set to false to skip deploying RHACM via ArgoCD.

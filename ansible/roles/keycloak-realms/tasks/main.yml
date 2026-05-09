@@ -1,0 +1,24 @@
+---
+- name: Create sovereign-central realm on central Keycloak
+  middleware_automation.keycloak.keycloak_realm:
+    auth_keycloak_url: "{{ keycloak_central_url }}"
+    auth_realm: master
+    auth_username: "{{ keycloak_admin_user }}"
+    auth_password: "{{ keycloak_admin_password }}"
+    validate_certs: false
+    realm: "{{ central_realm }}"
+    enabled: true
+    display_name: "Sovereign Central"
+    state: present
+
+- name: Create sovereign-tenants realm on services Keycloak
+  middleware_automation.keycloak.keycloak_realm:
+    auth_keycloak_url: "{{ keycloak_services_url }}"
+    auth_realm: master
+    auth_username: "{{ keycloak_admin_user }}"
+    auth_password: "{{ keycloak_admin_password }}"
+    validate_certs: false
+    realm: "{{ services_realm }}"
+    enabled: true
+    display_name: "Sovereign Tenants"
+    state: present

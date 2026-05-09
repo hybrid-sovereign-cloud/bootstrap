@@ -1,0 +1,36 @@
+{{- if .Values.sovereignNamespaces.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sovereign-namespaces-services
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-services.labels" . | nindent 4 }}
+    app.kubernetes.io/component: namespaces
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.sovereignNamespaces.syncWave | quote }}
+spec:
+  project: default
+
+  source:
+    repoURL: {{ printf "%s/sovereign-namespaces" (include "sovereign-services.ociURL" .) | quote }}
+    chart: sovereign-namespaces
+    targetRevision: {{ .Values.sovereignNamespaces.chartVersion | quote }}
+    helm:
+      releaseName: sovereign-namespaces-services
+      values: |
+        {{- toYaml .Values.sovereignNamespaces.values | nindent 8 }}
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+{{- end }}
