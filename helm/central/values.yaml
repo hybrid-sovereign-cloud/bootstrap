@@ -361,7 +361,7 @@ vaultSecretStore:
 
 # ─── Ansible Jobs (1 per role) ───────────────────────────────────────────
 jobs:
-  chartVersion: "0.1.0"
+  chartVersion: "0.1.1"
 
   vaultInit:
     enabled: true
