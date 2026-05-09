@@ -99,7 +99,7 @@ rhbkConfig:
 # ─── ACS (Advanced Cluster Security) ────────────────────────────────────────
 acs:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   syncWave: "25"
   destinationNamespace: rhacs-operator
   values:
@@ -114,7 +114,7 @@ acs:
 # ─── ACS — services cluster ────────────────────────────────────────────────
 acsServices:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   syncWave: "25"
   destinationNamespace: rhacs-operator
   values:

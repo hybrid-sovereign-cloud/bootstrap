@@ -1,14 +1,19 @@
 {{- if .Values.consolePlugin.enabled }}
 ---
-apiVersion: operator.openshift.io/v1
-kind: Console
+apiVersion: console.openshift.io/v1
+kind: ConsolePlugin
 metadata:
-  name: cluster
+  name: rhacs
   annotations:
     argocd.argoproj.io/sync-wave: "10"
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
-  plugins:
-    - acm
-    - rhacs
+  displayName: "Red Hat Advanced Cluster Security"
+  backend:
+    type: Service
+    service:
+      name: rhacs-operator-console-plugin
+      namespace: rhacs-operator
+      port: 9443
+      basePath: /
 {{- end }}
