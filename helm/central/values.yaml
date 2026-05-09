@@ -185,7 +185,7 @@ rhacm:
 # ─── AAP (services cluster only) ──────────────────────────────────────────
 aap:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   syncWave: "30"
   destinationNamespace: aap
   values:
@@ -193,11 +193,11 @@ aap:
     instance:
       enabled: true
       name: sovereign-aap
-    gateway:
-      enabled: true
     controller:
       enabled: true
     eda:
+      enabled: true
+    hub:
       enabled: true
 
 # ─── ODF / Noobaa (central cluster) ──────────────────────────────────────

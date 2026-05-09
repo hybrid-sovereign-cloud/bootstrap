@@ -9,16 +9,16 @@ metadata:
     argocd.argoproj.io/sync-wave: "5"
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
-  {{- if .Values.gateway.enabled }}
-  gateway:
-    replicas: 1
-  {{- end }}
   {{- if .Values.controller.enabled }}
   controller:
     replicas: 1
   {{- end }}
   {{- if .Values.eda.enabled }}
   eda:
+    replicas: 1
+  {{- end }}
+  {{- if .Values.hub.enabled }}
+  hub:
     replicas: 1
   {{- end }}
 {{- end }}

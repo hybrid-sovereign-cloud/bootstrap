@@ -11,11 +11,11 @@ instance:
   enabled: true
   name: sovereign-aap
 
-gateway:
-  enabled: true
-
 controller:
   enabled: true
 
 eda:
+  enabled: true
+
+hub:
   enabled: true
