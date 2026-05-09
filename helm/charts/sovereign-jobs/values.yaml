@@ -11,7 +11,7 @@ jobs:
     enabled: true
     playbook: vault-init.yml
     activeDeadlineSeconds: 600
-    syncWave: "5"
+    syncWave: "1"
     env:
       - name: VAULT_ADDR
         value: "http://vault.vault.svc:8200"
@@ -19,8 +19,8 @@ jobs:
   vaultKv:
     enabled: true
     playbook: vault-kv.yml
-    activeDeadlineSeconds: 300
-    syncWave: "10"
+    activeDeadlineSeconds: 600
+    syncWave: "1"
     env:
       - name: VAULT_ADDR
         value: "http://vault.vault.svc:8200"
@@ -29,7 +29,7 @@ jobs:
     enabled: true
     playbook: keycloak-realms.yml
     activeDeadlineSeconds: 600
-    syncWave: "15"
+    syncWave: "1"
     env:
       - name: KEYCLOAK_URL
         value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
@@ -42,7 +42,7 @@ jobs:
     enabled: true
     playbook: keycloak-groups.yml
     activeDeadlineSeconds: 600
-    syncWave: "16"
+    syncWave: "1"
     env:
       - name: KEYCLOAK_URL
         value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
@@ -55,7 +55,7 @@ jobs:
     enabled: true
     playbook: keycloak-clients.yml
     activeDeadlineSeconds: 600
-    syncWave: "17"
+    syncWave: "1"
     env:
       - name: KEYCLOAK_URL
         value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
@@ -69,8 +69,8 @@ jobs:
   keycloakRbac:
     enabled: true
     playbook: keycloak-rbac.yml
-    activeDeadlineSeconds: 300
-    syncWave: "18"
+    activeDeadlineSeconds: 600
+    syncWave: "1"
     env:
       - name: OCP_SERVICES_SERVER
         value: "https://api.shcservices.lab.signal9.gg:6443"
@@ -79,7 +79,7 @@ jobs:
     enabled: true
     playbook: keycloak-oauth.yml
     activeDeadlineSeconds: 600
-    syncWave: "19"
+    syncWave: "1"
     env:
       - name: KEYCLOAK_CENTRAL_URL
         value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
@@ -96,7 +96,7 @@ jobs:
     enabled: true
     playbook: gitea-init.yml
     activeDeadlineSeconds: 600
-    syncWave: "20"
+    syncWave: "1"
     env:
       - name: GITEA_URL
         value: "http://gitea-http.gitea.svc:3000"
