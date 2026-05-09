@@ -1,0 +1,50 @@
+{{- if .Values.multiClusterHub.enabled }}
+---
+# MultiClusterHub is the primary ACM instance CRD.
+# The operator must be Running before this resource is applied;
+# ArgoCD sync-wave annotations (via commonAnnotations) handle ordering.
+apiVersion: operator.open-cluster-management.io/v1
+kind: MultiClusterHub
+metadata:
+  name: multiclusterhub
+  namespace: {{ include "rhacm.namespace" . }}
+  labels:
+    {{- include "rhacm.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  availabilityConfig: {{ .Values.multiClusterHub.availabilityConfig | quote }}
+  disableHubSelfManagement: {{ .Values.multiClusterHub.disableHubSelfManagement }}
+  imagePullPolicy: {{ .Values.multiClusterHub.imagePullPolicy | quote }}
+
+  {{- if .Values.multiClusterHub.imagePullSecret }}
+  imagePullSecret: {{ .Values.multiClusterHub.imagePullSecret | quote }}
+  {{- end }}
+
+  {{- with .Values.multiClusterHub.nodeSelector }}
+  nodeSelector:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.multiClusterHub.tolerations }}
+  tolerations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- if .Values.multiClusterHub.storageClass }}
+  storageClass: {{ .Values.multiClusterHub.storageClass | quote }}
+  {{- end }}
+
+  {{- if .Values.multiClusterHub.customCAConfigmap }}
+  customCAConfigmap: {{ .Values.multiClusterHub.customCAConfigmap | quote }}
+  {{- end }}
+
+  overrides:
+    components:
+      {{- range $component, $enabled := .Values.multiClusterHub.components }}
+      - name: {{ $component }}
+        enabled: {{ $enabled }}
+      {{- end }}
+{{- end }}

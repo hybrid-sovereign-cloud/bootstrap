@@ -1,0 +1,21 @@
+apiVersion: v2
+name: rhacm
+description: >
+  Installs and configures Red Hat Advanced Cluster Manager (RHACM) from the
+  Red Hat certified operator catalog (redhat-operators).  Provisions the
+  Subscription, OperatorGroup, and MultiClusterHub instance and exposes all
+  tunable parameters through values.yaml.
+type: application
+version: 0.1.0
+# Tracks the upstream ACM operator channel — update when upgrading ACM.
+appVersion: "2.11"
+keywords:
+  - rhacm
+  - acm
+  - multicluster
+  - openshift
+home: https://access.redhat.com/products/red-hat-advanced-cluster-management-for-kubernetes
+sources:
+  - https://catalog.redhat.com/software/operators/detail/5e9c1681284a0304b89b1e83
+maintainers:
+  - name: platform-team

@@ -6,10 +6,11 @@ alwaysApply: true
 
 # Sovereign Cloud Agent Rules
 
-## Phase 1 — Bootstrap Design Philosophy (ADR-0022)
+## Design Philosophy
 
-- **Rapid initialisation**: `make phase1-gitops && make phase2-applicationset` = zero-to-platform.
+- **Rapid initialisation**: `make check-env && make upload-acm-chart && make init-central-argo` = zero-to-platform.
 - **Makefile portability**: every OpenShift mutation is a `make` target; rerunnable on any cluster by setting env vars.
+- **Make target files**: each make target lives in its own file under `make/*.mk`; the root `Makefile` imports them.
 - **OCP Appliance end-goal**: bootstrap pipeline will produce a versioned OCP Appliance image embedding all platform components for sovereign/air-gapped deployment.
 - **Developer sandbox**: clone bootstrap → set env → `make` = isolated dev cluster, no shared cluster needed.
 - **OC read-only**: `oc`/`kubectl` for investigation only; all mutations via `make` or ArgoCD.
@@ -17,52 +18,139 @@ alwaysApply: true
 ## Non-negotiable constraints
 
 - **Repo boundary**: modify only `bootstrap/` and `architecture/`. Never write to `/` (workspace root).
-- **Validate**: run `make validate-helm` before marking chart work done.
+- **Validate**: run `helm lint` before marking chart work done.
 - **Make for oc**: all OpenShift CLI interactions must go through `make` targets.
-- **GitOps**: after Phase 1, all installs must be ArgoCD ApplicationSet driven.
-- **Secrets**: store in Vault (`central/<path>`), pull via ESO ExternalSecrets. Never hardcode.
-- **Builds**: use OpenShift Pipelines (Tekton) + ImageStreams. No external registry direct push.
+- **GitOps**: after `make init-central-argo`, all installs must be ArgoCD ApplicationSet driven.
+- **Secrets**: all credentials via environment variables, passed through `helm --set`. Never hardcode.
 - **Git**: commit and push freely. Commit messages: `<type>: <description>`.
-- **Docs**: update README, Makefile help, and architecture ADR on every meaningful change.
+- **No git history**: never use git log, git blame, or commit history for context. Only look at the current state of files.
+- **Docs**: update `bootstrap/README.md`, Makefile help, and `architecture/docs/` on every meaningful change.
 - **Iterate**: deploy → test → fix loop until `Synced + Healthy`. Debug with `oc` read commands.
-- **Diagrams**: use Mermaid in architecture docs.
+- **Diagrams**: use Mermaid in `architecture/docs/`. Keep each diagram small and focused (max ~15 nodes). Split complex diagrams into multiple files.
+- **Security**: after any chart or Makefile change, review `architecture/hardeningcheck/security-assessment.md` and update if findings change.
+- **Architecture**: always follow `architecture/docs/` as the source of truth for platform topology.
 
-## Policy reference
+## Human-readability rules
 
-Full governance: `bootstrap/AI-POLICY.md`
-Agent guide: `bootstrap/AGENTS.md`
+- **No large files**: any file above 500 lines must be split into multiple files.
+- **No large diagrams**: split complex diagrams into multiple small, focused diagrams (max ~15 nodes each).
+- **Simple language**: documentation should be understandable by non-technical stakeholders where possible.
+- **One concern per file**: each file should have a single clear purpose.
 
-## Wave order (ApplicationSet sync)
+## ArgoCD rules
+
+- **Self-heal**: all ArgoCD Applications must have `selfHeal: true` in their sync policy.
+- **Prune**: all ArgoCD Applications must have `prune: true` to remove orphaned resources.
+- **Always in sync**: if any ArgoCD Application is not `Synced + Healthy`, investigate and fix immediately.
+- **Dynamic plugins**: always enable ArgoCD dynamic plugins when available (e.g., `argocd-vault-plugin`, UI plugins).
+
+## OCI / Quay rules
+
+- **Robot read-only**: the Quay robot account (`hybrid-sovereign+pull`) must have **read-only** access on all repositories in the `hybrid-sovereign` organization. Use the admin token (`OCI_REGISTRY_TOKEN`) for write operations (repo creation, chart push).
+- **Chart push uses admin token**: `make upload-acm-chart` authenticates with the admin token for push, not the robot.
+
+## Required Environment Variables
+
+All of the following **must** be set before any `make` target is executed. Never hardcode these values.
+`make check-env` verifies all 12 at once and tests logins.
+
+### Central Cluster
+| Variable | Purpose |
+|---|---|
+| `OCP_CENTRAL_SERVER` | Central cluster API URL |
+| `OCP_CENTRAL_USERNAME` | Central cluster login username |
+| `OCP_CENTRAL_PASSWORD` | Central cluster login password |
+
+### Services Cluster
+| Variable | Purpose |
+|---|---|
+| `OCP_SERVICES_SERVER` | Services cluster API URL |
+| `OCP_SERVICES_USERNAME` | Services cluster login username |
+| `OCP_SERVICES_PASSWORD` | Services cluster login password |
+
+### OCI Registry (admin)
+| Variable | Purpose |
+|---|---|
+| `OCI_REGISTRY` | Quay registry hostname or full URL (e.g. `https://quay.io/organization/myorg`) |
+| `OCI_REGISTRY_TOKEN` | Admin bearer token (used to create repos and push charts) |
+
+### OCI Registry (robot/read-only)
+| Variable | Purpose |
+|---|---|
+| `OCI_ROBOT_USERNAME` | Robot account username — read-only access to pull charts |
+| `OCI_ROBOT_PASSWORD` | Robot account token |
+
+### Derived Variables (computed by Makefile)
+| Variable | Derivation |
+|---|---|
+| `OCI_HOST` | Hostname extracted from `OCI_REGISTRY` |
+| `OCI_NAMESPACE` | Organization from URL path (defaults to `sovereign` if not a URL) |
+
+### Git
+| Variable | Purpose |
+|---|---|
+| `GITHUB_URL` | Repository base URL |
+| `GITHUB_TOKEN` | Personal access token (repo scope) |
+
+## Cluster Prerequisites (one-time, manual)
+
+Before running any bootstrap phase, both clusters must have:
+1. **OpenShift 4.x** installed
+2. **ArgoCD (OpenShift GitOps)** installed and accessible
+
+## Repository Folder Layout
 
 ```
-10-70   → operators (aap, eso, odf, pipelines, quay, rhbk, rhacm, rhacs)
-100-155 → instances (sovereign-cloud, vault, aap, rhbk, gitea, odf, pipelines, quay, rhacm, rhacs)
-200-245 → config   (vault-init, keycloak, eso-config, oidc, rhacs-config, rhacm-config)
-250     → argocd-init-job
-275     → custom-operators-git-creds
-280     → custom-operators-pipelines
-285     → custom-operators-applicationset
-300     → plugin_rbac
-310     → sovereign_tenancy (entity-operator)
-320     → cloudaws-operator, cloudoso-operator
-330     → platformopenshift-operator, team-operator
-340     → projects-operator, assignment-operator
+bootstrap/
+├── Makefile                    # Imports all make/*.mk files
+├── make/                       # Individual make target files
+│   ├── check-env.mk           # check-env target
+│   ├── upload-acm-chart.mk    # upload-acm-chart target
+│   └── init-central-argo.mk   # init-central-argo target
+└── helm/
+    ├── charts/
+    │   └── rhacm/              # Standalone RHACM chart — pushed to OCI by make upload-acm-chart
+    ├── central/                # App-of-Apps chart → deployed into central cluster
+    │   └── templates/
+    │       └── rhacm-application.yaml  # Application sourcing rhacm from OCI
+    └── init/                   # Bootstrap entry-point chart
+        └── templates/
+            ├── applicationset.yaml           # Drives central + services app-of-apps
+            ├── git-repo-secret.yaml          # ArgoCD git credential secret
+            └── services-cluster-secret.yaml  # Registers services cluster with ArgoCD
+
+architecture/
+├── docs/
+│   ├── 01-overview.md         # Platform overview
+│   ├── 02-bootstrap-flow.md   # Bootstrap sequence (simple flowchart)
+│   ├── 03-central-cluster.md  # Central cluster components
+│   ├── 04-services-cluster.md # Services cluster components
+│   └── 05-oci-registry.md     # OCI registry interaction
+└── hardeningcheck/
+    └── security-assessment.md # Security assessment + CIS gaps + remediation list
 ```
 
-## Custom Operator Repos
-| Repo | CRD | API group | Wave |
-|------|-----|-----------|------|
-| sovereign_tenancy | Entity, Container | hybridsovereign.redhat | 310 |
-| CloudAWS | CloudAWS | hybridsovereign.redhat | 320 |
-| CloudOSO | CloudOSO | hybridsovereign.redhat | 320 |
-| PlatformOpenshift | PlatformOpenshift | hybridsovereign.redhat | 330 |
-| Team | Team | hybridsovereign.redhat | 330 |
-| Projects | Projects | hybridsovereign.redhat | 340 |
-| Assignment | Assignment | hybridsovereign.redhat | 340 |
-| plugin_rbac | RbacConfig, Rbac | hybridsovereign.redhat | 300 |
+## Key rules for agents working in each directory
 
-## Teardown command
+- `helm/charts/rhacm` — after any change run `helm lint helm/charts/rhacm`; bump `Chart.yaml` version; re-run `make upload-acm-chart`.
+- `helm/central` — run `helm lint` after every chart change; update `values.yaml` chart version reference when the OCI chart is bumped.
+- `helm/init` — this is the bootstrap entry-point; changes here affect both clusters simultaneously; always test with `helm template` before pushing.
+- `make/*.mk` — each target in its own file; keep the root Makefile as a thin importer.
+- `architecture/docs/` — keep diagrams small and split across files. One diagram per concept.
+- `architecture/hardeningcheck/security-assessment.md` — update findings after any security-impacting change.
 
-```bash
-make teardown-bootstrap && make delete-bootstrap-namespaces
+## Make Targets
+
+| Target | Purpose |
+|---|---|
+| `make check-env` | Verify all 12 required env vars are set AND test logins (OCP + OCI) |
+| `make upload-acm-chart` | Create Quay OCI repo and push the chart (uses admin token) |
+| `make init-central-argo` | Log in to central cluster, deploy `helm/init`, trigger app-of-apps |
+
+## Bootstrap Execution Order
+
+```
+1. make check-env          ← always run first (validates vars + tests logins)
+2. make upload-acm-chart   ← push RHACM chart to OCI (before ArgoCD tries to sync it)
+3. make init-central-argo  ← deploy init chart → ApplicationSet fires → RHACM + all apps install
 ```

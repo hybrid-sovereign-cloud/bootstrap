@@ -1,0 +1,18 @@
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: open-cluster-management
+  namespace: {{ include "rhacm.namespace" . }}
+  labels:
+    {{- include "rhacm.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.operatorGroup.targetNamespaces }}
+  targetNamespaces:
+    {{- toYaml .Values.operatorGroup.targetNamespaces | nindent 4 }}
+  {{- end }}
+  # Empty targetNamespaces = AllNamespaces install mode (required by ACM).

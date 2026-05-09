@@ -1,0 +1,47 @@
+---
+# ApplicationSet that generates one ArgoCD Application per cluster entry in
+# the clusterDecisionResource list.  The central cluster uses the in-cluster
+# destination; the services cluster is registered via the cluster secret above.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: {{ .Values.applicationSet.name }}
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-init.labels" . | nindent 4 }}
+  annotations:
+    managed-by: sovereign-init-chart
+spec:
+  generators:
+    - list:
+        elements:
+          - cluster: central
+            server: https://kubernetes.default.svc
+            chartPath: helm/central
+          - cluster: {{ .Values.clusters.services.name }}
+            server: {{ .Values.clusters.services.server }}
+            chartPath: helm/services
+  template:
+    metadata:
+      name: "sovereign-{{`{{cluster}}`}}-apps"
+      labels:
+        app.kubernetes.io/part-of: sovereign-bootstrap
+    spec:
+      project: default
+      source:
+        repoURL: {{ .Values.gitops.repoURL | quote }}
+        targetRevision: {{ .Values.gitops.targetRevision | quote }}
+        path: "{{`{{chartPath}}`}}"
+        helm:
+          releaseName: "sovereign-{{`{{cluster}}`}}"
+      destination:
+        server: "{{`{{server}}`}}"
+        namespace: {{ .Values.applicationSet.destinationNamespace }}
+      syncPolicy:
+        automated:
+          prune: {{ .Values.applicationSet.syncPolicy.automated.prune }}
+          selfHeal: {{ .Values.applicationSet.syncPolicy.automated.selfHeal }}
+        syncOptions:
+          {{- range .Values.applicationSet.syncPolicy.syncOptions }}
+          - {{ . }}
+          {{- end }}

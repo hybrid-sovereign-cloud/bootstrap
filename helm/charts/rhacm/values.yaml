@@ -1,0 +1,98 @@
+# ─── Operator catalog / channel ───────────────────────────────────────────────
+operator:
+  # Catalog source that provides the ACM operator.
+  # "redhat-operators" = certified / production catalog.
+  catalogSource: redhat-operators
+  catalogSourceNamespace: openshift-marketplace
+
+  # Channel to subscribe to. Update per: oc get packagemanifest advanced-cluster-management -n openshift-marketplace -o jsonpath='{.status.defaultChannel}'
+  channel: release-2.11
+
+  # Approval strategy: Automatic | Manual
+  # Use Manual in sovereign/air-gapped environments for explicit upgrade control.
+  installPlanApproval: Automatic
+
+  # Operator package name in the catalog — do not change.
+  packageName: advanced-cluster-management
+
+  # Pin to a specific CSV; leave empty to track the channel head.
+  startingCSV: ""
+
+# ─── Operator namespace ───────────────────────────────────────────────────────
+namespace:
+  # Namespace where the ACM operator and MultiClusterHub are installed.
+  name: open-cluster-management
+  # Labels applied to the namespace.
+  labels:
+    openshift.io/cluster-monitoring: "true"
+
+# ─── OperatorGroup ────────────────────────────────────────────────────────────
+operatorGroup:
+  # Target all namespaces (AllNamespaces).
+  # Set to ["open-cluster-management"] for SingleNamespace mode.
+  targetNamespaces: []
+
+# ─── MultiClusterHub ──────────────────────────────────────────────────────────
+multiClusterHub:
+  # Enable / disable the MCH instance creation.
+  enabled: true
+
+  # Availability configuration: High | Basic
+  availabilityConfig: High
+
+  # Disable hub self-management (recommended for dedicated hub clusters).
+  disableHubSelfManagement: false
+
+  # Override the image pull policy: Always | IfNotPresent | Never
+  imagePullPolicy: IfNotPresent
+
+  # Pull secret name in the ACM namespace (must exist before install).
+  # Leave empty when using the default cluster pull secret.
+  imagePullSecret: ""
+
+  # Node selector for MCH pods.
+  nodeSelector: {}
+  #  node-role.kubernetes.io/infra: ""
+
+  # Tolerations for MCH pods.
+  tolerations: []
+  # - key: "node-role.kubernetes.io/infra"
+  #   operator: "Exists"
+  #   effect: "NoSchedule"
+
+  # Enable or disable specific ACM components.
+  # Keys match the component names in the MCH spec.components map.
+  components:
+    # Console and search
+    console: true
+    search: true
+    # Governance / policy engine
+    governance: true
+    # Cluster lifecycle
+    hive: true
+    # Observability stack (Prometheus/Grafana federation)
+    observability: false
+    # Submariner networking add-on
+    submariner: false
+    # Application lifecycle (AppSub / Subscription)
+    applicationManager: true
+    # Cert manager integration
+    certPolicyController: true
+    # IAM policy controller
+    iamPolicyController: true
+    # Config policy controller
+    configPolicyController: true
+
+  # Persistent storage class for MCH observability (used only when observability: true).
+  storageClass: ""
+
+  # Hub cluster ingress domain override. Leave empty to inherit from cluster DNS.
+  customCAConfigmap: ""
+
+# ─── Tolerations / placement for the operator pod itself ─────────────────────
+operatorPodNodeSelector: {}
+operatorPodTolerations: []
+
+# ─── Extra annotations on all created resources ───────────────────────────────
+commonAnnotations: {}
+#  argocd.argoproj.io/sync-wave: "10"

@@ -1,0 +1,46 @@
+# ─── GitOps repository ────────────────────────────────────────────────────────
+gitops:
+  # Full HTTPS URL of the bootstrap repository
+  repoURL: "https://github.com/my-org/bootstrap"
+  # Branch ArgoCD will track for all app-of-apps charts
+  targetRevision: HEAD
+  # Personal / service-account token with read access to the repo
+  token: ""
+
+# ─── ArgoCD namespace ─────────────────────────────────────────────────────────
+argocd:
+  namespace: openshift-gitops
+
+# ─── Services cluster registration ───────────────────────────────────────────
+clusters:
+  services:
+    # Human-readable name ArgoCD will use for this cluster entry
+    name: services
+    # Kubernetes API server URL for the services cluster
+    server: "https://api.services.example.com:6443"
+    # Credentials used by ArgoCD to reach the services cluster
+    username: ""
+    password: ""
+    # Set to true only when the services cluster uses a self-signed cert
+    tlsSkipVerify: false
+
+# ─── ApplicationSet — central app-of-apps ─────────────────────────────────────
+applicationSet:
+  name: sovereign-central-appset
+  # Path inside the repo that holds the central app-of-apps Helm chart
+  chartPath: helm/central
+  # Namespace where the ApplicationSet controller renders child Applications
+  destinationNamespace: openshift-gitops
+  # Sync policy applied to every generated Application
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
+# ─── OCI registry pull secret (injected into openshift-gitops) ───────────────
+oci:
+  registry: "quay.io"
+  robotUsername: ""
+  robotPassword: ""

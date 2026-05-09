@@ -1,0 +1,17 @@
+apiVersion: v2
+name: sovereign-central
+description: >
+  App-of-Apps chart for the central cluster.  Each ArgoCD Application in this
+  chart represents one platform component.  All Applications whose Helm source
+  is an OCI chart reference the registry configured in values.yaml.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - argocd
+  - app-of-apps
+  - gitops
+  - central
+home: https://github.com/hybrid-sovereign/bootstrap
+maintainers:
+  - name: platform-team
