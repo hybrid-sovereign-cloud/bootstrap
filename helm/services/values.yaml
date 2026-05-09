@@ -21,14 +21,14 @@ sovereignNamespaces:
       - name: sovereign-cloud-plugins
         enabled: true
       - name: sovereign-cloud
-        enabled: false
+        enabled: true
       - name: sovereign-cloud-jobs
         enabled: false
 
 # ─── RHBK (Keycloak) ─────────────────────────────────────────────────────────
 rhbk:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   syncWave: "5"
   destinationNamespace: sovereign-cloud
   values:
