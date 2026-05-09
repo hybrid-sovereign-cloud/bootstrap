@@ -16,6 +16,9 @@ rhacm:
   enabled: true
   # Chart version to deploy — must match the version pushed by make upload-acm-chart.
   chartVersion: "0.2.0"
+  # Set to false on first deployment (before ACM operator installs the CRD).
+  # Enable after the operator is running.
+  enableMultiClusterHub: false
   # Namespace on the central cluster where RHACM is installed.
   destinationNamespace: open-cluster-management
   # Sync wave — RHACM runs early so other platform components can register.

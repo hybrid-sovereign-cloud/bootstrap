@@ -22,10 +22,12 @@ spec:
     targetRevision: {{ .Values.rhacm.chartVersion | quote }}
     helm:
       releaseName: rhacm
-      {{- with .Values.rhacm.values }}
       values: |
+        multiClusterHub:
+          enabled: {{ .Values.rhacm.enableMultiClusterHub }}
+        {{- with .Values.rhacm.values }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
 
   destination:
     server: https://kubernetes.default.svc
