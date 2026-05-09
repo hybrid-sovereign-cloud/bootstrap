@@ -44,6 +44,11 @@ spec:
   {{- end }}
   features:
     enabled:
-      - admin2
       - token-exchange
+      - admin-fine-grained-authz
+  additionalOptions:
+    - name: http-enabled
+      value: "true"
+    - name: hostname-strict
+      value: "false"
 {{- end }}

@@ -45,7 +45,7 @@ sovereignNamespacesServices:
 # ─── RHBK (Keycloak) ─────────────────────────────────────────────────────────
 rhbk:
   enabled: true
-  chartVersion: "0.7.0"
+  chartVersion: "0.8.0"
   syncWave: "20"
   destinationNamespace: rhbk
   values:
@@ -65,7 +65,7 @@ rhbk:
 # ─── RHBK (Keycloak) — services cluster ─────────────────────────────────────
 rhbkServices:
   enabled: true
-  chartVersion: "0.7.0"
+  chartVersion: "0.8.0"
   syncWave: "20"
   destinationNamespace: rhbk
   values:
