@@ -23,7 +23,7 @@ spec:
         {{- toYaml .Values.sovereignNamespaces.values | nindent 8 }}
 
   destination:
-    server: https://kubernetes.default.svc
+    server: {{ .Values.targetCluster.server | quote }}
     namespace: default
 
   syncPolicy:

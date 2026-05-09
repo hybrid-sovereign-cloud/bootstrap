@@ -1,7 +1,7 @@
 ---
-# ApplicationSet that generates one ArgoCD Application per cluster entry in
-# the clusterDecisionResource list.  The central cluster uses the in-cluster
-# destination; the services cluster is registered via the cluster secret above.
+# ApplicationSet that generates one ArgoCD Application per cluster.
+# Both app-of-apps deploy TO the central cluster (where ArgoCD lives).
+# Child Applications inside each app-of-apps set their own destination.server.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -16,10 +16,8 @@ spec:
     - list:
         elements:
           - cluster: central
-            server: https://kubernetes.default.svc
             chartPath: helm/central
           - cluster: {{ .Values.clusters.services.name }}
-            server: {{ .Values.clusters.services.server }}
             chartPath: helm/services
   template:
     metadata:
@@ -35,7 +33,7 @@ spec:
         helm:
           releaseName: "sovereign-{{`{{cluster}}`}}"
       destination:
-        server: "{{`{{server}}`}}"
+        server: https://kubernetes.default.svc
         namespace: {{ .Values.applicationSet.destinationNamespace }}
       syncPolicy:
         automated:

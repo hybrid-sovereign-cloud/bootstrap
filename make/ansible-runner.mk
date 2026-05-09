@@ -13,11 +13,12 @@ ansible-runner: check-env ## Build ansible-runner image and push to Quay
 	  "https://$(OCI_HOST)/api/v1/repository" > /dev/null 2>&1 \
 	  && printf "  $(GREEN)✓$(RESET)  Repository created (or exists)\n" \
 	  || printf "  $(GREEN)✓$(RESET)  Repository already exists\n"
+	@echo "$(BOLD)Logging in to image registry...$(RESET)"
+	@echo "$(IMAGE_REGISTRY_PASSWORD)" | podman login "$(IMAGE_REGISTRY)" \
+	  --username="$(IMAGE_REGISTRY_USERNAME)" --password-stdin > /dev/null 2>&1
+	$(call ok,Logged in to $(IMAGE_REGISTRY))
 	@echo "$(BOLD)Building ansible-runner image...$(RESET)"
 	@podman build -t "$(ANSIBLE_RUNNER_IMAGE):$(ANSIBLE_RUNNER_TAG)" \
-	  --build-arg IMAGE_REGISTRY="$(IMAGE_REGISTRY)" \
-	  --build-arg IMAGE_REGISTRY_USERNAME="$(IMAGE_REGISTRY_USERNAME)" \
-	  --build-arg IMAGE_REGISTRY_PASSWORD="$(IMAGE_REGISTRY_PASSWORD)" \
 	  ansible/imagebuild/ansiblerunner
 	$(call ok,Image built: $(ANSIBLE_RUNNER_IMAGE):$(ANSIBLE_RUNNER_TAG))
 	@echo "$(BOLD)Pushing ansible-runner image to Quay...$(RESET)"

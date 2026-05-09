@@ -2,6 +2,10 @@
 argocd:
   namespace: openshift-gitops
 
+# ─── Target cluster (services cluster API URL) ──────────────────────────────
+targetCluster:
+  server: "https://api.shcservices.lab.signal9.gg:6443"
+
 # ─── OCI registry that stores platform Helm charts ───────────────────────────
 oci:
   registry: "quay.signal9.gg"
