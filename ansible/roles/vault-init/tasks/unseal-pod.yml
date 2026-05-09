@@ -18,13 +18,13 @@
     validate_certs: false
     body_format: json
     body:
-      leader_api_addr: "http://vault-0.vault-internal.{{ vault_namespace }}.svc:8200"
+      leader_api_addr: "{{ vault_pod_addrs[0] }}"
     status_code: [200, 204, 400]
   when:
     - pod_seal_status.status is defined
     - pod_seal_status.status == 200
     - pod_seal_status.json.sealed | default(true)
-    - pod_addr != ("http://vault-0.vault-internal." + vault_namespace + ".svc:8200")
+    - pod_addr != vault_pod_addrs[0]
   retries: 3
   delay: 5
   ignore_errors: true

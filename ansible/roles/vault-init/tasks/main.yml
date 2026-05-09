@@ -69,11 +69,24 @@
         vault_root_token: "{{ (existing_secret.resources[0].data.root_token | b64decode) }}"
         vault_unseal_keys: "{{ (existing_secret.resources[0].data.unseal_keys | b64decode) | from_json }}"
 
+- name: Discover Vault pods
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: "{{ vault_namespace }}"
+    label_selectors:
+      - "app.kubernetes.io/name=vault"
+      - "component=server"
+  register: vault_pods
+  retries: 5
+  delay: 5
+  until: vault_pods.resources | length > 0
+
+- name: Build list of Vault pod addresses
+  ansible.builtin.set_fact:
+    vault_pod_addrs: "{{ vault_pods.resources | map(attribute='metadata') | map(attribute='name') | map('regex_replace', '^(.*)$', 'http://\\1.vault-internal.' + vault_namespace + '.svc:8200') | list }}"
+
 - name: Unseal each Vault pod directly
   ansible.builtin.include_tasks: unseal-pod.yml
-  loop:
-    - "http://vault-0.vault-internal.{{ vault_namespace }}.svc:8200"
-    - "http://vault-1.vault-internal.{{ vault_namespace }}.svc:8200"
-    - "http://vault-2.vault-internal.{{ vault_namespace }}.svc:8200"
+  loop: "{{ vault_pod_addrs }}"
   loop_control:
     loop_var: pod_addr
