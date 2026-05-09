@@ -316,8 +316,8 @@ gitea:
 
 # ─── Crunchy Postgres for Kubernetes (central cluster) ────────────────────
 crunchyPostgres:
-  enabled: false
-  chartVersion: "0.1.0"
+  enabled: true
+  chartVersion: "0.2.0"
   syncWave: "11"
   destinationNamespace: openshift-operators
   values:
@@ -325,8 +325,8 @@ crunchyPostgres:
 
 # ─── Crunchy Postgres for Kubernetes (services cluster) ───────────────────
 crunchyPostgresServices:
-  enabled: false
-  chartVersion: "0.1.0"
+  enabled: true
+  chartVersion: "0.2.0"
   syncWave: "11"
   destinationNamespace: openshift-operators
   values:
