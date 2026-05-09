@@ -17,9 +17,7 @@ spec:
   project: default
 
   source:
-    # OCI registry URL — helm chart is stored as an OCI artifact.
     repoURL: {{ include "sovereign-central.ociURL" . | quote }}
-    chart: rhacm
     targetRevision: {{ .Values.rhacm.chartVersion | quote }}
     helm:
       releaseName: rhacm

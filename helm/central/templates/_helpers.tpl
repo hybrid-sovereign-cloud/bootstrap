@@ -17,7 +17,8 @@ app.kubernetes.io/part-of: sovereign-bootstrap
 
 {{/*
 OCI chart URL helper: oci://<registry>/<repositoryBase>/<chartName>
+For ArgoCD v3.x, the repoURL must include the full path to the chart.
 */}}
 {{- define "sovereign-central.ociURL" -}}
-{{- printf "oci://%s/%s" .Values.oci.registry .Values.oci.repositoryBase }}
+{{- printf "oci://%s/%s/rhacm" .Values.oci.registry .Values.oci.repositoryBase }}
 {{- end }}

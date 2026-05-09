@@ -19,6 +19,7 @@ init-central-argo: check-env ## Bootstrap ArgoCD on central cluster: install ini
 	  --set clusters.services.password="$(OCP_SERVICES_PASSWORD)" \
 	  --set clusters.services.tlsSkipVerify=true \
 	  --set oci.registry="$(OCI_HOST)" \
+	  --set oci.namespace="$(OCI_NAMESPACE)" \
 	  --set oci.robotUsername="$(OCI_ROBOT_USERNAME)" \
 	  --set oci.robotPassword="$(OCI_ROBOT_PASSWORD)" \
 	  --wait --timeout=5m

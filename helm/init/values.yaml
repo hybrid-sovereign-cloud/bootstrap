@@ -42,5 +42,6 @@ applicationSet:
 # ─── OCI registry pull secret (injected into openshift-gitops) ───────────────
 oci:
   registry: "quay.io"
+  namespace: "sovereign"
   robotUsername: ""
   robotPassword: ""
