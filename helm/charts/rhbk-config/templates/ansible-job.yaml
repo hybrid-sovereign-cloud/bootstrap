@@ -30,8 +30,6 @@ metadata:
   namespace: {{ .Values.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "15"
-    argocd.argoproj.io/hook: PostSync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   backoffLimit: 3
   template:
@@ -48,36 +46,16 @@ spec:
             - -p
             - configure-keycloak.yml
           env:
-            - name: OCP_CENTRAL_SERVER
-              valueFrom:
-                secretKeyRef:
-                  name: sovereign-cluster-credentials
-                  key: central-server
-            - name: OCP_SERVICES_SERVER
-              valueFrom:
-                secretKeyRef:
-                  name: sovereign-cluster-credentials
-                  key: services-server
-            - name: KEYCLOAK_CENTRAL_URL
-              valueFrom:
-                secretKeyRef:
-                  name: sovereign-keycloak-config
-                  key: central-url
-            - name: KEYCLOAK_SERVICES_URL
-              valueFrom:
-                secretKeyRef:
-                  name: sovereign-keycloak-config
-                  key: services-url
             - name: KEYCLOAK_ADMIN_USER
               valueFrom:
                 secretKeyRef:
-                  name: sovereign-keycloak-initial-admin
+                  name: {{ .Values.ansibleJob.adminSecretName | default "sovereign-keycloak-central-initial-admin" }}
                   key: username
-                  optional: true
             - name: KEYCLOAK_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: sovereign-keycloak-initial-admin
+                  name: {{ .Values.ansibleJob.adminSecretName | default "sovereign-keycloak-central-initial-admin" }}
                   key: password
-                  optional: true
+            - name: KEYCLOAK_URL
+              value: {{ .Values.ansibleJob.keycloakUrl | default "http://sovereign-keycloak-central-service.rhbk.svc:8080" | quote }}
 {{- end }}

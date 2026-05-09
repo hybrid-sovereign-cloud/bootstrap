@@ -4,3 +4,5 @@ ansibleJob:
   enabled: true
   image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
   serviceAccount: sovereign-ansible-runner
+  adminSecretName: "sovereign-keycloak-central-initial-admin"
+  keycloakUrl: "http://sovereign-keycloak-central-service.rhbk.svc:8080"

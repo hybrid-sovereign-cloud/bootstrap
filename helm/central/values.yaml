@@ -85,7 +85,7 @@ rhbkServices:
 # ─── RHBK Config (Ansible job — runs after Keycloak is ready) ────────────────
 rhbkConfig:
   enabled: true
-  chartVersion: "0.2.0"
+  chartVersion: "0.3.0"
   syncWave: "30"
   destinationNamespace: rhbk
   values:
@@ -93,6 +93,8 @@ rhbkConfig:
     ansibleJob:
       enabled: true
       image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
+      adminSecretName: "sovereign-keycloak-central-initial-admin"
+      keycloakUrl: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
 
 # ─── RHACM Application ───────────────────────────────────────────────────────
 rhacm:
