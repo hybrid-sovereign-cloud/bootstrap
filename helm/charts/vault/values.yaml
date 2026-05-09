@@ -25,9 +25,12 @@ vault:
       enabled: true
       host: ""
     image:
-      repository: docker.io/hashicorp/vault
-      tag: "1.17.2"
+      repository: registry.connect.redhat.com/hashicorp/vault
+      tag: "1.17.2-ubi"
   ui:
     enabled: true
   injector:
     enabled: true
+    image:
+      repository: registry.connect.redhat.com/hashicorp/vault-k8s
+      tag: "1.4.2-ubi"

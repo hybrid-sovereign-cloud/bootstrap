@@ -127,7 +127,7 @@ acsServices:
 # ─── Vault (central cluster only) ──────────────────────────────────────────
 vault:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   syncWave: "15"
   values:
     vault:
@@ -141,10 +141,16 @@ vault:
             enabled: true
         route:
           enabled: true
+        image:
+          repository: registry.connect.redhat.com/hashicorp/vault
+          tag: "1.17.2-ubi"
       ui:
         enabled: true
       injector:
         enabled: true
+        image:
+          repository: registry.connect.redhat.com/hashicorp/vault-k8s
+          tag: "1.4.2-ubi"
 
 # ─── RHACM Application ───────────────────────────────────────────────────────
 rhacm:
@@ -197,7 +203,7 @@ aap:
 # ─── ODF / Noobaa (central cluster) ──────────────────────────────────────
 odf:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   syncWave: "12"
   destinationNamespace: openshift-storage
   values:
@@ -209,7 +215,7 @@ odf:
 # ─── ODF / Noobaa (services cluster) ──────────────────────────────────────
 odfServices:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   syncWave: "12"
   destinationNamespace: openshift-storage
   values:
