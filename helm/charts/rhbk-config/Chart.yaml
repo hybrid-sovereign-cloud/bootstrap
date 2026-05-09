@@ -2,5 +2,5 @@ apiVersion: v2
 name: rhbk-config
 description: Keycloak configuration via Ansible — runs after RHBK operator and instance are ready
 type: application
-version: 0.3.0
+version: 0.4.0
 appVersion: "1.0"

@@ -4,8 +4,128 @@
   connection: local
   gather_facts: false
 
-  roles:
-    - role: keycloak-realms
-    - role: keycloak-clients
-    - role: keycloak-oauth
-    - role: keycloak-rbac
+  vars:
+    keycloak_url: "{{ lookup('env', 'KEYCLOAK_URL') }}"
+    keycloak_admin_user: "{{ lookup('env', 'KEYCLOAK_ADMIN_USER') }}"
+    keycloak_admin_password: "{{ lookup('env', 'KEYCLOAK_ADMIN_PASSWORD') }}"
+
+  tasks:
+    - name: Verify Keycloak is accessible
+      ansible.builtin.uri:
+        url: "{{ keycloak_url }}/realms/master"
+        method: GET
+        validate_certs: false
+        status_code: 200
+      register: kc_health
+      retries: 5
+      delay: 10
+      until: kc_health.status == 200
+
+    - name: Display Keycloak info
+      ansible.builtin.debug:
+        msg: "Keycloak is running at {{ keycloak_url }} - realm: {{ kc_health.json.realm }}"
+
+    - name: Obtain admin token for realm operations
+      ansible.builtin.uri:
+        url: "{{ keycloak_url }}/realms/master/protocol/openid-connect/token"
+        method: POST
+        body_format: form-urlencoded
+        body:
+          client_id: admin-cli
+          username: "{{ keycloak_admin_user }}"
+          password: "{{ keycloak_admin_password }}"
+          grant_type: password
+        validate_certs: false
+        status_code: 200
+      register: token_result
+
+    - name: Check if sovereign-central realm exists
+      ansible.builtin.uri:
+        url: "{{ keycloak_url }}/admin/realms/sovereign-central"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ token_result.json.access_token }}"
+        validate_certs: false
+        status_code: [200, 404]
+      register: realm_check
+
+    - name: Create sovereign-central realm
+      ansible.builtin.uri:
+        url: "{{ keycloak_url }}/admin/realms"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ token_result.json.access_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          id: sovereign-central
+          realm: sovereign-central
+          enabled: true
+          registrationAllowed: false
+          loginWithEmailAllowed: true
+          duplicateEmailsAllowed: false
+          sslRequired: none
+        validate_certs: false
+        status_code: [201]
+      when: realm_check.status == 404
+
+    - name: Display realm result
+      ansible.builtin.debug:
+        msg: "Realm sovereign-central: {{ 'already exists' if realm_check.status == 200 else 'created' }}"
+
+    - name: Obtain fresh token for client operations
+      ansible.builtin.uri:
+        url: "{{ keycloak_url }}/realms/master/protocol/openid-connect/token"
+        method: POST
+        body_format: form-urlencoded
+        body:
+          client_id: admin-cli
+          username: "{{ keycloak_admin_user }}"
+          password: "{{ keycloak_admin_password }}"
+          grant_type: password
+        validate_certs: false
+        status_code: 200
+      register: token_result2
+
+    - name: Check if sovereign-central client exists
+      ansible.builtin.uri:
+        url: "{{ keycloak_url }}/admin/realms/sovereign-central/clients?clientId=sovereign-central"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ token_result2.json.access_token }}"
+        validate_certs: false
+        status_code: [200]
+      register: client_check
+
+    - name: Create sovereign-central client
+      ansible.builtin.uri:
+        url: "{{ keycloak_url }}/admin/realms/sovereign-central/clients"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ token_result2.json.access_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          clientId: sovereign-central
+          name: "Sovereign Central"
+          enabled: true
+          clientAuthenticatorType: client-secret
+          serviceAccountsEnabled: true
+          standardFlowEnabled: true
+          directAccessGrantsEnabled: true
+          redirectUris:
+            - "*"
+        validate_certs: false
+        status_code: [201]
+      when: client_check.json | length == 0
+
+    - name: Display client result
+      ansible.builtin.debug:
+        msg: "Client sovereign-central: {{ 'already exists' if (client_check.json | length > 0) else 'created' }}"
+
+    - name: Configuration complete
+      ansible.builtin.debug:
+        msg: >-
+          Keycloak configuration completed successfully.
+          Realm: sovereign-central (enabled),
+          Client: sovereign-central (service account enabled)

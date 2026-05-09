@@ -85,7 +85,7 @@ rhbkServices:
 # ─── RHBK Config (Ansible job — runs after Keycloak is ready) ────────────────
 rhbkConfig:
   enabled: true
-  chartVersion: "0.3.0"
+  chartVersion: "0.4.0"
   syncWave: "30"
   destinationNamespace: rhbk
   values:

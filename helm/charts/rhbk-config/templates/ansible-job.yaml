@@ -36,6 +36,8 @@ spec:
     spec:
       serviceAccountName: {{ .Values.ansibleJob.serviceAccount }}
       restartPolicy: OnFailure
+      imagePullSecrets:
+        - name: quay-pull-secret
       containers:
         - name: ansible-runner
           image: {{ .Values.ansibleJob.image | quote }}
