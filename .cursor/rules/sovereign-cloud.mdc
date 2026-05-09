@@ -8,7 +8,7 @@ alwaysApply: true
 
 ## Design Philosophy
 
-- **Rapid initialisation**: `make check-env && make upload-acm-chart && make init-central-argo` = zero-to-platform.
+- **Rapid initialisation**: `make check-env && make add-docker-repo && make upload-* && make ansible-runner && make init-central-argo` = zero-to-platform.
 - **Makefile portability**: every OpenShift mutation is a `make` target; rerunnable on any cluster by setting env vars.
 - **Make target files**: each make target lives in its own file under `make/*.mk`; the root `Makefile` imports them.
 - **OCP Appliance end-goal**: bootstrap pipeline will produce a versioned OCP Appliance image embedding all platform components for sovereign/air-gapped deployment.
@@ -43,16 +43,17 @@ alwaysApply: true
 - **Prune**: all ArgoCD Applications must have `prune: true` to remove orphaned resources.
 - **Always in sync**: if any ArgoCD Application is not `Synced + Healthy`, investigate and fix immediately.
 - **Dynamic plugins**: always enable ArgoCD dynamic plugins when available (e.g., `argocd-vault-plugin`, UI plugins).
+- **All apps on central**: all ArgoCD Applications live on the central cluster (where ArgoCD runs). Services apps set their `destination.server` to the services cluster URL.
 
 ## OCI / Quay rules
 
 - **Robot read-only**: the Quay robot account (`hybrid-sovereign+pull`) must have **read-only** access on all repositories in the `hybrid-sovereign` organization. Use the admin token (`OCI_REGISTRY_TOKEN`) for write operations (repo creation, chart push).
-- **Chart push uses admin token**: `make upload-acm-chart` authenticates with the admin token for push, not the robot.
+- **Chart push uses admin token**: all `make upload-*` targets authenticate with the admin token for push, not the robot.
 
 ## Required Environment Variables
 
 All of the following **must** be set before any `make` target is executed. Never hardcode these values.
-`make check-env` verifies all 12 at once and tests logins.
+`make check-env` verifies them and tests logins.
 
 ### Central Cluster
 | Variable | Purpose |
@@ -71,20 +72,21 @@ All of the following **must** be set before any `make` target is executed. Never
 ### OCI Registry (admin)
 | Variable | Purpose |
 |---|---|
-| `OCI_REGISTRY` | Quay registry hostname or full URL (e.g. `https://quay.io/organization/myorg`) |
-| `OCI_REGISTRY_TOKEN` | Admin bearer token (used to create repos and push charts) |
+| `OCI_REGISTRY` | Quay registry hostname or full URL |
+| `OCI_REGISTRY_TOKEN` | Admin bearer token (create repos, push charts/images) |
 
 ### OCI Registry (robot/read-only)
 | Variable | Purpose |
 |---|---|
-| `OCI_ROBOT_USERNAME` | Robot account username — read-only access to pull charts |
+| `OCI_ROBOT_USERNAME` | Robot account username — read-only pull |
 | `OCI_ROBOT_PASSWORD` | Robot account token |
 
-### Derived Variables (computed by Makefile)
-| Variable | Derivation |
+### Image Registry
+| Variable | Purpose |
 |---|---|
-| `OCI_HOST` | Hostname extracted from `OCI_REGISTRY` |
-| `OCI_NAMESPACE` | Organization from URL path (defaults to `sovereign` if not a URL) |
+| `IMAGE_REGISTRY` | Container image registry (e.g. `registry.redhat.io`) |
+| `IMAGE_REGISTRY_USERNAME` | Registry login username |
+| `IMAGE_REGISTRY_PASSWORD` | Registry login password/token |
 
 ### Git
 | Variable | Purpose |
@@ -104,53 +106,60 @@ Before running any bootstrap phase, both clusters must have:
 bootstrap/
 ├── Makefile                    # Imports all make/*.mk files
 ├── make/                       # Individual make target files
-│   ├── check-env.mk           # check-env target
-│   ├── upload-acm-chart.mk    # upload-acm-chart target
-│   └── init-central-argo.mk   # init-central-argo target
-└── helm/
-    ├── charts/
-    │   └── rhacm/              # Standalone RHACM chart — pushed to OCI by make upload-acm-chart
-    ├── central/                # App-of-Apps chart → deployed into central cluster
-    │   └── templates/
-    │       └── rhacm-application.yaml  # Application sourcing rhacm from OCI
-    └── init/                   # Bootstrap entry-point chart
-        └── templates/
-            ├── applicationset.yaml           # Drives central + services app-of-apps
-            ├── git-repo-secret.yaml          # ArgoCD git credential secret
-            └── services-cluster-secret.yaml  # Registers services cluster with ArgoCD
-
-architecture/
-├── docs/
-│   ├── 01-overview.md         # Platform overview
-│   ├── 02-bootstrap-flow.md   # Bootstrap sequence (simple flowchart)
-│   ├── 03-central-cluster.md  # Central cluster components
-│   ├── 04-services-cluster.md # Services cluster components
-│   └── 05-oci-registry.md     # OCI registry interaction
-└── hardeningcheck/
-    └── security-assessment.md # Security assessment + CIS gaps + remediation list
+│   ├── check-env.mk           # Check bastion configs
+│   ├── add-docker-repo.mk     # Trust image registry
+│   ├── upload-acm-chart.mk    # Build artifact: RHACM chart
+│   ├── upload-sovereign-namespaces-chart.mk  # Build artifact: namespaces chart
+│   ├── upload-rhbk-chart.mk   # Build artifact: Keycloak chart
+│   ├── ansible-runner.mk      # Build artifact: ansible-runner image
+│   ├── init-central-argo.mk   # Bootstrap cluster
+│   └── help.mk
+├── helm/
+│   ├── charts/
+│   │   ├── rhacm/              # RHACM operator chart (OCI)
+│   │   ├── sovereign-namespaces/  # Namespace creation chart (OCI)
+│   │   └── rhbk/              # Keycloak operator chart (OCI)
+│   ├── central/               # App-of-Apps for central cluster
+│   ├── services/              # App-of-Apps for services cluster
+│   └── init/                  # Bootstrap entry-point chart
+└── ansible/
+    ├── imagebuild/ansiblerunner/  # Containerfile for ansible-runner
+    ├── roles/                 # Ansible roles for platform config
+    │   ├── keycloak-realms/
+    │   ├── keycloak-clients/
+    │   ├── keycloak-oauth/
+    │   └── keycloak-rbac/
+    └── project/               # Playbooks
 ```
+
+## Make Targets (grouped by section)
+
+### Check Bastion Configs
+| Target | Purpose |
+|---|---|
+| `make check-env` | Verify all required env vars + test logins |
+| `make add-docker-repo` | Trust IMAGE_REGISTRY on both clusters |
+
+### Build Artifacts
+| Target | Purpose |
+|---|---|
+| `make upload-acm-chart` | Push RHACM chart to OCI (admin token) |
+| `make upload-sovereign-namespaces-chart` | Push namespace chart to OCI |
+| `make upload-rhbk-chart` | Push Keycloak chart to OCI |
+| `make ansible-runner` | Build + push ansible-runner image |
+
+### Bootstrap Cluster
+| Target | Purpose |
+|---|---|
+| `make init-central-argo` | Deploy init chart → ApplicationSet → ArgoCD takes over |
 
 ## Key rules for agents working in each directory
 
-- `helm/charts/rhacm` — after any change run `helm lint helm/charts/rhacm`; bump `Chart.yaml` version; re-run `make upload-acm-chart`.
-- `helm/central` — run `helm lint` after every chart change; update `values.yaml` chart version reference when the OCI chart is bumped.
-- `helm/init` — this is the bootstrap entry-point; changes here affect both clusters simultaneously; always test with `helm template` before pushing.
-- `make/*.mk` — each target in its own file; keep the root Makefile as a thin importer.
-- `architecture/docs/` — keep diagrams small and split across files. One diagram per concept.
-- `architecture/hardeningcheck/security-assessment.md` — update findings after any security-impacting change.
-
-## Make Targets
-
-| Target | Purpose |
-|---|---|
-| `make check-env` | Verify all 12 required env vars are set AND test logins (OCP + OCI) |
-| `make upload-acm-chart` | Create Quay OCI repo and push the chart (uses admin token) |
-| `make init-central-argo` | Log in to central cluster, deploy `helm/init`, trigger app-of-apps |
-
-## Bootstrap Execution Order
-
-```
-1. make check-env          ← always run first (validates vars + tests logins)
-2. make upload-acm-chart   ← push RHACM chart to OCI (before ArgoCD tries to sync it)
-3. make init-central-argo  ← deploy init chart → ApplicationSet fires → RHACM + all apps install
-```
+- `helm/charts/*` — after any change: `helm lint`, bump `Chart.yaml` version, re-run `make upload-*`.
+- `helm/central` — run `helm lint` after every change; update `values.yaml` when OCI chart is bumped.
+- `helm/services` — same as central; child apps target services cluster via `targetCluster.server`.
+- `helm/init` — bootstrap entry-point; changes affect both clusters; test with `helm template`.
+- `make/*.mk` — each target in its own file; keep root Makefile as a thin importer.
+- `ansible/roles/*` — Keycloak configuration; test with `ansible-lint` if available.
+- `architecture/docs/` — keep diagrams small, one concept per file.
+- `architecture/hardeningcheck/` — update after any security-impacting change.
