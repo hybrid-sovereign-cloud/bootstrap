@@ -26,6 +26,11 @@ spec:
     server: https://kubernetes.default.svc
     namespace: {{ .Values.odf.destinationNamespace }}
 
+  ignoreDifferences:
+    - group: noobaa.io
+      kind: NooBaa
+      jsonPointers:
+        - /spec
   syncPolicy:
     automated:
       prune: true
@@ -34,6 +39,7 @@ spec:
       - CreateNamespace=true
       - ServerSideApply=true
       - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
     retry:
       limit: 5
       backoff:

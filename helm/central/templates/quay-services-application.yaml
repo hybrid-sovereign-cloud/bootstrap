@@ -27,6 +27,11 @@ spec:
     server: {{ .Values.servicesCluster.server | quote }}
     namespace: {{ .Values.quayServices.destinationNamespace }}
 
+  ignoreDifferences:
+    - group: quay.redhat.com
+      kind: QuayRegistry
+      jsonPointers:
+        - /spec
   syncPolicy:
     automated:
       prune: true
@@ -35,6 +40,7 @@ spec:
       - CreateNamespace=true
       - ServerSideApply=true
       - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
     retry:
       limit: 5
       backoff:
