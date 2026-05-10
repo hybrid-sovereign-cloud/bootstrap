@@ -6,17 +6,35 @@
 
   vars:
     keycloak_central_url: "{{ lookup('env', 'KEYCLOAK_CENTRAL_URL') | default('http://sovereign-keycloak-central-service.rhbk.svc:8080', true) }}"
-    keycloak_services_url: "{{ lookup('env', 'KEYCLOAK_SERVICES_URL') | default('http://sovereign-keycloak-services-service.rhbk.svc:8080', true) }}"
+    keycloak_services_url: "{{ lookup('env', 'KEYCLOAK_SERVICES_URL') | default('https://keycloak-services.apps.shcservices.lab.signal9.gg', true) }}"
     keycloak_admin_secret_name: "{{ lookup('env', 'KEYCLOAK_ADMIN_SECRET') | default('sovereign-keycloak-central-initial-admin', true) }}"
     keycloak_admin_secret_namespace: "{{ lookup('env', 'KEYCLOAK_ADMIN_SECRET_NS') | default('rhbk', true) }}"
+    keycloak_services_admin_secret_name: "{{ lookup('env', 'KEYCLOAK_SERVICES_ADMIN_SECRET') | default('sovereign-keycloak-services-initial-admin', true) }}"
+    keycloak_services_admin_secret_namespace: "{{ lookup('env', 'KEYCLOAK_SERVICES_ADMIN_SECRET_NS') | default('rhbk', true) }}"
     central_realm: "{{ lookup('env', 'REALM_NAME') | default('sovereign-central', true) }}"
-    services_realm: "{{ lookup('env', 'REALM_NAME') | default('sovereign-central', true) }}"
+    services_realm: "{{ lookup('env', 'SERVICES_REALM_NAME') | default('sovereign-central', true) }}"
     central_oauth_client_id: "openshift-central"
     services_oauth_client_id: "openshift-services"
     ocp_services_server: "{{ lookup('env', 'OCP_SERVICES_SERVER') }}"
 
   pre_tasks:
-    - name: Fetch Keycloak admin credentials from cluster
+    - name: Fetch ArgoCD cluster secret for services cluster
+      kubernetes.core.k8s_info:
+        kind: Secret
+        namespace: openshift-gitops
+        label_selectors:
+          - "argocd.argoproj.io/secret-type=cluster"
+      register: argo_cluster_secrets
+      retries: 5
+      delay: 5
+
+    - name: Extract services cluster bearer token
+      ansible.builtin.set_fact:
+        services_cluster_token: >-
+          {{ ((argo_cluster_secrets.resources | first).data.config | b64decode | from_json).bearerToken }}
+      when: argo_cluster_secrets.resources | length > 0
+
+    - name: Fetch central Keycloak admin credentials
       kubernetes.core.k8s_info:
         kind: Secret
         name: "{{ keycloak_admin_secret_name }}"
@@ -26,10 +44,30 @@
       delay: 10
       until: admin_secret.resources | length > 0
 
-    - name: Set admin credentials
+    - name: Set central admin credentials
       ansible.builtin.set_fact:
         keycloak_admin_user: "{{ admin_secret.resources[0].data.username | b64decode }}"
         keycloak_admin_password: "{{ admin_secret.resources[0].data.password | b64decode }}"
+
+    - name: Fetch services Keycloak admin credentials from services cluster
+      kubernetes.core.k8s_info:
+        kind: Secret
+        name: "{{ keycloak_services_admin_secret_name }}"
+        namespace: "{{ keycloak_services_admin_secret_namespace }}"
+        host: "{{ ocp_services_server }}"
+        api_key: "{{ services_cluster_token }}"
+        validate_certs: false
+      register: services_admin_secret
+      retries: 30
+      delay: 10
+      until: services_admin_secret.resources | length > 0
+      when: ocp_services_server | length > 0
+
+    - name: Set services admin credentials
+      ansible.builtin.set_fact:
+        services_keycloak_admin_user: "{{ services_admin_secret.resources[0].data.username | b64decode }}"
+        services_keycloak_admin_password: "{{ services_admin_secret.resources[0].data.password | b64decode }}"
+      when: services_admin_secret.resources is defined and services_admin_secret.resources | length > 0
 
     - name: Wait for Keycloak central to be reachable
       ansible.builtin.uri:
@@ -68,15 +106,31 @@
       ansible.builtin.set_fact:
         central_client_secrets: "{{ keycloak_client_secrets }}"
 
+    - name: Wait for services Keycloak to be reachable
+      ansible.builtin.uri:
+        url: "{{ keycloak_services_url }}/realms/master"
+        method: GET
+        validate_certs: false
+        status_code: [200]
+      retries: 30
+      delay: 10
+      register: kc_services_health
+      until: kc_services_health.status == 200
+      when: ocp_services_server | length > 0
+
     - name: Authenticate to services Keycloak
       ansible.builtin.include_role:
         name: keycloak-auth
       vars:
         keycloak_url: "{{ keycloak_services_url }}"
+        keycloak_admin_user: "{{ services_keycloak_admin_user }}"
+        keycloak_admin_password: "{{ services_keycloak_admin_password }}"
+      when: ocp_services_server | length > 0
 
     - name: Set services token
       ansible.builtin.set_fact:
         services_keycloak_token: "{{ keycloak_token }}"
+      when: ocp_services_server | length > 0
 
     - name: Retrieve services client secrets
       ansible.builtin.include_role:
@@ -89,10 +143,11 @@
             client_id: "{{ services_oauth_client_id }}"
             name: "OpenShift Services"
             redirect_uris: ["*"]
+      when: ocp_services_server | length > 0
 
     - name: Merge all secrets
       ansible.builtin.set_fact:
-        keycloak_client_secrets: "{{ central_client_secrets | combine(keycloak_client_secrets) }}"
+        keycloak_client_secrets: "{{ central_client_secrets | combine(keycloak_client_secrets | default({})) }}"
 
   roles:
     - keycloak-oauth

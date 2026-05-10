@@ -8,5 +8,25 @@
     admin_group: "{{ lookup('env', 'ADMIN_GROUP') | default('sovereign-admin', true) }}"
     ocp_services_server: "{{ lookup('env', 'OCP_SERVICES_SERVER') }}"
 
+  pre_tasks:
+    - name: Fetch ArgoCD cluster secret for services cluster
+      kubernetes.core.k8s_info:
+        kind: Secret
+        namespace: openshift-gitops
+        label_selectors:
+          - "argocd.argoproj.io/secret-type=cluster"
+      register: argo_cluster_secrets
+      retries: 5
+      delay: 5
+      when: ocp_services_server | length > 0
+
+    - name: Extract services cluster bearer token
+      ansible.builtin.set_fact:
+        services_cluster_token: >-
+          {{ ((argo_cluster_secrets.resources | first).data.config | b64decode | from_json).bearerToken }}
+      when:
+        - ocp_services_server | length > 0
+        - argo_cluster_secrets.resources | length > 0
+
   roles:
     - keycloak-rbac

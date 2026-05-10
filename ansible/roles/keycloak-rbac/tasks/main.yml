@@ -22,6 +22,8 @@
   kubernetes.core.k8s:
     state: present
     host: "{{ ocp_services_server }}"
+    api_key: "{{ services_cluster_token }}"
+    validate_certs: false
     definition:
       apiVersion: rbac.authorization.k8s.io/v1
       kind: ClusterRoleBinding

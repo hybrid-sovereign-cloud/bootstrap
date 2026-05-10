@@ -1,31 +1,39 @@
 ---
-- name: Check if Gitea admin user exists
+- name: Get Gitea admin password from deployment
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: gitea
+    namespace: gitea
+  register: gitea_deploy
+  retries: 10
+  delay: 10
+  until: gitea_deploy.resources | length > 0
+
+- name: Extract admin password from init container env
+  ansible.builtin.set_fact:
+    gitea_admin_password: >-
+      {{ gitea_deploy.resources[0].spec.template.spec.initContainers
+         | selectattr('name', 'equalto', 'configure-gitea')
+         | map(attribute='env') | first
+         | selectattr('name', 'equalto', 'GITEA_ADMIN_PASSWORD')
+         | map(attribute='value') | first }}
+    gitea_admin_user: >-
+      {{ gitea_deploy.resources[0].spec.template.spec.initContainers
+         | selectattr('name', 'equalto', 'configure-gitea')
+         | map(attribute='env') | first
+         | selectattr('name', 'equalto', 'GITEA_ADMIN_USERNAME')
+         | map(attribute='value') | first }}
+
+- name: Wait for Gitea API to be reachable
   ansible.builtin.uri:
     url: "{{ gitea_url }}/api/v1/users/{{ gitea_admin_user }}"
     method: GET
     validate_certs: false
     status_code: [200, 404]
   register: gitea_user_check
-  retries: 10
+  retries: 30
   delay: 10
   until: gitea_user_check.status is defined
-
-- name: Get Gitea admin credentials from secret
-  kubernetes.core.k8s_info:
-    kind: Secret
-    name: gitea-admin-credentials
-    namespace: gitea
-  register: gitea_secret
-  when: gitea_user_check.status == 200
-  retries: 3
-  delay: 5
-
-- name: Set admin password from existing secret
-  ansible.builtin.set_fact:
-    gitea_admin_password: "{{ (gitea_secret.resources[0].data.password | b64decode) }}"
-  when:
-    - gitea_user_check.status == 200
-    - gitea_secret.resources | length > 0
 
 - name: Generate admin API token
   ansible.builtin.uri:
