@@ -1,3 +1,5 @@
+pushSecretToVault: false
+
 vault:
   global:
     openshift: true
@@ -24,6 +26,9 @@ vault:
     route:
       enabled: true
       host: ""
+      tls:
+        termination: edge
+        insecureEdgeTerminationPolicy: Redirect
     image:
       repository: quay.signal9.gg/hybrid-sovereign/vault
       tag: "1.21.2"

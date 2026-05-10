@@ -125,9 +125,10 @@ acsServices:
 # ─── Vault (central cluster only) ──────────────────────────────────────────
 vault:
   enabled: true
-  chartVersion: "0.4.0"
+  chartVersion: "0.5.0"
   syncWave: "15"
   values:
+    pushSecretToVault: true
     vault:
       global:
         openshift: true
@@ -135,11 +136,32 @@ vault:
           - name: quay-pull-secret
       server:
         standalone:
-          enabled: true
-        ha:
           enabled: false
+        ha:
+          enabled: true
+          replicas: 3
+          raft:
+            enabled: true
+            config: |
+              ui = true
+              listener "tcp" {
+                tls_disable = 1
+                address = "[::]:8200"
+                cluster_address = "[::]:8201"
+              }
+              storage "raft" {
+                path = "/vault/data"
+              }
+              service_registration "kubernetes" {}
+        dataStorage:
+          enabled: true
+          size: 10Gi
         route:
           enabled: true
+          host: vault.apps.shcstack-3.lab.signal9.gg
+          tls:
+            termination: edge
+            insecureEdgeTerminationPolicy: Redirect
         image:
           repository: quay.signal9.gg/hybrid-sovereign/vault
           tag: "1.21.2"

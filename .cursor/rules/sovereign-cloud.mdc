@@ -30,6 +30,19 @@ alwaysApply: true
 - **Security**: after any chart or Makefile change, review `architecture/hardeningcheck/security-assessment.md` and update if findings change.
 - **Architecture**: always follow `architecture/docs/` as the source of truth for platform topology.
 
+## `oc` / `kubectl` usage rules
+
+- **Investigation only**: `oc` is permitted for read commands (`get`, `describe`, `logs`, `status`) and ArgoCD app refreshes (`oc annotate ... argocd.argoproj.io/refresh=hard`).
+- **Never create YAML via oc**: do not use `oc apply -f -`, `oc create`, or pipe YAML into `oc`. All resource creation and mutation must go through Helm charts rendered by ArgoCD.
+- **No oc exec**: never use `oc exec` or `kubectl exec` to run commands inside pods. If in-cluster actions are needed, use an Ansible Job deployed via ArgoCD.
+- **Deletion via ArgoCD preferred**: the agent may delete resources directly with `oc delete` when necessary, but the preferred method is disabling the component in the app-of-apps (`enabled: false`) and letting ArgoCD prune.
+
+## Change methodology
+
+- **Primary method — app-of-apps**: all cluster changes must flow through the app-of-apps Helm chart (`helm/central`). Add, modify, or disable components there.
+- **Secondary method — Ansible via ArgoCD**: if the app-of-apps cannot achieve a change (e.g., imperative API calls, multi-step workflows, waiting for readiness), implement it as an Ansible playbook deployed as a Kubernetes Job via an ArgoCD-managed Helm chart (`helm/charts/*/`).
+- **Never ad-hoc**: do not apply ad-hoc YAML, run imperative `oc` mutations, or `oc exec` into pods as a way to make changes.
+
 ## Human-readability rules
 
 - **No large files**: any file above 500 lines must be split into multiple files.
