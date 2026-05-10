@@ -16,21 +16,17 @@
   ansible.builtin.set_fact:
     root_token: "{{ vault_secret.resources[0].data.root_token | b64decode }}"
 
-- name: Get services cluster API token
-  ansible.builtin.uri:
-    url: "{{ services_server }}/oauth/authorize?response_type=token&client_id=openshift-challenging-client"
-    method: GET
-    validate_certs: false
-    force_basic_auth: true
-    url_username: "{{ lookup('env', 'OCP_SERVICES_USERNAME') | default('kubeadmin', true) }}"
-    url_password: "{{ lookup('env', 'OCP_SERVICES_PASSWORD') }}"
-    status_code: [302]
-    follow_redirects: none
-  register: oauth_response
+- name: Read ArgoCD cluster secret for services bearer token
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: argocd-cluster-services
+    namespace: openshift-gitops
+  register: argocd_cluster_secret
 
-- name: Extract bearer token from OAuth redirect
+- name: Extract bearer token from ArgoCD cluster config
   ansible.builtin.set_fact:
-    services_bearer_token: "{{ oauth_response.location | regex_search('access_token=([^&]+)', '\\1') | first }}"
+    services_bearer_token: "{{ (argocd_cluster_secret.resources[0].data.config | b64decode | from_json).bearerToken }}"
 
 - name: Ensure target namespace exists on services cluster
   kubernetes.core.k8s:

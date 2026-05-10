@@ -514,13 +514,6 @@ sovereignJobs:
       env:
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
-        - name: OCP_SERVICES_USERNAME
-          value: "kubeadmin"
-        - name: OCP_SERVICES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: services-cluster-creds
-              key: password
         - name: TARGET_NAMESPACE
           value: "vault"
         - name: TARGET_SECRET_NAME
