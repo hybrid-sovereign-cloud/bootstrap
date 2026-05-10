@@ -131,6 +131,8 @@ vault:
     vault:
       global:
         openshift: true
+        imagePullSecrets:
+          - name: quay-pull-secret
       server:
         standalone:
           enabled: true
