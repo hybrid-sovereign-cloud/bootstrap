@@ -21,9 +21,9 @@ spec:
     - kind: mirror
       managed: {{ .Values.registry.components.mirror.managed }}
     - kind: route
-      managed: true
+      managed: {{ .Values.registry.components.route.managed | default true }}
     - kind: tls
-      managed: true
+      managed: {{ .Values.registry.components.tls.managed | default true }}
     - kind: monitoring
-      managed: true
+      managed: {{ .Values.registry.components.monitoring.managed | default true }}
 {{- end }}

@@ -23,6 +23,12 @@ registry:
       managed: true
     mirror:
       managed: true
+    route:
+      managed: true
+    tls:
+      managed: true
+    monitoring:
+      managed: true
 
 objectStorage:
   bucketName: "quay-datastorage"
