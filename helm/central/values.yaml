@@ -402,7 +402,7 @@ vaultSecretStore:
 # ─── Sovereign Jobs (all Ansible jobs in one chart) ─────────────────────
 sovereignJobs:
   enabled: true
-  chartVersion: "0.1.8"
+  chartVersion: "0.1.9"
   syncWave: "5"
   values:
     namespace: sovereign-jobs
@@ -502,6 +502,20 @@ sovereignJobs:
         env:
           - name: GITEA_URL
             value: "http://gitea-http.gitea.svc:3000"
+      keycloakServicesRealms:
+        enabled: true
+        playbook: keycloak-realms.yml
+        activeDeadlineSeconds: 600
+        syncWave: "2"
+        env:
+          - name: KEYCLOAK_URL
+            value: "https://keycloak-services.apps.shcservices.lab.signal9.gg"
+          - name: KEYCLOAK_ADMIN_SECRET
+            value: "rhbk-services-admin"
+          - name: KEYCLOAK_ADMIN_SECRET_NS
+            value: "sovereign-jobs"
+          - name: REALM_NAME
+            value: "sovereign-tenants"
       pushAdminSecrets:
         enabled: true
         playbook: push-admin-secrets.yml
@@ -512,6 +526,17 @@ sovereignJobs:
             value: "http://vault-active.vault.svc:8200"
           - name: OCP_SERVICES_SERVER
             value: "https://api.shcservices.lab.signal9.gg:6443"
+    externalSecrets:
+      rhbkServicesAdmin:
+        enabled: true
+        targetSecretName: rhbk-services-admin
+        data:
+          - secretKey: username
+            remoteKey: central/data/rhbk-services-admin
+            property: username
+          - secretKey: password
+            remoteKey: central/data/rhbk-services-admin
+            property: password
 
 # ─── Entity Operator (services cluster) ───────────────────────────────────────
 entityOperator:

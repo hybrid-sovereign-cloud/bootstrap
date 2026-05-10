@@ -112,6 +112,8 @@ jobs:
       - name: OCP_SERVICES_SERVER
         value: "https://api.shcservices.lab.signal9.gg:6443"
 
+externalSecrets: {}
+
 pushSecrets:
   pushGiteaAdmin:
     enabled: true
