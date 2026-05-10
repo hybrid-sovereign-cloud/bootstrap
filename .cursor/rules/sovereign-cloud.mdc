@@ -24,11 +24,17 @@ alwaysApply: true
 - **Secrets**: all credentials via environment variables, passed through `helm --set`. Never hardcode.
 - **Git**: commit and push freely. Commit messages: `<type>: <description>`.
 - **No git history**: never use git log, git blame, or commit history for context. Only look at the current state of files.
-- **Docs**: update `bootstrap/README.md`, Makefile help, and `architecture/docs/` on every meaningful change.
+- **Docs**: update `bootstrap/README.md`, Makefile help, and `architecture/docs/` on every meaningful change. **Always update `architecture/docs/` after any architectural or topology change.**
 - **Iterate**: deploy → test → fix loop until `Synced + Healthy`. Debug with `oc` read commands.
 - **Diagrams**: use Mermaid in `architecture/docs/`. Keep each diagram small and focused (max ~15 nodes). Split complex diagrams into multiple files.
 - **Security**: after any chart or Makefile change, review `architecture/hardeningcheck/security-assessment.md` and update if findings change.
+- **Hardening checks**: at the end of each work cycle, perform hardening checks and update or create entries in `architecture/hardeningcheck/`. Add new component files as components are added.
 - **Architecture**: always follow `architecture/docs/` as the source of truth for platform topology.
+
+## Operator placement rules
+
+- **`hybridsovereign.redhat` operators → services cluster**: all operators with API group `hybridsovereign.redhat` (e.g., Entity Operator, plugin_rbac) must be deployed to the **services cluster**. Their CRDs, deployments, and watched namespaces live on services.
+- **`helper.hybridsovereign.redhat` operators → central cluster**: all operators with API group `helper.hybridsovereign.redhat` must be deployed to the **central cluster**. Currently none exist; this rule applies to future additions.
 
 ## `oc` / `kubectl` usage rules
 
