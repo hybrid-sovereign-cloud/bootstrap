@@ -22,9 +22,7 @@
   kubernetes.core.k8s:
     state: present
     host: "{{ ocp_services_server }}"
-    api_key: "{{ services_cluster_token if (services_cluster_token | default('')) | length > 0 else omit }}"
-    username: "{{ services_cluster_username if (services_cluster_token | default('')) | length == 0 else omit }}"
-    password: "{{ services_cluster_password if (services_cluster_token | default('')) | length == 0 else omit }}"
+    api_key: "{{ services_cluster_token }}"
     validate_certs: false
     definition:
       apiVersion: rbac.authorization.k8s.io/v1

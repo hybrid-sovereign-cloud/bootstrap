@@ -33,11 +33,24 @@
         services_cluster_config: "{{ (argo_cluster_secrets.resources | first).data.config | b64decode | from_json }}"
       when: argo_cluster_secrets.resources | length > 0
 
-    - name: Set services cluster auth vars
+    - name: Login to services cluster to obtain bearer token
+      ansible.builtin.shell: |
+        oc login "{{ ocp_services_server }}" \
+          --username="{{ services_cluster_config.username }}" \
+          --password="{{ services_cluster_config.password }}" \
+          --insecure-skip-tls-verify=true --kubeconfig=/tmp/svc-kubeconfig >/dev/null 2>&1
+        oc whoami --show-token --kubeconfig=/tmp/svc-kubeconfig
+      register: svc_token_result
+      retries: 5
+      delay: 10
+      until: svc_token_result.rc == 0
+      when:
+        - argo_cluster_secrets.resources | length > 0
+        - (services_cluster_config.bearerToken | default('')) | length == 0
+
+    - name: Set services cluster token
       ansible.builtin.set_fact:
-        services_cluster_token: "{{ services_cluster_config.bearerToken | default('') }}"
-        services_cluster_username: "{{ services_cluster_config.username | default('') }}"
-        services_cluster_password: "{{ services_cluster_config.password | default('') }}"
+        services_cluster_token: "{{ services_cluster_config.bearerToken if (services_cluster_config.bearerToken | default('')) | length > 0 else svc_token_result.stdout | trim }}"
       when: argo_cluster_secrets.resources | length > 0
 
     - name: Fetch central Keycloak admin credentials
@@ -61,14 +74,12 @@
         name: "{{ keycloak_services_admin_secret_name }}"
         namespace: "{{ keycloak_services_admin_secret_namespace }}"
         host: "{{ ocp_services_server }}"
-        api_key: "{{ services_cluster_token if services_cluster_token | length > 0 else omit }}"
-        username: "{{ services_cluster_username if services_cluster_token | length == 0 else omit }}"
-        password: "{{ services_cluster_password if services_cluster_token | length == 0 else omit }}"
+        api_key: "{{ services_cluster_token }}"
         validate_certs: false
       register: services_admin_secret
       retries: 30
       delay: 10
-      until: services_admin_secret.resources | length > 0
+      until: services_admin_secret.resources is defined and services_admin_secret.resources | length > 0
       when: ocp_services_server | length > 0
 
     - name: Set services admin credentials

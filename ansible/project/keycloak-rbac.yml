@@ -27,11 +27,25 @@
         - ocp_services_server | length > 0
         - argo_cluster_secrets.resources | length > 0
 
-    - name: Set services cluster auth vars
+    - name: Login to services cluster to obtain bearer token
+      ansible.builtin.shell: |
+        oc login "{{ ocp_services_server }}" \
+          --username="{{ services_cluster_config.username }}" \
+          --password="{{ services_cluster_config.password }}" \
+          --insecure-skip-tls-verify=true --kubeconfig=/tmp/svc-kubeconfig >/dev/null 2>&1
+        oc whoami --show-token --kubeconfig=/tmp/svc-kubeconfig
+      register: svc_token_result
+      retries: 5
+      delay: 10
+      until: svc_token_result.rc == 0
+      when:
+        - ocp_services_server | length > 0
+        - argo_cluster_secrets.resources | length > 0
+        - (services_cluster_config.bearerToken | default('')) | length == 0
+
+    - name: Set services cluster token
       ansible.builtin.set_fact:
-        services_cluster_token: "{{ services_cluster_config.bearerToken | default('') }}"
-        services_cluster_username: "{{ services_cluster_config.username | default('') }}"
-        services_cluster_password: "{{ services_cluster_config.password | default('') }}"
+        services_cluster_token: "{{ services_cluster_config.bearerToken if (services_cluster_config.bearerToken | default('')) | length > 0 else svc_token_result.stdout | trim }}"
       when:
         - ocp_services_server | length > 0
         - argo_cluster_secrets.resources | length > 0
