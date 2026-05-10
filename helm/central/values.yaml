@@ -610,7 +610,7 @@ sovereignJobs:
         - name: GITEA_URL
           value: "http://gitea-http.gitea.svc:3000"
     keycloakServicesRealms:
-      enabled: false
+      enabled: true
       playbook: keycloak-realms.yml
       activeDeadlineSeconds: 600
       syncWave: "28"
