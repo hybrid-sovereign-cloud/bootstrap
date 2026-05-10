@@ -272,6 +272,17 @@ quayServices:
     registry:
       enabled: true
       name: svc-sovereign-registry
+      components:
+        objectstorage:
+          managed: true
+        postgres:
+          managed: true
+        clair:
+          managed: true
+        redis:
+          managed: true
+        mirror:
+          managed: true
 
 # ─── Gitea (central cluster only) ─────────────────────────────────────────
 gitea:
