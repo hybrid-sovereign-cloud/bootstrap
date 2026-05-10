@@ -12,7 +12,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: {{ .Values.rhbkServices.syncWave | quote }}
 spec:
-  project: default
+  project: services
 
   source:
     repoURL: {{ printf "oci://%s/%s/rhbk" .Values.oci.registry .Values.oci.repositoryBase | quote }}

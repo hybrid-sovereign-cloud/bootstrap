@@ -36,9 +36,16 @@ alwaysApply: true
 - **`hybridsovereign.redhat` operators → services cluster**: all operators with API group `hybridsovereign.redhat` (e.g., Entity Operator, plugin_rbac) must be deployed to the **services cluster**. Their CRDs, deployments, and watched namespaces live on services.
 - **`helper.hybridsovereign.redhat` operators → central cluster**: all operators with API group `helper.hybridsovereign.redhat` must be deployed to the **central cluster**. Currently none exist; this rule applies to future additions.
 
+## ArgoCD interaction rules
+
+- **Central ArgoCD only**: all ArgoCD interaction must target the central cluster ArgoCD (`openshift-gitops` namespace on central). Never interact with ArgoCD on the services cluster.
+- **No ArgoCD on services**: do NOT create, modify, or query ArgoCD Applications/ApplicationSets on the services cluster. The services cluster has NO ArgoCD management.
+- **All deployments via central ArgoCD**: every cluster change flows through the central ArgoCD app-of-apps. No direct deployments to either cluster outside of `make` bootstrap targets.
+- **AppProject separation**: central cluster resources use `project: central`, services cluster resources use `project: services`. Never mix.
+
 ## `oc` / `kubectl` usage rules
 
-- **Investigation only**: `oc` is permitted for read commands (`get`, `describe`, `logs`, `status`) and ArgoCD app refreshes (`oc annotate ... argocd.argoproj.io/refresh=hard`).
+- **Investigation and deletion only**: `oc` is permitted for read commands (`get`, `describe`, `logs`, `status`), resource deletion (`oc delete`), and triggering ArgoCD syncs/refreshes (`oc annotate ... argocd.argoproj.io/refresh=hard`) on the **central cluster only**.
 - **Never create YAML via oc**: do not use `oc apply -f -`, `oc create`, or pipe YAML into `oc`. All resource creation and mutation must go through Helm charts rendered by ArgoCD.
 - **No oc exec**: never use `oc exec` or `kubectl exec` to run commands inside pods. If in-cluster actions are needed, use an Ansible Job deployed via ArgoCD.
 - **Deletion via ArgoCD preferred**: the agent may delete resources directly with `oc delete` when necessary, but the preferred method is disabling the component in the app-of-apps (`enabled: false`) and letting ArgoCD prune.

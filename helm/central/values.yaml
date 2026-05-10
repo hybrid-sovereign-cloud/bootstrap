@@ -399,150 +399,198 @@ vaultSecretStore:
       tokenSecretNamespace: "vault"
       tokenSecretKey: "root_token"
 
-# ─── Sovereign Jobs (all Ansible jobs in one chart) ─────────────────────
-sovereignJobs:
+# ─── Sovereign Jobs RBAC (shared SA + ClusterRoleBinding) ────────────────
+sovereignJobsRbac:
   enabled: true
-  chartVersion: "0.1.11"
-  syncWave: "5"
+  chartVersion: "0.1.0"
+  syncWave: "3"
   values:
-    namespace: sovereign-jobs
+    namespace: sovereign-cloud-jobs
     serviceAccount: sovereign-ansible-runner
-    image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
-    backoffLimit: 5
     imagePullSecrets:
       - name: quay-pull-secret
-    jobs:
-      vaultInit:
-        enabled: true
-        playbook: vault-init.yml
-        activeDeadlineSeconds: 600
-        syncWave: "1"
-        env:
-          - name: VAULT_ADDR
-            value: "http://vault.vault.svc:8200"
-      vaultKv:
-        enabled: true
-        playbook: vault-kv.yml
-        activeDeadlineSeconds: 600
-        syncWave: "1"
-        env:
-          - name: VAULT_ADDR
-            value: "http://vault.vault.svc:8200"
-      keycloakRealms:
-        enabled: true
-        playbook: keycloak-realms.yml
-        activeDeadlineSeconds: 600
-        syncWave: "1"
-        env:
-          - name: KEYCLOAK_URL
-            value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
-          - name: KEYCLOAK_ADMIN_SECRET
-            value: "sovereign-keycloak-central-initial-admin"
-          - name: KEYCLOAK_ADMIN_SECRET_NS
-            value: "rhbk"
-      keycloakGroups:
-        enabled: true
-        playbook: keycloak-groups.yml
-        activeDeadlineSeconds: 600
-        syncWave: "1"
-        env:
-          - name: KEYCLOAK_URL
-            value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
-          - name: KEYCLOAK_ADMIN_SECRET
-            value: "sovereign-keycloak-central-initial-admin"
-          - name: KEYCLOAK_ADMIN_SECRET_NS
-            value: "rhbk"
-      keycloakClients:
-        enabled: true
-        playbook: keycloak-clients.yml
-        activeDeadlineSeconds: 600
-        syncWave: "1"
-        env:
-          - name: KEYCLOAK_URL
-            value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
-          - name: KEYCLOAK_ADMIN_SECRET
-            value: "sovereign-keycloak-central-initial-admin"
-          - name: KEYCLOAK_ADMIN_SECRET_NS
-            value: "rhbk"
-          - name: KEYCLOAK_CLIENTS
-            value: '[{"realm":"sovereign-central","client_id":"quay-central","name":"Quay Central","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"vault","name":"Vault","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"gitea","name":"Gitea","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"openshift-central","name":"OpenShift Central","redirect_uris":["*"]}]'
-      keycloakRbac:
-        enabled: true
-        playbook: keycloak-rbac.yml
-        activeDeadlineSeconds: 600
-        syncWave: "1"
-        env:
-          - name: OCP_SERVICES_SERVER
-            value: "https://api.shcservices.lab.signal9.gg:6443"
-      keycloakOauth:
-        enabled: true
-        playbook: keycloak-oauth.yml
-        activeDeadlineSeconds: 600
-        syncWave: "1"
-        env:
-          - name: KEYCLOAK_CENTRAL_URL
-            value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
-          - name: KEYCLOAK_SERVICES_URL
-            value: "https://keycloak-services.apps.shcservices.lab.signal9.gg"
-          - name: KEYCLOAK_ADMIN_SECRET
-            value: "sovereign-keycloak-central-initial-admin"
-          - name: KEYCLOAK_ADMIN_SECRET_NS
-            value: "rhbk"
-          - name: KEYCLOAK_SERVICES_ADMIN_SECRET
-            value: "sovereign-keycloak-services-initial-admin"
-          - name: KEYCLOAK_SERVICES_ADMIN_SECRET_NS
-            value: "rhbk"
-          - name: OCP_SERVICES_SERVER
-            value: "https://api.shcservices.lab.signal9.gg:6443"
-      giteaInit:
-        enabled: true
-        playbook: gitea-init.yml
-        activeDeadlineSeconds: 600
-        syncWave: "1"
-        env:
-          - name: GITEA_URL
-            value: "http://gitea-http.gitea.svc:3000"
-      keycloakServicesRealms:
-        enabled: true
-        playbook: keycloak-realms.yml
-        activeDeadlineSeconds: 600
-        syncWave: "2"
-        env:
-          - name: KEYCLOAK_URL
-            value: "https://keycloak-services.apps.shcservices.lab.signal9.gg"
-          - name: KEYCLOAK_ADMIN_SECRET
-            value: "rhbk-services-admin"
-          - name: KEYCLOAK_ADMIN_SECRET_NS
-            value: "sovereign-jobs"
-          - name: REALM_NAME
-            value: "sovereign-tenants"
-      pushAdminSecrets:
-        enabled: true
-        playbook: push-admin-secrets.yml
-        activeDeadlineSeconds: 600
-        syncWave: "1"
-        env:
-          - name: VAULT_ADDR
-            value: "http://vault-active.vault.svc:8200"
-          - name: OCP_SERVICES_SERVER
-            value: "https://api.shcservices.lab.signal9.gg:6443"
-    externalSecrets:
-      rhbkServicesAdmin:
-        enabled: true
-        targetSecretName: rhbk-services-admin
-        syncWave: "3"
-        data:
-          - secretKey: username
-            remoteKey: rhbk-services-admin
-            property: username
-          - secretKey: password
-            remoteKey: rhbk-services-admin
-            property: password
+
+# ─── Sovereign Jobs (individual Ansible job Applications) ────────────────
+sovereignJobs:
+  chartVersion: "0.1.0"
+  namespace: sovereign-cloud-jobs
+  serviceAccount: sovereign-ansible-runner
+  image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
+  backoffLimit: 5
+  imagePullSecrets:
+    - name: quay-pull-secret
+  jobs:
+    vaultInit:
+      enabled: true
+      playbook: vault-init.yml
+      activeDeadlineSeconds: 600
+      syncWave: "23"
+      env:
+        - name: VAULT_ADDR
+          value: "http://vault.vault.svc:8200"
+    vaultKv:
+      enabled: true
+      playbook: vault-kv.yml
+      activeDeadlineSeconds: 600
+      syncWave: "24"
+      env:
+        - name: VAULT_ADDR
+          value: "http://vault.vault.svc:8200"
+    keycloakRealms:
+      enabled: true
+      playbook: keycloak-realms.yml
+      activeDeadlineSeconds: 600
+      syncWave: "26"
+      env:
+        - name: KEYCLOAK_URL
+          value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
+        - name: KEYCLOAK_ADMIN_SECRET
+          value: "sovereign-keycloak-central-initial-admin"
+        - name: KEYCLOAK_ADMIN_SECRET_NS
+          value: "rhbk"
+    keycloakGroups:
+      enabled: true
+      playbook: keycloak-groups.yml
+      activeDeadlineSeconds: 600
+      syncWave: "27"
+      env:
+        - name: KEYCLOAK_URL
+          value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
+        - name: KEYCLOAK_ADMIN_SECRET
+          value: "sovereign-keycloak-central-initial-admin"
+        - name: KEYCLOAK_ADMIN_SECRET_NS
+          value: "rhbk"
+    keycloakClients:
+      enabled: true
+      playbook: keycloak-clients.yml
+      activeDeadlineSeconds: 600
+      syncWave: "27"
+      env:
+        - name: KEYCLOAK_URL
+          value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
+        - name: KEYCLOAK_ADMIN_SECRET
+          value: "sovereign-keycloak-central-initial-admin"
+        - name: KEYCLOAK_ADMIN_SECRET_NS
+          value: "rhbk"
+        - name: KEYCLOAK_CLIENTS
+          value: '[{"realm":"sovereign-central","client_id":"quay-central","name":"Quay Central","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"vault","name":"Vault","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"gitea","name":"Gitea","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"openshift-central","name":"OpenShift Central","redirect_uris":["*"]}]'
+    keycloakRbac:
+      enabled: true
+      playbook: keycloak-rbac.yml
+      activeDeadlineSeconds: 600
+      syncWave: "27"
+      env:
+        - name: OCP_SERVICES_SERVER
+          value: "https://api.shcservices.lab.signal9.gg:6443"
+    keycloakOauth:
+      enabled: true
+      playbook: keycloak-oauth.yml
+      activeDeadlineSeconds: 600
+      syncWave: "27"
+      env:
+        - name: KEYCLOAK_CENTRAL_URL
+          value: "http://sovereign-keycloak-central-service.rhbk.svc:8080"
+        - name: KEYCLOAK_SERVICES_URL
+          value: "https://keycloak-services.apps.shcservices.lab.signal9.gg"
+        - name: KEYCLOAK_ADMIN_SECRET
+          value: "sovereign-keycloak-central-initial-admin"
+        - name: KEYCLOAK_ADMIN_SECRET_NS
+          value: "rhbk"
+        - name: KEYCLOAK_SERVICES_ADMIN_SECRET
+          value: "sovereign-keycloak-services-initial-admin"
+        - name: KEYCLOAK_SERVICES_ADMIN_SECRET_NS
+          value: "rhbk"
+        - name: OCP_SERVICES_SERVER
+          value: "https://api.shcservices.lab.signal9.gg:6443"
+    giteaInit:
+      enabled: true
+      playbook: gitea-init.yml
+      activeDeadlineSeconds: 600
+      syncWave: "27"
+      env:
+        - name: GITEA_URL
+          value: "http://gitea-http.gitea.svc:3000"
+    keycloakServicesRealms:
+      enabled: true
+      playbook: keycloak-realms.yml
+      activeDeadlineSeconds: 600
+      syncWave: "28"
+      externalSecrets:
+        rhbkServicesAdmin:
+          enabled: true
+          targetSecretName: rhbk-services-admin
+          data:
+            - secretKey: username
+              remoteKey: rhbk-services-admin
+              property: username
+            - secretKey: password
+              remoteKey: rhbk-services-admin
+              property: password
+      env:
+        - name: KEYCLOAK_URL
+          value: "https://keycloak-services.apps.shcservices.lab.signal9.gg"
+        - name: KEYCLOAK_ADMIN_SECRET
+          value: "rhbk-services-admin"
+        - name: KEYCLOAK_ADMIN_SECRET_NS
+          value: "sovereign-cloud-jobs"
+        - name: REALM_NAME
+          value: "sovereign-tenants"
+    pushAdminSecrets:
+      enabled: true
+      playbook: push-admin-secrets.yml
+      activeDeadlineSeconds: 600
+      syncWave: "29"
+      pushSecrets:
+        pushGiteaAdmin:
+          enabled: true
+          secretName: gitea-credentials
+          data:
+            - secretKey: admin_user
+              remoteKey: central/data/gitea-admin
+              property: admin_user
+            - secretKey: admin_password
+              remoteKey: central/data/gitea-admin
+              property: admin_password
+            - secretKey: admin_token
+              remoteKey: central/data/gitea-admin
+              property: admin_token
+      env:
+        - name: VAULT_ADDR
+          value: "http://vault-active.vault.svc:8200"
+        - name: OCP_SERVICES_SERVER
+          value: "https://api.shcservices.lab.signal9.gg:6443"
+    deliverServicesSecrets:
+      enabled: true
+      playbook: deliver-services-secrets.yml
+      activeDeadlineSeconds: 600
+      syncWave: "30"
+      env:
+        - name: VAULT_ADDR
+          value: "http://vault-active.vault.svc:8200"
+        - name: OCP_SERVICES_SERVER
+          value: "https://api.shcservices.lab.signal9.gg:6443"
+        - name: TARGET_NAMESPACE
+          value: "sovereign-cloud-plugins"
+
+# ─── Plugin RBAC Operator (services cluster) ──────────────────────────────────
+pluginRbac:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "39"
+  destinationNamespace: sovereign-cloud-plugins
+  values:
+    namespace: sovereign-cloud-plugins
+    image:
+      repository: quay.signal9.gg/hybrid-sovereign/plugin-rbac
+      tag: "0.0.1"
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: quay-pull-secret
 
 # ─── Entity Operator (services cluster) ───────────────────────────────────────
 entityOperator:
   enabled: true
-  chartVersion: "0.5.0"
+  chartVersion: "0.6.0"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:

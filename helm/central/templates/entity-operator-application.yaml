@@ -11,7 +11,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: {{ .Values.entityOperator.syncWave | quote }}
 spec:
-  project: default
+  project: services
 
   source:
     repoURL: {{ printf "oci://%s/%s/entity-operator" .Values.oci.registry .Values.oci.repositoryBase | quote }}

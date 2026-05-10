@@ -1,0 +1,68 @@
+{{- range $name, $job := .Values.sovereignJobs.jobs }}
+{{- if $job.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: job-{{ $name | kebabcase }}
+  namespace: {{ $.Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: job
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ $job.syncWave | quote }}
+spec:
+  project: central
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/sovereign-job" $.Values.oci.registry $.Values.oci.repositoryBase | quote }}
+    chart: sovereign-job
+    targetRevision: {{ $.Values.sovereignJobs.chartVersion | quote }}
+    helm:
+      releaseName: job-{{ $name | kebabcase }}
+      values: |
+        namespace: {{ $.Values.sovereignJobs.namespace }}
+        serviceAccount: {{ $.Values.sovereignJobs.serviceAccount }}
+        image: {{ $.Values.sovereignJobs.image | quote }}
+        backoffLimit: {{ $.Values.sovereignJobs.backoffLimit }}
+        {{- if $.Values.sovereignJobs.imagePullSecrets }}
+        imagePullSecrets:
+          {{- toYaml $.Values.sovereignJobs.imagePullSecrets | nindent 10 }}
+        {{- end }}
+        job:
+          name: {{ $name | kebabcase }}
+          playbook: {{ $job.playbook }}
+          activeDeadlineSeconds: {{ $job.activeDeadlineSeconds | default 600 }}
+          {{- if $job.env }}
+          env:
+            {{- toYaml $job.env | nindent 12 }}
+          {{- end }}
+        {{- if $job.externalSecrets }}
+        externalSecrets:
+          {{- toYaml $job.externalSecrets | nindent 10 }}
+        {{- end }}
+        {{- if $job.pushSecrets }}
+        pushSecrets:
+          {{- toYaml $job.pushSecrets | nindent 10 }}
+        {{- end }}
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ $.Values.sovereignJobs.namespace }}
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+{{- end }}
+{{- end }}

@@ -1,0 +1,82 @@
+---
+- name: Read vault-init-secrets from central cluster
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ vault_init_secret_name }}"
+    namespace: "{{ vault_init_secret_namespace }}"
+  register: vault_init_result
+
+- name: Fail if vault-init-secrets not found
+  ansible.builtin.fail:
+    msg: "Secret {{ vault_init_secret_name }} not found in {{ vault_init_secret_namespace }}"
+  when: vault_init_result.resources | length == 0
+
+- name: Extract Vault root token
+  ansible.builtin.set_fact:
+    vault_root_token: "{{ vault_init_result.resources[0].data.root_token | b64decode }}"
+
+- name: Read RHBK services admin credentials from Vault
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/central/data/rhbk-services-admin"
+    method: GET
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    return_content: true
+    status_code: 200
+  register: rhbk_vault_result
+
+- name: Extract RHBK admin creds
+  ansible.builtin.set_fact:
+    rhbk_admin_username: "{{ rhbk_vault_result.json.data.data.username }}"
+    rhbk_admin_password: "{{ rhbk_vault_result.json.data.data.password }}"
+
+- name: Login to services cluster
+  ansible.builtin.command:
+    cmd: >
+      oc login {{ ocp_services_server }}
+        --token={{ lookup('file', '/var/run/secrets/kubernetes.io/serviceaccount/token') }}
+        --insecure-skip-tls-verify=true
+  changed_when: true
+
+- name: Ensure target namespace exists on services
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: "{{ target_namespace }}"
+    state: present
+
+- name: Create RHBK services admin secret on services cluster
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: rhbk-services-admin
+        namespace: "{{ target_namespace }}"
+      type: Opaque
+      stringData:
+        username: "{{ rhbk_admin_username }}"
+        password: "{{ rhbk_admin_password }}"
+
+- name: Create Vault admin token secret on services cluster
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: vault-admin-token
+        namespace: "{{ target_namespace }}"
+      type: Opaque
+      stringData:
+        root_token: "{{ vault_root_token }}"
+
+- name: Switch back to central cluster
+  ansible.builtin.command:
+    cmd: >
+      oc login https://kubernetes.default.svc
+        --token={{ lookup('file', '/var/run/secrets/kubernetes.io/serviceaccount/token') }}
+        --insecure-skip-tls-verify=true
+  changed_when: true

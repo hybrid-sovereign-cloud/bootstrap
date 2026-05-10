@@ -14,7 +14,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: {{ .Values.rhacm.syncWave | quote }}
 spec:
-  project: default
+  project: central
 
   source:
     repoURL: {{ include "sovereign-central.ociURL" . | quote }}

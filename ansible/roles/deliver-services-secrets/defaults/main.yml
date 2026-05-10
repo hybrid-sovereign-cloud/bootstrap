@@ -1,0 +1,20 @@
+---
+vault_addr: "http://vault-active.vault.svc:8200"
+vault_init_secret_name: "vault-init-secrets"
+vault_init_secret_namespace: "vault"
+ocp_services_server: ""
+target_namespace: "sovereign-cloud-plugins"
+
+secrets_to_deliver:
+  - vault_path: "rhbk-services-admin"
+    target_secret_name: "rhbk-services-admin"
+    keys:
+      - username
+      - password
+
+  - source_type: "k8s_secret"
+    source_secret_name: "vault-init-secrets"
+    source_namespace: "vault"
+    target_secret_name: "vault-admin-token"
+    keys:
+      - root_token

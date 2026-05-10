@@ -1,0 +1,49 @@
+{{- if .Values.sovereignJobsRbac.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sovereign-jobs-rbac
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rbac
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.sovereignJobsRbac.syncWave | quote }}
+spec:
+  project: central
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/sovereign-job-rbac" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: sovereign-job-rbac
+    targetRevision: {{ .Values.sovereignJobsRbac.chartVersion | quote }}
+    helm:
+      releaseName: sovereign-jobs-rbac
+      values: |
+        {{- toYaml .Values.sovereignJobsRbac.values | nindent 8 }}
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.sovereignJobsRbac.values.namespace }}
+
+  ignoreDifferences:
+    - group: ""
+      kind: ServiceAccount
+      jsonPointers:
+        - /imagePullSecrets
+        - /secrets
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+{{- end }}

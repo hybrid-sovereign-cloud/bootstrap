@@ -12,7 +12,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: {{ .Values.crunchyPostgresServices.syncWave | quote }}
 spec:
-  project: default
+  project: services
 
   source:
     repoURL: {{ printf "oci://%s/%s/crunchy-postgres" .Values.oci.registry .Values.oci.repositoryBase | quote }}

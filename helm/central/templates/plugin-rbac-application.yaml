@@ -1,36 +1,37 @@
-{{- if .Values.sovereignDashboard.enabled }}
+{{- if .Values.pluginRbac.enabled }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: sovereign-cloud-dashboard
+  name: plugin-rbac
   namespace: {{ .Values.argocd.namespace }}
   labels:
     {{- include "sovereign-central.labels" . | nindent 4 }}
-    app.kubernetes.io/component: dashboard
+    app.kubernetes.io/component: operator
   annotations:
-    argocd.argoproj.io/sync-wave: {{ .Values.sovereignDashboard.syncWave | quote }}
+    argocd.argoproj.io/sync-wave: {{ .Values.pluginRbac.syncWave | quote }}
 spec:
   project: services
 
   source:
-    repoURL: {{ printf "oci://%s/%s/sovereign-cloud-dashboard" .Values.oci.registry .Values.oci.repositoryBase | quote }}
-    chart: sovereign-cloud-dashboard
-    targetRevision: {{ .Values.sovereignDashboard.chartVersion | quote }}
+    repoURL: {{ printf "oci://%s/%s/plugin-rbac" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: plugin-rbac
+    targetRevision: {{ .Values.pluginRbac.chartVersion | quote }}
     helm:
-      releaseName: sovereign-cloud-dashboard
+      releaseName: plugin-rbac
       values: |
-        {{- toYaml .Values.sovereignDashboard.values | nindent 8 }}
+        {{- toYaml .Values.pluginRbac.values | nindent 8 }}
 
   destination:
     server: {{ .Values.servicesCluster.server | quote }}
-    namespace: {{ .Values.sovereignDashboard.destinationNamespace }}
+    namespace: {{ .Values.pluginRbac.destinationNamespace }}
 
   ignoreDifferences:
     - group: ""
-      kind: Secret
+      kind: ServiceAccount
       jsonPointers:
-        - /data
+        - /imagePullSecrets
+        - /secrets
 
   syncPolicy:
     automated:

@@ -11,7 +11,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: {{ .Values.gitea.syncWave | quote }}
 spec:
-  project: default
+  project: central
 
   source:
     repoURL: {{ printf "oci://%s/%s/gitea" .Values.oci.registry .Values.oci.repositoryBase | quote }}

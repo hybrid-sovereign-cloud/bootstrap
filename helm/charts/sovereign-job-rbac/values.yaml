@@ -1,0 +1,5 @@
+namespace: sovereign-cloud-jobs
+serviceAccount: sovereign-ansible-runner
+
+imagePullSecrets:
+  - name: quay-pull-secret
