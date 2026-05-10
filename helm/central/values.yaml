@@ -250,7 +250,7 @@ odfServices:
 # ─── Quay (central cluster) ──────────────────────────────────────────────
 quay:
   enabled: true
-  chartVersion: "0.5.0"
+  chartVersion: "0.5.1"
   syncWave: "35"
   destinationNamespace: quay-enterprise
   values:
@@ -262,7 +262,7 @@ quay:
 # ─── Quay (services cluster) ──────────────────────────────────────────────
 quayServices:
   enabled: true
-  chartVersion: "0.5.0"
+  chartVersion: "0.5.1"
   syncWave: "35"
   destinationNamespace: quay-enterprise
   values:
