@@ -20,10 +20,18 @@
       delay: 5
       when: ocp_services_server | length > 0
 
-    - name: Extract services cluster bearer token
+    - name: Parse services cluster credentials
       ansible.builtin.set_fact:
-        services_cluster_token: >-
-          {{ ((argo_cluster_secrets.resources | first).data.config | b64decode | from_json).bearerToken }}
+        services_cluster_config: "{{ (argo_cluster_secrets.resources | first).data.config | b64decode | from_json }}"
+      when:
+        - ocp_services_server | length > 0
+        - argo_cluster_secrets.resources | length > 0
+
+    - name: Set services cluster auth vars
+      ansible.builtin.set_fact:
+        services_cluster_token: "{{ services_cluster_config.bearerToken | default('') }}"
+        services_cluster_username: "{{ services_cluster_config.username | default('') }}"
+        services_cluster_password: "{{ services_cluster_config.password | default('') }}"
       when:
         - ocp_services_server | length > 0
         - argo_cluster_secrets.resources | length > 0

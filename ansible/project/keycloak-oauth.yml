@@ -28,10 +28,16 @@
       retries: 5
       delay: 5
 
-    - name: Extract services cluster bearer token
+    - name: Parse services cluster credentials
       ansible.builtin.set_fact:
-        services_cluster_token: >-
-          {{ ((argo_cluster_secrets.resources | first).data.config | b64decode | from_json).bearerToken }}
+        services_cluster_config: "{{ (argo_cluster_secrets.resources | first).data.config | b64decode | from_json }}"
+      when: argo_cluster_secrets.resources | length > 0
+
+    - name: Set services cluster auth vars
+      ansible.builtin.set_fact:
+        services_cluster_token: "{{ services_cluster_config.bearerToken | default('') }}"
+        services_cluster_username: "{{ services_cluster_config.username | default('') }}"
+        services_cluster_password: "{{ services_cluster_config.password | default('') }}"
       when: argo_cluster_secrets.resources | length > 0
 
     - name: Fetch central Keycloak admin credentials
@@ -55,7 +61,9 @@
         name: "{{ keycloak_services_admin_secret_name }}"
         namespace: "{{ keycloak_services_admin_secret_namespace }}"
         host: "{{ ocp_services_server }}"
-        api_key: "{{ services_cluster_token }}"
+        api_key: "{{ services_cluster_token if services_cluster_token | length > 0 else omit }}"
+        username: "{{ services_cluster_username if services_cluster_token | length == 0 else omit }}"
+        password: "{{ services_cluster_password if services_cluster_token | length == 0 else omit }}"
         validate_certs: false
       register: services_admin_secret
       retries: 30

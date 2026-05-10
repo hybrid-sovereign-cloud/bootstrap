@@ -48,7 +48,9 @@
 - name: Create OAuth secret for services cluster
   kubernetes.core.k8s:
     host: "{{ ocp_services_server }}"
-    api_key: "{{ services_cluster_token }}"
+    api_key: "{{ services_cluster_token if (services_cluster_token | default('')) | length > 0 else omit }}"
+    username: "{{ services_cluster_username if (services_cluster_token | default('')) | length == 0 else omit }}"
+    password: "{{ services_cluster_password if (services_cluster_token | default('')) | length == 0 else omit }}"
     validate_certs: false
     state: present
     definition:
@@ -67,7 +69,9 @@
 - name: Add Keycloak as OAuth identity provider on services cluster
   kubernetes.core.k8s:
     host: "{{ ocp_services_server }}"
-    api_key: "{{ services_cluster_token }}"
+    api_key: "{{ services_cluster_token if (services_cluster_token | default('')) | length > 0 else omit }}"
+    username: "{{ services_cluster_username if (services_cluster_token | default('')) | length == 0 else omit }}"
+    password: "{{ services_cluster_password if (services_cluster_token | default('')) | length == 0 else omit }}"
     validate_certs: false
     state: present
     merge_type: merge
