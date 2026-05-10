@@ -458,7 +458,7 @@ vaultSecretStore:
 
 # ─── Vault ClusterSecretStore (services → vault-central via external route) ─
 vaultSecretStoreServices:
-  enabled: false
+  enabled: true
   chartVersion: "0.2.0"
   syncWave: "22"
   values:
