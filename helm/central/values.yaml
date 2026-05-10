@@ -245,7 +245,7 @@ odfServices:
     namespace: openshift-storage
     noobaa:
       enabled: true
-      name: noobaa
+      name: svc-noobaa
 
 # ─── Quay (central cluster) ──────────────────────────────────────────────
 quay:
@@ -271,7 +271,7 @@ quayServices:
     namespace: quay-enterprise
     registry:
       enabled: true
-      name: sovereign-registry
+      name: svc-sovereign-registry
 
 # ─── Gitea (central cluster only) ─────────────────────────────────────────
 gitea:
