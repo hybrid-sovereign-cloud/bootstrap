@@ -560,7 +560,7 @@ sovereignJobs:
         - name: SECRETS_NAMESPACE
           value: "sovereign-cloud-jobs"
     keycloakRbac:
-      enabled: false
+      enabled: true
       playbook: keycloak-rbac.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
@@ -568,7 +568,7 @@ sovereignJobs:
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
     keycloakOauth:
-      enabled: false
+      enabled: true
       playbook: keycloak-oauth.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
