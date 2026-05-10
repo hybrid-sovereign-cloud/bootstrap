@@ -503,7 +503,7 @@ sovereignJobs:
           - name: GITEA_URL
             value: "http://gitea-http.gitea.svc:3000"
       keycloakServicesRealms:
-        enabled: true
+        enabled: false
         playbook: keycloak-realms.yml
         activeDeadlineSeconds: 600
         syncWave: "2"
@@ -528,8 +528,9 @@ sovereignJobs:
             value: "https://api.shcservices.lab.signal9.gg:6443"
     externalSecrets:
       rhbkServicesAdmin:
-        enabled: true
+        enabled: false
         targetSecretName: rhbk-services-admin
+        syncWave: "3"
         data:
           - secretKey: username
             remoteKey: rhbk-services-admin
