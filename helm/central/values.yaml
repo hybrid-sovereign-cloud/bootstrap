@@ -471,7 +471,7 @@ vaultSecretStoreServices:
 
 # ─── Sovereign Jobs RBAC ────────────────────────────────────────────────────
 sovereignJobsRbac:
-  enabled: false
+  enabled: true
   chartVersion: "0.1.0"
   syncWave: "3"
   values:
@@ -491,7 +491,7 @@ sovereignJobs:
     - name: quay-pull-secret
   jobs:
     vaultInit:
-      enabled: false
+      enabled: true
       playbook: vault-init.yml
       activeDeadlineSeconds: 600
       syncWave: "23"
