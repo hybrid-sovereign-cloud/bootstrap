@@ -14,7 +14,7 @@ jobs:
     syncWave: "1"
     env:
       - name: VAULT_ADDR
-        value: "http://vault.vault.svc:8200"
+        value: "http://vault-active.vault.svc:8200"
 
   vaultKv:
     enabled: true
@@ -23,7 +23,7 @@ jobs:
     syncWave: "1"
     env:
       - name: VAULT_ADDR
-        value: "http://vault.vault.svc:8200"
+        value: "http://vault-active.vault.svc:8200"
 
   keycloakRealms:
     enabled: true

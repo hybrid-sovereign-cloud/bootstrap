@@ -1,5 +1,5 @@
 vault:
-  server: "http://vault.vault.svc:8200"
+  server: "http://vault-active.vault.svc:8200"
   path: "central"
   tokenSecretName: "vault-init-secrets"
   tokenSecretNamespace: "vault"

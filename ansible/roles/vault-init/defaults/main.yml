@@ -1,5 +1,5 @@
 ---
-vault_addr: "http://vault.vault.svc:8200"
+vault_addr: "http://vault-active.vault.svc:8200"
 vault_namespace: "vault"
 vault_secret_name: "vault-init-secrets"
 vault_key_shares: 5

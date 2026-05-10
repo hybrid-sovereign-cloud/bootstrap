@@ -372,11 +372,11 @@ externalSecrets:
 # ─── Vault ClusterSecretStore ────────────────────────────────────────────
 vaultSecretStore:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   syncWave: "22"
   values:
     vault:
-      server: "http://vault.vault.svc:8200"
+      server: "http://vault-active.vault.svc:8200"
       path: "central"
       tokenSecretName: "vault-init-secrets"
       tokenSecretNamespace: "vault"
@@ -385,7 +385,7 @@ vaultSecretStore:
 # ─── Sovereign Jobs (all Ansible jobs in one chart) ─────────────────────
 sovereignJobs:
   enabled: true
-  chartVersion: "0.1.4"
+  chartVersion: "0.1.5"
   syncWave: "5"
   values:
     namespace: sovereign-jobs
