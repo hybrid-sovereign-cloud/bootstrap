@@ -49,6 +49,7 @@ include make/upload-vault-secret-store-chart.mk
 include make/upload-sovereign-jobs-chart.mk
 include make/ansible-runner.mk
 include make/init-central-argo.mk
+include make/init-services-pull-secrets.mk
 include make/help.mk
 
 ##@ Convenience

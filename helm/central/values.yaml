@@ -513,7 +513,7 @@ sovereignJobs:
           - name: OCP_SERVICES_SERVER
             value: "https://api.shcservices.lab.signal9.gg:6443"
 
-# ─── Entity Operator ────────────────────────────────────────────────────────
+# ─── Entity Operator (services cluster) ───────────────────────────────────────
 entityOperator:
   enabled: true
   chartVersion: "0.5.0"
@@ -526,7 +526,7 @@ entityOperator:
       tag: "0.0.3"
       pullPolicy: Always
     imagePullSecrets:
-      - name: entity-operator-pull-secret
+      - name: quay-pull-secret
 
 # ─── Sovereign Cloud Dashboard (services cluster) ─────────────────────────────
 sovereignDashboard:
@@ -542,7 +542,7 @@ sovereignDashboard:
       tag: "1.2.0"
       pullPolicy: Always
     imagePullSecrets:
-      - name: dashboard-pull-secret
+      - name: quay-pull-secret
     oauthProxy:
       image: registry.redhat.io/openshift4/ose-oauth-proxy:v4.14
       cookieSecret: "1RYh2dMWh0FoJZIfW8LqIWojyDPN6vPD"
