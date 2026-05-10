@@ -532,10 +532,10 @@ sovereignJobs:
         targetSecretName: rhbk-services-admin
         data:
           - secretKey: username
-            remoteKey: central/data/rhbk-services-admin
+            remoteKey: rhbk-services-admin
             property: username
           - secretKey: password
-            remoteKey: central/data/rhbk-services-admin
+            remoteKey: rhbk-services-admin
             property: password
 
 # ─── Entity Operator (services cluster) ───────────────────────────────────────
