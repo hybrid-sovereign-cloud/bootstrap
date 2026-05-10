@@ -245,7 +245,7 @@ odfServices:
     namespace: openshift-storage
     noobaa:
       enabled: true
-      name: svc-noobaa
+      name: noobaa
 
 # ─── Quay (central cluster) ──────────────────────────────────────────────
 quay:
