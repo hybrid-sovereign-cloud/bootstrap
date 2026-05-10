@@ -557,6 +557,8 @@ sovereignJobs:
           value: "rhbk"
         - name: KEYCLOAK_CLIENTS
           value: '[{"realm":"sovereign-central","client_id":"quay-central","name":"Quay Central","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"vault","name":"Vault","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"gitea","name":"Gitea","redirect_uris":["*"]},{"realm":"sovereign-central","client_id":"openshift-central","name":"OpenShift Central","redirect_uris":["*"]}]'
+        - name: SECRETS_NAMESPACE
+          value: "sovereign-cloud-jobs"
     keycloakRbac:
       enabled: false
       playbook: keycloak-rbac.yml
