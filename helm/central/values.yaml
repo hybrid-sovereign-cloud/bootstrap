@@ -14,26 +14,24 @@ oci:
   # Charts are stored at oci://<registry>/<repositoryBase>/<chartName>
   repositoryBase: "hybrid-sovereign"
 
-# ─── Sovereign Namespaces ────────────────────────────────────────────────────
+# ─── Sovereign Namespaces (central cluster) ──────────────────────────────────
+# Central cluster only has jobs and helpers namespaces.
 sovereignNamespaces:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   syncWave: "1"
   values:
     namespaces:
-      - name: sovereign-cloud
-        enabled: true
-      - name: sovereign-cloud-plugins
-        enabled: true
       - name: sovereign-cloud-jobs
+        enabled: true
+      - name: sovereign-cloud-helpers
         enabled: true
 
 # ─── Sovereign Namespaces (services cluster) ────────────────────────────────
-# Disabled: services namespaces are created by CreateNamespace=true in RHBK app.
-# ArgoCD has a known limitation with same-named cluster-scoped resources across clusters.
+# Services cluster has sovereign-cloud and sovereign-cloud-plugins namespaces.
 sovereignNamespacesServices:
-  enabled: false
-  chartVersion: "0.1.0"
+  enabled: true
+  chartVersion: "0.2.0"
   syncWave: "1"
   values:
     namespaces:
@@ -530,7 +528,7 @@ entityOperator:
     imagePullSecrets:
       - name: entity-operator-pull-secret
 
-# ─── Sovereign Cloud Dashboard ──────────────────────────────────────────────
+# ─── Sovereign Cloud Dashboard (services cluster) ─────────────────────────────
 sovereignDashboard:
   enabled: true
   chartVersion: "0.3.0"
@@ -538,7 +536,7 @@ sovereignDashboard:
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
-    clusterDomain: apps.shcstack-3.lab.signal9.gg
+    clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/sovereign-cloud-dashboard
       tag: "1.2.0"

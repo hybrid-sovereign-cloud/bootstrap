@@ -23,7 +23,7 @@ spec:
         {{- toYaml .Values.sovereignDashboard.values | nindent 8 }}
 
   destination:
-    server: https://kubernetes.default.svc
+    server: {{ .Values.servicesCluster.server | quote }}
     namespace: {{ .Values.sovereignDashboard.destinationNamespace }}
 
   ignoreDifferences:
