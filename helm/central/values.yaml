@@ -544,7 +544,7 @@ sovereignJobs:
         - name: KEYCLOAK_ADMIN_SECRET_NS
           value: "rhbk"
     keycloakClients:
-      enabled: false
+      enabled: true
       playbook: keycloak-clients.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
