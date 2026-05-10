@@ -1,3 +1,4 @@
+{{- if not .Values.skipNamespace }}
 ---
 apiVersion: v1
 kind: Namespace
@@ -7,6 +8,7 @@ metadata:
     argocd.argoproj.io/sync-wave: "1"
   labels:
     openshift.io/cluster-monitoring: "true"
+{{- end }}
 ---
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup

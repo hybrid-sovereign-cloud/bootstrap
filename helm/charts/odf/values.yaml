@@ -1,4 +1,5 @@
 namePrefix: ""
+skipNamespace: false
 
 operator:
   channel: stable-4.21

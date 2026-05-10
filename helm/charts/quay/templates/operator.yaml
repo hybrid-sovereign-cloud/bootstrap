@@ -1,3 +1,4 @@
+{{- if not .Values.skipNamespace }}
 ---
 apiVersion: v1
 kind: Namespace
@@ -5,6 +6,7 @@ metadata:
   name: {{ .Values.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "1"
+{{- end }}
 ---
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
