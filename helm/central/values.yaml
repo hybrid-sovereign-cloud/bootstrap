@@ -520,7 +520,7 @@ sovereignJobs:
         - name: TARGET_SECRET_NAME
           value: "vault-central-token"
     keycloakRealms:
-      enabled: false
+      enabled: true
       playbook: keycloak-realms.yml
       activeDeadlineSeconds: 600
       syncWave: "26"
