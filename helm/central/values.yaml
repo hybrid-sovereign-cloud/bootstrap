@@ -385,7 +385,7 @@ vaultSecretStore:
 # ─── Sovereign Jobs (all Ansible jobs in one chart) ─────────────────────
 sovereignJobs:
   enabled: true
-  chartVersion: "0.1.6"
+  chartVersion: "0.1.7"
   syncWave: "5"
   values:
     namespace: sovereign-jobs
