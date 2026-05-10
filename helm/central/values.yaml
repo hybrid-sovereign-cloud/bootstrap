@@ -508,7 +508,7 @@ sovereignJobs:
         enabled: true
         playbook: push-admin-secrets.yml
         activeDeadlineSeconds: 600
-        syncWave: "2"
+        syncWave: "1"
         env:
           - name: VAULT_ADDR
             value: "http://vault-active.vault.svc:8200"
