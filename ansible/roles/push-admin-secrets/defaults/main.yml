@@ -6,26 +6,26 @@ services_secrets:
   - namespace: aap
     secret_name: sovereign-aap-admin-password
     vault_key: aap-services-admin
-    keys:
+    secret_keys:
       - password
   - namespace: aap
     secret_name: sovereign-aap-controller-admin-password
     vault_key: aap-services-controller-admin
-    keys:
+    secret_keys:
       - password
   - namespace: aap
     secret_name: sovereign-aap-eda-admin-password
     vault_key: aap-services-eda-admin
-    keys:
+    secret_keys:
       - password
   - namespace: aap
     secret_name: sovereign-aap-hub-admin-password
     vault_key: aap-services-hub-admin
-    keys:
+    secret_keys:
       - password
   - namespace: rhbk
     secret_name: sovereign-keycloak-services-initial-admin
     vault_key: rhbk-services-admin
-    keys:
+    secret_keys:
       - username
       - password
