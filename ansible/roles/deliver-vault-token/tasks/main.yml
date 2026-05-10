@@ -1,0 +1,33 @@
+---
+- name: Read vault-init-secrets from central cluster
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ vault_secret_name }}"
+    namespace: "{{ vault_secret_namespace }}"
+  register: vault_secret
+
+- name: Fail if vault-init-secrets not found
+  ansible.builtin.fail:
+    msg: "Secret {{ vault_secret_name }} not found in namespace {{ vault_secret_namespace }}"
+  when: vault_secret.resources | length == 0
+
+- name: Extract root_token
+  ansible.builtin.set_fact:
+    root_token: "{{ vault_secret.resources[0].data.root_token | b64decode }}"
+
+- name: Create vault-central-token secret on services cluster
+  kubernetes.core.k8s:
+    host: "{{ services_server }}"
+    api_key: "{{ lookup('file', '/var/run/secrets/kubernetes.io/serviceaccount/token') }}"
+    validate_certs: false
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ lookup('env', 'TARGET_SECRET_NAME') | default(target_secret_name, true) }}"
+        namespace: "{{ lookup('env', 'TARGET_NAMESPACE') | default(target_namespace, true) }}"
+      type: Opaque
+      stringData:
+        root_token: "{{ root_token }}"

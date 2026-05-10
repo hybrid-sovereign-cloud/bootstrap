@@ -7,6 +7,13 @@ operator:
 
 namespace: aap
 
+postgres:
+  enabled: false
+  name: aap-pgcluster
+  instances: 1
+  storage: 10Gi
+  backupStorage: 10Gi
+
 instance:
   enabled: true
   name: sovereign-aap

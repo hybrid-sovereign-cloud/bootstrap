@@ -49,9 +49,15 @@ oci:
 # ─── Image pull secrets delivered to component namespaces ────────────────────
 # The init chart is the ONLY chart allowed to seed secrets from env vars.
 # All other secret delivery goes through Vault → ExternalSecret.
+pushSecrets:
+  enabled: false
+
 pullSecretNamespaces:
   - vault
   - gitea
   - rhbk
-  - sovereign-jobs
+  - sovereign-cloud
+  - sovereign-cloud-plugins
+  - sovereign-cloud-helpers
+  - sovereign-cloud-jobs
   - external-secrets

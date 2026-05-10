@@ -1,0 +1,138 @@
+---
+- name: Initialize and unseal vault-services via external route
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    vault_addr: "{{ lookup('env', 'VAULT_ADDR') | default('https://vault-services.apps.shcservices.lab.signal9.gg', true) }}"
+    vault_secret_name: "{{ lookup('env', 'VAULT_SECRET_NAME') | default('vault-services-init-secrets', true) }}"
+    vault_secret_namespace: "{{ lookup('env', 'VAULT_SECRET_NAMESPACE') | default('sovereign-cloud-jobs', true) }}"
+    vault_key_shares: 5
+    vault_key_threshold: 3
+    services_server: "{{ lookup('env', 'OCP_SERVICES_SERVER') }}"
+
+  pre_tasks:
+    - name: Wait for vault-services API to be reachable
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/sys/health"
+        method: GET
+        validate_certs: false
+        status_code: [200, 429, 472, 473, 501, 503]
+      register: vault_health
+      retries: 30
+      delay: 10
+      until: vault_health.status is defined
+
+  tasks:
+    - name: Check initialization status
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/sys/init"
+        method: GET
+        validate_certs: false
+        status_code: [200]
+      register: vault_init_status
+      retries: 10
+      delay: 10
+      until: vault_init_status.status == 200
+
+    - name: Initialize vault-services
+      when: not vault_init_status.json.initialized
+      block:
+        - name: Initialize Vault
+          ansible.builtin.uri:
+            url: "{{ vault_addr }}/v1/sys/init"
+            method: PUT
+            validate_certs: false
+            body_format: json
+            body:
+              secret_shares: "{{ vault_key_shares }}"
+              secret_threshold: "{{ vault_key_threshold }}"
+            status_code: [200]
+          register: vault_init_response
+          retries: 3
+          delay: 5
+          until: vault_init_response.status == 200
+
+        - name: Set init data
+          ansible.builtin.set_fact:
+            vault_root_token: "{{ vault_init_response.json.root_token }}"
+            vault_unseal_keys: "{{ vault_init_response.json['keys'] }}"
+            vault_unseal_keys_base64: "{{ vault_init_response.json['keys_base64'] }}"
+
+        - name: Store init secrets on central cluster
+          kubernetes.core.k8s:
+            state: present
+            definition:
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: "{{ vault_secret_name }}"
+                namespace: "{{ vault_secret_namespace }}"
+              type: Opaque
+              stringData:
+                root_token: "{{ vault_root_token }}"
+                unseal_keys: "{{ vault_unseal_keys | to_json }}"
+                unseal_keys_base64: "{{ vault_unseal_keys_base64 | to_json }}"
+          retries: 3
+          delay: 5
+
+    - name: Load existing credentials when already initialized
+      when: vault_init_status.json.initialized
+      block:
+        - name: Retrieve existing secrets from central
+          kubernetes.core.k8s_info:
+            kind: Secret
+            name: "{{ vault_secret_name }}"
+            namespace: "{{ vault_secret_namespace }}"
+          register: existing_secret
+          retries: 5
+          delay: 5
+          until: existing_secret.resources | length > 0
+
+        - name: Load credentials from secret
+          ansible.builtin.set_fact:
+            vault_root_token: "{{ (existing_secret.resources[0].data.root_token | b64decode) }}"
+            vault_unseal_keys: "{{ (existing_secret.resources[0].data.unseal_keys | b64decode) | from_json }}"
+
+    - name: Unseal vault-services via external route
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/sys/unseal"
+        method: PUT
+        validate_certs: false
+        body_format: json
+        body:
+          key: "{{ item }}"
+        status_code: [200]
+      loop: "{{ vault_unseal_keys[:vault_key_threshold | int] }}"
+      register: unseal_result
+      retries: 3
+      delay: 5
+
+    - name: Push vault-services init secrets to vault-central KV
+      when: vault_root_token is defined
+      block:
+        - name: Read vault-central root token
+          kubernetes.core.k8s_info:
+            kind: Secret
+            name: vault-init-secrets
+            namespace: vault
+          register: central_vault_secret
+
+        - name: Write vault-services secrets to vault-central KV
+          ansible.builtin.uri:
+            url: "http://vault-active.vault.svc:8200/v1/central/data/vault-services-init"
+            method: POST
+            validate_certs: false
+            headers:
+              X-Vault-Token: "{{ central_vault_secret.resources[0].data.root_token | b64decode }}"
+            body_format: json
+            body:
+              data:
+                root_token: "{{ vault_root_token }}"
+                unseal_keys: "{{ vault_unseal_keys | to_json }}"
+                unseal_keys_base64: "{{ vault_unseal_keys_base64 | to_json }}"
+            status_code: [200, 204]
+          retries: 3
+          delay: 5
+          when: central_vault_secret.resources | length > 0

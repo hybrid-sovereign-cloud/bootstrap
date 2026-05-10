@@ -1,0 +1,7 @@
+---
+- name: Deliver vault-central root token to services cluster
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - deliver-vault-token

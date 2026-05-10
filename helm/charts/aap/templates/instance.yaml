@@ -9,6 +9,19 @@ metadata:
     argocd.argoproj.io/sync-wave: "5"
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
+  {{- if .Values.postgres.enabled }}
+  postgres:
+    host: {{ .Values.postgres.name | default "aap-pgcluster" }}-primary.{{ .Values.namespace }}.svc
+    port: 5432
+    dbname: aap
+    sslmode: prefer
+    secret:
+      name: {{ .Values.postgres.name | default "aap-pgcluster" }}-pguser-aap
+      key: password
+    username_secret:
+      name: {{ .Values.postgres.name | default "aap-pgcluster" }}-pguser-aap
+      key: user
+  {{- end }}
   {{- if .Values.controller.enabled }}
   controller:
     replicas: 1

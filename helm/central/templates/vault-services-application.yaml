@@ -1,0 +1,55 @@
+{{- if .Values.vaultServices.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault-services
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: secrets
+    sovereign-cloud/target: services
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.vaultServices.syncWave | default "15" | quote }}
+spec:
+  project: services
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/vault" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: vault
+    targetRevision: {{ .Values.vaultServices.chartVersion | quote }}
+    helm:
+      releaseName: vault-services
+      valuesObject:
+        {{- toYaml .Values.vaultServices.values | nindent 10 }}
+
+  destination:
+    server: {{ .Values.servicesCluster.server | quote }}
+    namespace: vault
+
+  ignoreDifferences:
+    - group: route.openshift.io
+      kind: Route
+      jsonPointers:
+        - /spec/host
+    - group: external-secrets.io
+      kind: PushSecret
+      jsonPointers:
+        - /spec
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+{{- end }}

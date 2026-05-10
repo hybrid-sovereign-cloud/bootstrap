@@ -103,14 +103,16 @@ jobs:
 
   pushAdminSecrets:
     enabled: false
-    playbook: push-admin-secrets.yml
+    playbook: deliver-vault-token.yml
     activeDeadlineSeconds: 600
     syncWave: "2"
     env:
-      - name: VAULT_ADDR
-        value: "http://vault-active.vault.svc:8200"
       - name: OCP_SERVICES_SERVER
         value: "https://api.shcservices.lab.signal9.gg:6443"
+      - name: TARGET_NAMESPACE
+        value: "vault"
+      - name: TARGET_SECRET_NAME
+        value: "vault-central-token"
 
 externalSecrets: {}
 

@@ -6,8 +6,8 @@
 
   vars:
     vault_addr: "{{ lookup('env', 'VAULT_ADDR') | default('http://vault.vault.svc:8200', true) }}"
-    vault_namespace: "vault"
-    vault_secret_name: "vault-init-secrets"
+    vault_namespace: "{{ lookup('env', 'VAULT_SECRET_NAMESPACE') | default('vault', true) }}"
+    vault_secret_name: "{{ lookup('env', 'VAULT_SECRET_NAME') | default('vault-init-secrets', true) }}"
     vault_key_shares: 5
     vault_key_threshold: 3
 
