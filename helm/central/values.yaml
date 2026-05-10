@@ -587,6 +587,8 @@ sovereignJobs:
           value: "rhbk"
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
+        - name: SERVICES_REALM_NAME
+          value: "sovereign-tenants"
     giteaInit:
       enabled: false
       playbook: gitea-init.yml
