@@ -66,7 +66,7 @@ rhbk:
 # ─── RHBK (Keycloak) — services cluster ─────────────────────────────────────
 rhbkServices:
   enabled: true
-  chartVersion: "0.8.0"
+  chartVersion: "0.9.0"
   syncWave: "20"
   destinationNamespace: rhbk
   values:
@@ -76,7 +76,7 @@ rhbkServices:
       channel: stable-v26.4
     keycloak:
       enabled: true
-      instances: 2
+      instances: 1
       hostname: "keycloak-services.apps.shcservices.lab.signal9.gg"
       db:
         enabled: false

@@ -27,6 +27,13 @@ spec:
     server: {{ .Values.servicesCluster.server | quote }}
     namespace: {{ .Values.rhbkServices.destinationNamespace }}
 
+  ignoreDifferences:
+    - group: k8s.keycloak.org
+      kind: Keycloak
+      jsonPointers:
+        - /spec/additionalOptions
+        - /spec/hostname
+
   syncPolicy:
     automated:
       prune: true
@@ -35,6 +42,7 @@ spec:
       - CreateNamespace=true
       - ServerSideApply=true
       - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
     retry:
       limit: 5
       backoff:
