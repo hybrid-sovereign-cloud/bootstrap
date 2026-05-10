@@ -31,7 +31,7 @@ spec:
     - group: quay.redhat.com
       kind: QuayRegistry
       jsonPointers:
-        - /spec
+        - /spec/configBundleSecret
   syncPolicy:
     automated:
       prune: true
