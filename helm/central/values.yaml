@@ -445,7 +445,7 @@ externalSecretsServices:
 
 # ─── Vault ClusterSecretStore (central) ─────────────────────────────────────
 vaultSecretStore:
-  enabled: false
+  enabled: true
   chartVersion: "0.2.0"
   syncWave: "22"
   values:
@@ -499,7 +499,7 @@ sovereignJobs:
         - name: VAULT_ADDR
           value: "http://vault.vault.svc:8200"
     vaultKv:
-      enabled: false
+      enabled: true
       playbook: vault-kv.yml
       activeDeadlineSeconds: 600
       syncWave: "24"
