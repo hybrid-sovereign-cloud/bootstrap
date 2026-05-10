@@ -37,7 +37,7 @@ sovereignNamespacesServices:
 
 # ─── RHBK Central (Keycloak) ─────────────────────────────────────────────────
 rhbk:
-  enabled: false
+  enabled: true
   chartVersion: "0.10.0"
   syncWave: "20"
   destinationNamespace: rhbk
