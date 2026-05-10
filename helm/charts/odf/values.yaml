@@ -1,3 +1,5 @@
+namePrefix: ""
+
 operator:
   channel: stable-4.21
   installPlanApproval: Automatic

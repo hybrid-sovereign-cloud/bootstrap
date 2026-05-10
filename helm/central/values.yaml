@@ -224,7 +224,7 @@ aap:
 # ─── ODF / Noobaa (central cluster) ──────────────────────────────────────
 odf:
   enabled: true
-  chartVersion: "0.3.0"
+  chartVersion: "0.4.0"
   syncWave: "12"
   destinationNamespace: openshift-storage
   values:
@@ -236,10 +236,11 @@ odf:
 # ─── ODF / Noobaa (services cluster) ──────────────────────────────────────
 odfServices:
   enabled: true
-  chartVersion: "0.3.0"
+  chartVersion: "0.4.0"
   syncWave: "12"
   destinationNamespace: openshift-storage
   values:
+    namePrefix: "svc-"
     namespace: openshift-storage
     noobaa:
       enabled: true
@@ -248,7 +249,7 @@ odfServices:
 # ─── Quay (central cluster) ──────────────────────────────────────────────
 quay:
   enabled: true
-  chartVersion: "0.2.0"
+  chartVersion: "0.3.0"
   syncWave: "35"
   destinationNamespace: quay-enterprise
   values:
@@ -260,10 +261,11 @@ quay:
 # ─── Quay (services cluster) ──────────────────────────────────────────────
 quayServices:
   enabled: true
-  chartVersion: "0.2.0"
+  chartVersion: "0.3.0"
   syncWave: "35"
   destinationNamespace: quay-enterprise
   values:
+    namePrefix: "svc-"
     namespace: quay-enterprise
     registry:
       enabled: true
@@ -341,7 +343,7 @@ gitea:
 # ─── Crunchy Postgres for Kubernetes (central cluster) ────────────────────
 crunchyPostgres:
   enabled: true
-  chartVersion: "0.3.0"
+  chartVersion: "0.4.0"
   syncWave: "11"
   destinationNamespace: openshift-operators
   values:
@@ -350,10 +352,11 @@ crunchyPostgres:
 # ─── Crunchy Postgres for Kubernetes (services cluster) ───────────────────
 crunchyPostgresServices:
   enabled: true
-  chartVersion: "0.3.0"
+  chartVersion: "0.4.0"
   syncWave: "11"
   destinationNamespace: openshift-operators
   values:
+    namePrefix: "svc-"
     namespace: openshift-operators
 
 # ─── External Secrets Operator ───────────────────────────────────────────

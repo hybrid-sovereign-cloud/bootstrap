@@ -11,7 +11,7 @@ metadata:
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
-  name: odf-operator-group
+  name: {{ .Values.namePrefix | default "" }}odf-operator-group
   namespace: {{ .Values.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "2"
@@ -22,7 +22,7 @@ spec:
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
-  name: odf-operator
+  name: {{ .Values.namePrefix | default "" }}odf-operator
   namespace: {{ .Values.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "3"

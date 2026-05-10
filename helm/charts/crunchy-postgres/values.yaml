@@ -1,3 +1,5 @@
+namePrefix: ""
+
 operator:
   channel: v5
   installPlanApproval: Automatic
