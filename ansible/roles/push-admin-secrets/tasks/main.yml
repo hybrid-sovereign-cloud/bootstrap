@@ -1,0 +1,24 @@
+---
+- name: Read secret from services cluster
+  ansible.builtin.uri:
+    url: "{{ services_api_server }}/api/v1/namespaces/{{ item.namespace }}/secrets/{{ item.secret_name }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ services_bearer_token }}"
+    validate_certs: false
+    status_code: [200]
+  register: secret_result
+  loop: "{{ services_secrets }}"
+  loop_control:
+    label: "{{ item.namespace }}/{{ item.secret_name }}"
+  retries: 3
+  delay: 10
+  ignore_errors: true
+
+- name: Build and push decoded secrets to Vault
+  ansible.builtin.include_tasks: push-one-secret.yml
+  loop: "{{ secret_result.results }}"
+  loop_control:
+    loop_var: result
+    label: "{{ result.item.vault_key }}"
+  when: result.status | default(0) == 200

@@ -10,6 +10,7 @@ namespace: rhbk
 instanceName: sovereign-keycloak
 
 pushSecretToVault: false
+vaultSecretPath: "central/data/keycloak-admin"
 
 keycloak:
   enabled: true

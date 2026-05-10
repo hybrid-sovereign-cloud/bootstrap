@@ -45,13 +45,14 @@ sovereignNamespacesServices:
 # ─── RHBK (Keycloak) ─────────────────────────────────────────────────────────
 rhbk:
   enabled: true
-  chartVersion: "0.9.0"
+  chartVersion: "0.10.0"
   syncWave: "20"
   destinationNamespace: rhbk
   values:
     namespace: rhbk
     instanceName: sovereign-keycloak-central
     pushSecretToVault: true
+    vaultSecretPath: "central/data/rhbk-central-admin"
     operator:
       channel: stable-v26.4
     keycloak:
@@ -66,7 +67,7 @@ rhbk:
 # ─── RHBK (Keycloak) — services cluster ─────────────────────────────────────
 rhbkServices:
   enabled: true
-  chartVersion: "0.9.0"
+  chartVersion: "0.10.0"
   syncWave: "20"
   destinationNamespace: rhbk
   values:
@@ -403,7 +404,7 @@ vaultSecretStore:
 # ─── Sovereign Jobs (all Ansible jobs in one chart) ─────────────────────
 sovereignJobs:
   enabled: true
-  chartVersion: "0.1.7"
+  chartVersion: "0.1.8"
   syncWave: "5"
   values:
     namespace: sovereign-jobs
@@ -503,6 +504,16 @@ sovereignJobs:
         env:
           - name: GITEA_URL
             value: "http://gitea-http.gitea.svc:3000"
+      pushAdminSecrets:
+        enabled: true
+        playbook: push-admin-secrets.yml
+        activeDeadlineSeconds: 600
+        syncWave: "2"
+        env:
+          - name: VAULT_ADDR
+            value: "http://vault-active.vault.svc:8200"
+          - name: OCP_SERVICES_SERVER
+            value: "https://api.shcservices.lab.signal9.gg:6443"
 
 # ─── Entity Operator ────────────────────────────────────────────────────────
 entityOperator:

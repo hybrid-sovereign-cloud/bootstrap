@@ -101,6 +101,17 @@ jobs:
       - name: GITEA_URL
         value: "http://gitea-http.gitea.svc:3000"
 
+  pushAdminSecrets:
+    enabled: false
+    playbook: push-admin-secrets.yml
+    activeDeadlineSeconds: 600
+    syncWave: "2"
+    env:
+      - name: VAULT_ADDR
+        value: "http://vault-active.vault.svc:8200"
+      - name: OCP_SERVICES_SERVER
+        value: "https://api.shcservices.lab.signal9.gg:6443"
+
 pushSecrets:
   pushGiteaAdmin:
     enabled: true
