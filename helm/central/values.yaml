@@ -400,7 +400,7 @@ gitea:
 
 # ─── Crunchy Postgres (central) ─────────────────────────────────────────────
 crunchyPostgres:
-  enabled: false
+  enabled: true
   chartVersion: "0.4.0"
   syncWave: "11"
   destinationNamespace: openshift-operators
@@ -409,7 +409,7 @@ crunchyPostgres:
 
 # ─── Crunchy Postgres (services) ────────────────────────────────────────────
 crunchyPostgresServices:
-  enabled: false
+  enabled: true
   chartVersion: "0.4.0"
   syncWave: "11"
   destinationNamespace: openshift-operators
