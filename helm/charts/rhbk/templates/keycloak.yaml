@@ -42,6 +42,13 @@ spec:
   proxy:
     headers: xforwarded
   {{- end }}
+  resources:
+    requests:
+      cpu: 500m
+      memory: 768Mi
+    limits:
+      cpu: "2"
+      memory: 1Gi
   features:
     enabled:
       - token-exchange

@@ -1,0 +1,49 @@
+{{- if .Values.sovereignDashboard.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sovereign-cloud-dashboard
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: dashboard
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.sovereignDashboard.syncWave | quote }}
+spec:
+  project: default
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/sovereign-cloud-dashboard" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: sovereign-cloud-dashboard
+    targetRevision: {{ .Values.sovereignDashboard.chartVersion | quote }}
+    helm:
+      releaseName: sovereign-cloud-dashboard
+      values: |
+        {{- toYaml .Values.sovereignDashboard.values | nindent 8 }}
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.sovereignDashboard.destinationNamespace }}
+
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      jsonPointers:
+        - /data
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+{{- end }}

@@ -31,6 +31,11 @@ spec:
       kind: PushSecret
       jsonPointers:
         - /spec
+    - group: k8s.keycloak.org
+      kind: Keycloak
+      jsonPointers:
+        - /spec/additionalOptions
+        - /spec/hostname
 
   syncPolicy:
     automated:

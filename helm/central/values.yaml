@@ -45,7 +45,7 @@ sovereignNamespacesServices:
 # ─── RHBK (Keycloak) ─────────────────────────────────────────────────────────
 rhbk:
   enabled: true
-  chartVersion: "0.8.0"
+  chartVersion: "0.9.0"
   syncWave: "20"
   destinationNamespace: rhbk
   values:
@@ -56,8 +56,8 @@ rhbk:
       channel: stable-v26.4
     keycloak:
       enabled: true
-      instances: 2
-      hostname: ""
+      instances: 1
+      hostname: "keycloak-central.apps.shcstack-3.lab.signal9.gg"
       db:
         enabled: false
       tls:
@@ -96,7 +96,7 @@ rhbkConfig:
 
 # ─── ACS (Advanced Cluster Security) ────────────────────────────────────────
 acs:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.0"
   syncWave: "25"
   destinationNamespace: rhacs-operator
@@ -111,7 +111,7 @@ acs:
 
 # ─── ACS — services cluster ────────────────────────────────────────────────
 acsServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.0"
   syncWave: "25"
   destinationNamespace: rhacs-operator
@@ -463,3 +463,42 @@ sovereignJobs:
         env:
           - name: GITEA_URL
             value: "http://gitea-http.gitea.svc:3000"
+
+# ─── Entity Operator ────────────────────────────────────────────────────────
+entityOperator:
+  enabled: true
+  chartVersion: "0.5.0"
+  syncWave: "38"
+  destinationNamespace: sovereign-cloud
+  values:
+    namespace: sovereign-cloud
+    image:
+      repository: quay.signal9.gg/hybrid-sovereign/entity-operator
+      tag: "0.0.3"
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: entity-operator-pull-secret
+
+# ─── Sovereign Cloud Dashboard ──────────────────────────────────────────────
+sovereignDashboard:
+  enabled: true
+  chartVersion: "0.3.0"
+  syncWave: "40"
+  destinationNamespace: sovereign-cloud
+  values:
+    namespace: sovereign-cloud
+    clusterDomain: apps.shcstack-3.lab.signal9.gg
+    image:
+      repository: quay.signal9.gg/hybrid-sovereign/sovereign-cloud-dashboard
+      tag: "1.2.0"
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: dashboard-pull-secret
+    oauthProxy:
+      image: registry.redhat.io/openshift4/ose-oauth-proxy:v4.14
+      cookieSecret: "1RYh2dMWh0FoJZIfW8LqIWojyDPN6vPD"
+    route:
+      enabled: true
+    env:
+      ENTITY_NAMESPACE: sovereign-cloud
+      NODE_ENV: production
