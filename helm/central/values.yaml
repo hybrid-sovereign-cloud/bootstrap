@@ -223,7 +223,7 @@ vaultServices:
 rhacm:
   enabled: true
   chartVersion: "0.5.0"
-  enableMultiClusterHub: false
+  enableMultiClusterHub: true
   destinationNamespace: open-cluster-management
   syncWave: "10"
   values:
@@ -231,7 +231,7 @@ rhacm:
       channel: release-2.16
       installPlanApproval: Automatic
     multiClusterHub:
-      enabled: false
+      enabled: true
       availabilityConfig: High
       disableHubSelfManagement: false
       components:
