@@ -331,7 +331,7 @@ quayServices:
 
 # ─── Gitea (central only) ───────────────────────────────────────────────────
 gitea:
-  enabled: false
+  enabled: true
   chartVersion: "0.3.0"
   syncWave: "18"
   values:
