@@ -639,7 +639,7 @@ sovereignJobs:
         - name: REALM_NAME
           value: "sovereign-tenants"
     vaultServicesInit:
-      enabled: false
+      enabled: true
       playbook: vault-services-init.yml
       activeDeadlineSeconds: 600
       syncWave: "29"
