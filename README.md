@@ -175,6 +175,12 @@ See [`architecture/docs/architecture.md`](../architecture/docs/architecture.md) 
 - Component responsibilities
 - Secrets strategy
 
+Bootstrap-aligned technical supplements (waves, tenancy stack):
+
+- [`architecture/docs/technical/18-secrets-flow.md`](architecture/docs/technical/18-secrets-flow.md) — vault / ESO choreography (includes **helm/central** sync waves)
+- [`architecture/docs/technical/20-tenancy-operators.md`](architecture/docs/technical/20-tenancy-operators.md) — tenancy **Ansible** operators (`Team`, `Assignment`, `Project`, `PlatformOpenshift`, `CloudOSO`)
+- [`architecture/docs/technical/21-prometheus-metrics.md`](architecture/docs/technical/21-prometheus-metrics.md) — `8443` metrics, `ServiceMonitor`, `PrometheusRule` alerts
+
 ## Security Assessment
 
 See [`architecture/hardeningcheck/security-assessment.md`](../architecture/hardeningcheck/security-assessment.md) for:
@@ -182,3 +188,5 @@ See [`architecture/hardeningcheck/security-assessment.md`](../architecture/harde
 - Hardening checks (pass/fail/todo)
 - CIS benchmark gaps
 - Remediation priority list
+
+Tenancy operator hardening addendum: [`architecture/hardeningcheck/tenancy-operators.md`](architecture/hardeningcheck/tenancy-operators.md)
