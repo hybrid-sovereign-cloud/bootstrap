@@ -969,7 +969,7 @@ cloudOSOOperator:
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
   enabled: true
-  chartVersion: "0.4.0"
+  chartVersion: "0.5.0"
   syncWave: "40"
   destinationNamespace: sovereign-cloud
   values:
@@ -984,6 +984,7 @@ sovereignDashboard:
     oauthProxy:
       image: registry.redhat.io/openshift4/ose-oauth-proxy:v4.14
       cookieSecret: "1RYh2dMWh0FoJZIfW8LqIWojyDPN6vPD"
+      clientSecret: "je33LwhD66xymdCzeH1qJrxXVxHTwb-3KZCTsFZVy8c"
     route:
       enabled: true
     env:
@@ -993,7 +994,7 @@ sovereignDashboard:
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
   enabled: true
-  chartVersion: "0.5.4"
+  chartVersion: "0.6.0"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
   values:
@@ -1008,6 +1009,7 @@ tenancyDashboard:
     oauthProxy:
       image: registry.redhat.io/openshift4/ose-oauth-proxy:v4.14
       cookieSecret: "xK7mP2qR4sT8vW1yZ3bN5dF7hJ9kL0n"
+      clientSecret: "N8vFqcbzwUav5pe1QsTheUxGbU7zTIHhYWUGiRgY1uw"
     route:
       enabled: true
     env:
