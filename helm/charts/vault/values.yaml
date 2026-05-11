@@ -1,5 +1,29 @@
 pushSecretToVault: false
 
+# ─── OCI pull secret via ExternalSecret (for services cluster vault namespace) ─
+ociCredentials:
+  enabled: false
+  vaultPath: "central/data/oci-credentials"
+  secretStoreName: "vault-backend"
+  secretStoreKind: "ClusterSecretStore"
+
+# ─── In-cluster vault init Job ────────────────────────────────────────────────
+vaultInit:
+  enabled: false
+  image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
+  imagePullSecretName: "quay-pull-secret"
+  serviceAccount: "vault-init-runner"
+  namespace: "vault"
+  secretName: "vault-services-init-secrets"
+  vaultAddr: "http://vault-services.vault.svc:8200"
+  vaultNamespace: "vault"
+  activeDeadlineSeconds: 600
+  backoffLimit: 5
+  syncWave: "18"
+  pushSecretToVaultCentral: false
+  pushSecretStoreName: "vault-backend"
+  vaultCentralPath: "central/data/vault-services-init"
+
 vault:
   global:
     openshift: true

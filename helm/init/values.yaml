@@ -50,7 +50,7 @@ oci:
 # The init chart is the ONLY chart allowed to seed secrets from env vars.
 # All other secret delivery goes through Vault → ExternalSecret.
 pushSecrets:
-  enabled: false
+  enabled: true
 
 pullSecretNamespaces:
   - vault

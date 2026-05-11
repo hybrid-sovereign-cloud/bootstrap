@@ -171,10 +171,30 @@ vault:
 # ─── Vault Services ─────────────────────────────────────────────────────────
 vaultServices:
   enabled: true
-  chartVersion: "0.5.0"
+  chartVersion: "0.6.0"
   syncWave: "15"
   values:
     pushSecretToVault: false
+    ociCredentials:
+      enabled: true
+      vaultPath: "central/data/oci-credentials"
+      secretStoreName: "vault-backend"
+      secretStoreKind: "ClusterSecretStore"
+    vaultInit:
+      enabled: true
+      image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
+      imagePullSecretName: "quay-pull-secret"
+      serviceAccount: "vault-init-runner"
+      namespace: "vault"
+      secretName: "vault-services-init-secrets"
+      vaultAddr: "http://vault-services.vault.svc:8200"
+      vaultNamespace: "vault"
+      activeDeadlineSeconds: 600
+      backoffLimit: 5
+      syncWave: "18"
+      pushSecretToVaultCentral: true
+      pushSecretStoreName: "vault-backend"
+      vaultCentralPath: "central/data/vault-services-init"
     vault:
       global:
         openshift: true
@@ -243,7 +263,7 @@ rhacm:
 
 # ─── AAP (services cluster) ─────────────────────────────────────────────────
 aap:
-  enabled: false
+  enabled: true
   chartVersion: "0.4.0"
   syncWave: "30"
   destinationNamespace: aap
@@ -292,7 +312,7 @@ odfServices:
 
 # ─── Quay (central) ─────────────────────────────────────────────────────────
 quay:
-  enabled: false
+  enabled: true
   chartVersion: "0.5.1"
   syncWave: "35"
   destinationNamespace: quay-enterprise
@@ -301,10 +321,27 @@ quay:
     registry:
       enabled: true
       name: sovereign-registry
+      components:
+        objectstorage:
+          managed: true
+        postgres:
+          managed: true
+        clair:
+          managed: true
+        redis:
+          managed: true
+        mirror:
+          managed: true
+        route:
+          managed: true
+        tls:
+          managed: true
+        monitoring:
+          managed: false
 
 # ─── Quay (services) ────────────────────────────────────────────────────────
 quayServices:
-  enabled: false
+  enabled: true
   chartVersion: "0.5.1"
   syncWave: "35"
   destinationNamespace: quay-enterprise
@@ -548,6 +585,23 @@ sovereignJobs:
       playbook: keycloak-clients.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
+      pushSecrets:
+        pushKeycloakClientSecrets:
+          enabled: true
+          secretName: keycloak-client-secrets
+          data:
+            - secretKey: quay-central
+              remoteKey: central/data/keycloak-clients
+              property: quay-central
+            - secretKey: vault
+              remoteKey: central/data/keycloak-clients
+              property: vault
+            - secretKey: gitea
+              remoteKey: central/data/keycloak-clients
+              property: gitea
+            - secretKey: openshift-central
+              remoteKey: central/data/keycloak-clients
+              property: openshift-central
       env:
         - name: KEYCLOAK_URL
           value: "http://rhbk-central-service.rhbk.svc:8080"
@@ -639,7 +693,7 @@ sovereignJobs:
         - name: REALM_NAME
           value: "sovereign-tenants"
     vaultServicesInit:
-      enabled: true
+      enabled: false
       playbook: vault-services-init.yml
       activeDeadlineSeconds: 600
       syncWave: "29"
@@ -655,7 +709,7 @@ sovereignJobs:
 
 # ─── Plugin RBAC Operator (services cluster) ────────────────────────────────
 pluginRbac:
-  enabled: false
+  enabled: true
   chartVersion: "0.1.0"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -667,10 +721,14 @@ pluginRbac:
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
+    oidc:
+      issuerUrl: "https://rhbk-services.apps.shcservices.lab.signal9.gg/realms/sovereign-tenants"
+      realm: "sovereign-tenants"
+      keycloakUrl: "https://rhbk-services.apps.shcservices.lab.signal9.gg"
 
 # ─── Entity Operator (services cluster) ─────────────────────────────────────
 entityOperator:
-  enabled: false
+  enabled: true
   chartVersion: "0.6.0"
   syncWave: "38"
   destinationNamespace: sovereign-cloud

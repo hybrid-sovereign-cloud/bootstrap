@@ -1,0 +1,31 @@
+---
+- name: Initialize and unseal vault-services from within the services cluster
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    vault_addr: "{{ lookup('env', 'VAULT_ADDR') | default('http://vault-services.vault.svc:8200', true) }}"
+    vault_namespace: "{{ lookup('env', 'VAULT_NAMESPACE') | default('vault', true) }}"
+    vault_secret_name: "{{ lookup('env', 'VAULT_SECRET_NAME') | default('vault-services-init-secrets', true) }}"
+    vault_key_shares: 5
+    vault_key_threshold: 3
+    vault_internal_svc_name: "vault-services-internal"
+    vault_pod_label_selectors:
+      - "app.kubernetes.io/instance=vault-services"
+      - "component=server"
+
+  pre_tasks:
+    - name: Wait for vault-services API to be reachable
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/sys/health"
+        method: GET
+        validate_certs: false
+        status_code: [200, 429, 472, 473, 501, 503]
+      register: vault_health
+      retries: 30
+      delay: 10
+      until: vault_health.status is defined
+
+  roles:
+    - vault-init

@@ -50,6 +50,18 @@ spec:
     server: https://kubernetes.default.svc
     namespace: {{ $.Values.sovereignJobs.namespace }}
 
+  ignoreDifferences:
+    - group: external-secrets.io
+      kind: ExternalSecret
+      jsonPointers:
+        - /spec/dataFrom
+        - /metadata/annotations
+    - group: external-secrets.io
+      kind: PushSecret
+      jsonPointers:
+        - /metadata/annotations
+        - /spec/selector
+
   syncPolicy:
     automated:
       prune: true
@@ -58,6 +70,7 @@ spec:
       - CreateNamespace=false
       - ServerSideApply=true
       - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
     retry:
       limit: 5
       backoff:

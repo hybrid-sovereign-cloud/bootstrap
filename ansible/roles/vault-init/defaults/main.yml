@@ -4,3 +4,7 @@ vault_namespace: "vault"
 vault_secret_name: "vault-init-secrets"
 vault_key_shares: 5
 vault_key_threshold: 3
+vault_internal_svc_name: "vault-internal"
+vault_pod_label_selectors:
+  - "app.kubernetes.io/name=vault"
+  - "component=server"

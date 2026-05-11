@@ -73,9 +73,7 @@
   kubernetes.core.k8s_info:
     kind: Pod
     namespace: "{{ vault_namespace }}"
-    label_selectors:
-      - "app.kubernetes.io/name=vault"
-      - "component=server"
+    label_selectors: "{{ vault_pod_label_selectors }}"
   register: vault_pods
   retries: 5
   delay: 5
@@ -83,7 +81,7 @@
 
 - name: Build list of Vault pod addresses
   ansible.builtin.set_fact:
-    vault_pod_addrs: "{{ vault_pods.resources | map(attribute='metadata') | map(attribute='name') | map('regex_replace', '^(.*)$', 'http://\\1.vault-internal.' + vault_namespace + '.svc:8200') | list }}"
+    vault_pod_addrs: "{{ vault_pods.resources | map(attribute='metadata') | map(attribute='name') | map('regex_replace', '^(.*)$', 'http://\\1.' + vault_internal_svc_name + '.' + vault_namespace + '.svc:8200') | list }}"
 
 - name: Unseal each Vault pod directly
   ansible.builtin.include_tasks: unseal-pod.yml
