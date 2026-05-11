@@ -773,6 +773,72 @@ pluginVault:
       vaultPath: rhbk-services-admin
       refreshInterval: "1h"
 
+# ─── Plugin AAP Operator (services cluster) ───────────────────────────────
+pluginAap:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "39"
+  destinationNamespace: sovereign-cloud-plugins
+  values:
+    namespace: sovereign-cloud-plugins
+    image:
+      repository: quay.signal9.gg/hybrid-sovereign/plugin-aap
+      tag: "0.0.1"
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: quay-pull-secret
+    aap:
+      controllerUrl: "https://sovereign-aap-controller-aap.apps.shcservices.lab.signal9.gg"
+      controllerInternalUrl: "http://sovereign-aap-controller-service.aap.svc:80"
+    keycloak:
+      internalUrl: "http://rhbk-services-service.rhbk.svc:8080"
+      realm: sovereign-tenants
+    externalSecret:
+      enabled: true
+      targetSecretName: aap-admin-credentials
+      secretStoreName: vault-backend
+      secretStoreKind: ClusterSecretStore
+      vaultPath: aap-admin
+      refreshInterval: "1h"
+    defaultAAPConfig:
+      enabled: true
+      name: aap-sovereign-services
+      secret: aap-admin-credentials
+      rbacConfig: keycloak-sovereign-tenants-services
+
+# ─── Plugin Quay Operator (services cluster) ──────────────────────────────
+pluginQuay:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "39"
+  destinationNamespace: sovereign-cloud-plugins
+  values:
+    namespace: sovereign-cloud-plugins
+    image:
+      repository: quay.signal9.gg/hybrid-sovereign/plugin-quay
+      tag: "0.0.1"
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: quay-pull-secret
+    quay:
+      url: "https://svc-sovereign-registry-quay-quay-enterprise.apps.shcservices.lab.signal9.gg"
+      internalUrl: "http://svc-sovereign-registry-quay-app.quay-enterprise.svc:443"
+    keycloak:
+      internalUrl: "http://rhbk-services-service.rhbk.svc:8080"
+      realm: sovereign-tenants
+    externalSecret:
+      enabled: true
+      targetSecretName: quay-admin-credentials
+      secretStoreName: vault-backend
+      secretStoreKind: ClusterSecretStore
+      vaultPath: quay-admin
+      refreshInterval: "1h"
+    defaultQuayConfig:
+      enabled: true
+      name: quay-sovereign-services
+      secret: quay-admin-credentials
+      rbacConfig: keycloak-sovereign-tenants-services
+
 # ─── Entity Operator (services cluster) ─────────────────────────────────────
 entityOperator:
   enabled: true

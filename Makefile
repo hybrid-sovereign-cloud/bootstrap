@@ -52,6 +52,8 @@ include make/upload-vault-services-init-chart.mk
 include make/upload-entity-operator-chart.mk
 include make/upload-plugin-rbac-chart.mk
 include make/upload-plugin-vault-chart.mk
+include make/upload-plugin-aap-chart.mk
+include make/upload-plugin-quay-chart.mk
 include make/upload-dashboard-chart.mk
 include make/upload-tenancy-dashboard-chart.mk
 include make/ansible-runner.mk
@@ -82,6 +84,8 @@ UPLOAD_TARGETS := \
   upload-entity-operator-chart \
   upload-plugin-rbac-chart \
   upload-plugin-vault-chart \
+  upload-plugin-aap-chart \
+  upload-plugin-quay-chart \
   upload-dashboard-chart \
   upload-tenancy-dashboard-chart
 
