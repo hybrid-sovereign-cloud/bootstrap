@@ -1,8 +1,22 @@
+##@ Build Artifacts
+
 .PHONY: upload-ansible-job-chart
-upload-ansible-job-chart: ## Package and push Ansible Job chart to OCI registry
-	@echo "── Packaging Ansible Job chart ──"
-	helm package helm/charts/ansible-job -d /tmp/charts/
-	@echo "── Logging into OCI registry (admin) ──"
-	helm registry login $(OCI_REGISTRY) -u '$$oauthtoken' -p $(OCI_REGISTRY_TOKEN)
-	@echo "── Pushing Ansible Job chart ──"
-	helm push /tmp/charts/ansible-job-$$(grep '^version:' helm/charts/ansible-job/Chart.yaml | awk '{print $$2}').tgz oci://$(OCI_REGISTRY)/hybrid-sovereign
+upload-ansible-job-chart: check-env ## Package and push Ansible Job chart to OCI registry
+	@echo "$(BOLD)Ensuring Quay repository for ansible-job chart...$(RESET)"
+	@curl -sf -X POST \
+	  -H "Authorization: Bearer $(OCI_REGISTRY_TOKEN)" \
+	  -H "Content-Type: application/json" \
+	  -d '{"repository":"ansible-job","visibility":"private","description":"Generic Ansible Job chart","namespace":"$(OCI_NAMESPACE)"}' \
+	  "https://$(OCI_HOST)/api/v1/repository" > /dev/null 2>&1 \
+	  && printf "  $(GREEN)✓$(RESET)  Repository created (or exists)\n" \
+	  || printf "  $(GREEN)✓$(RESET)  Repository already exists\n"
+	@echo "$(BOLD)Logging in to OCI registry...$(RESET)"
+	@echo "$(OCI_REGISTRY_TOKEN)" | helm registry login "$(OCI_HOST)" \
+	  --username='$$oauthtoken' --password-stdin > /dev/null 2>&1
+	$(call ok,Logged in to $(OCI_HOST))
+	@echo "$(BOLD)Packaging and pushing ansible-job chart...$(RESET)"
+	@mkdir -p /tmp/helm-pkg
+	@helm package helm/charts/ansible-job -d /tmp/helm-pkg > /dev/null
+	@CHART_VER=$$(grep '^version:' helm/charts/ansible-job/Chart.yaml | awk '{print $$2}'); \
+	 helm push /tmp/helm-pkg/ansible-job-$${CHART_VER}.tgz oci://$(OCI_HOST)/$(OCI_NAMESPACE)
+	$(call ok,ansible-job chart pushed to oci://$(OCI_HOST)/$(OCI_NAMESPACE)/ansible-job)

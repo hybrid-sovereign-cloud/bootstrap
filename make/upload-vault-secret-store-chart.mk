@@ -1,8 +1,22 @@
+##@ Build Artifacts
+
 .PHONY: upload-vault-secret-store-chart
-upload-vault-secret-store-chart: ## Package and push Vault SecretStore chart to OCI registry
-	@echo "── Packaging Vault SecretStore chart ──"
-	helm package helm/charts/vault-secret-store -d /tmp/charts/
-	@echo "── Logging into OCI registry (admin) ──"
-	helm registry login $(OCI_REGISTRY) -u '$$oauthtoken' -p $(OCI_REGISTRY_TOKEN)
-	@echo "── Pushing Vault SecretStore chart ──"
-	helm push /tmp/charts/vault-secret-store-$$(grep '^version:' helm/charts/vault-secret-store/Chart.yaml | awk '{print $$2}').tgz oci://$(OCI_HOST)/$(OCI_NAMESPACE)
+upload-vault-secret-store-chart: check-env ## Package and push Vault SecretStore chart to OCI registry
+	@echo "$(BOLD)Ensuring Quay repository for vault-secret-store chart...$(RESET)"
+	@curl -sf -X POST \
+	  -H "Authorization: Bearer $(OCI_REGISTRY_TOKEN)" \
+	  -H "Content-Type: application/json" \
+	  -d '{"repository":"vault-secret-store","visibility":"private","description":"Vault ClusterSecretStore chart","namespace":"$(OCI_NAMESPACE)"}' \
+	  "https://$(OCI_HOST)/api/v1/repository" > /dev/null 2>&1 \
+	  && printf "  $(GREEN)✓$(RESET)  Repository created (or exists)\n" \
+	  || printf "  $(GREEN)✓$(RESET)  Repository already exists\n"
+	@echo "$(BOLD)Logging in to OCI registry...$(RESET)"
+	@echo "$(OCI_REGISTRY_TOKEN)" | helm registry login "$(OCI_HOST)" \
+	  --username='$$oauthtoken' --password-stdin > /dev/null 2>&1
+	$(call ok,Logged in to $(OCI_HOST))
+	@echo "$(BOLD)Packaging and pushing vault-secret-store chart...$(RESET)"
+	@mkdir -p /tmp/helm-pkg
+	@helm package helm/charts/vault-secret-store -d /tmp/helm-pkg > /dev/null
+	@CHART_VER=$$(grep '^version:' helm/charts/vault-secret-store/Chart.yaml | awk '{print $$2}'); \
+	 helm push /tmp/helm-pkg/vault-secret-store-$${CHART_VER}.tgz oci://$(OCI_HOST)/$(OCI_NAMESPACE)
+	$(call ok,vault-secret-store chart pushed to oci://$(OCI_HOST)/$(OCI_NAMESPACE)/vault-secret-store)

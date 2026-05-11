@@ -39,6 +39,7 @@ spec:
         - /spec/template/spec/containers/1/resources
         - /spec/template/spec/securityContext
         - /spec/template/metadata/annotations
+        - /spec/volumeClaimTemplates
 
   syncPolicy:
     automated:
