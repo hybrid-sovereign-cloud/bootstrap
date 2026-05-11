@@ -720,7 +720,7 @@ sovereignJobs:
 # ─── Plugin RBAC Operator (services cluster) ────────────────────────────────
 pluginRbac:
   enabled: true
-  chartVersion: "0.3.0"
+  chartVersion: "0.4.0"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -747,7 +747,7 @@ pluginRbac:
 # ─── Plugin Vault Operator (services cluster) ──────────────────────────────
 pluginVault:
   enabled: true
-  chartVersion: "0.1.3"
+  chartVersion: "0.2.0"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -776,7 +776,7 @@ pluginVault:
 # ─── Plugin AAP Operator (services cluster) ───────────────────────────────
 pluginAap:
   enabled: true
-  chartVersion: "0.1.6"
+  chartVersion: "0.2.0"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -811,7 +811,7 @@ pluginAap:
 # ─── Plugin Quay Operator (services cluster) ──────────────────────────────
 pluginQuay:
   enabled: true
-  chartVersion: "0.1.2"
+  chartVersion: "0.2.0"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
