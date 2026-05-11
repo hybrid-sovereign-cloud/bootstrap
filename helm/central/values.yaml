@@ -611,6 +611,8 @@ sovereignJobs:
       env:
         - name: GITEA_URL
           value: "http://gitea-http.gitea.svc:3000"
+        - name: SECRETS_NAMESPACE
+          value: "sovereign-cloud-jobs"
     keycloakServicesRealms:
       enabled: true
       playbook: keycloak-realms.yml
