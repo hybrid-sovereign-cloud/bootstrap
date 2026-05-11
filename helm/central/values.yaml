@@ -171,7 +171,7 @@ vault:
 # ─── Vault Services ─────────────────────────────────────────────────────────
 vaultServices:
   enabled: true
-  chartVersion: "0.6.0"
+  chartVersion: "0.6.1"
   syncWave: "15"
   values:
     pushSecretToVault: false
