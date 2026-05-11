@@ -747,14 +747,14 @@ pluginRbac:
 # ─── Plugin Vault Operator (services cluster) ──────────────────────────────
 pluginVault:
   enabled: true
-  chartVersion: "0.2.0"
+  chartVersion: "0.2.1"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
     namespace: sovereign-cloud-plugins
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-vault
-      tag: "0.0.4"
+      tag: "0.0.5"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
