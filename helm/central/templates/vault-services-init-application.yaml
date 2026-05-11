@@ -31,7 +31,7 @@ spec:
     - group: external-secrets.io
       kind: PushSecret
       jsonPointers:
-        - /spec
+        - /status
 
   syncPolicy:
     automated:
@@ -41,7 +41,6 @@ spec:
       - CreateNamespace=false
       - ServerSideApply=true
       - SkipDryRunOnMissingResource=true
-      - RespectIgnoreDifferences=true
     retry:
       limit: 10
       backoff:
