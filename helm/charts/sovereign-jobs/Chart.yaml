@@ -1,6 +1,0 @@
-apiVersion: v2
-name: sovereign-jobs
-description: All sovereign Ansible jobs in one chart with proper sync-wave ordering
-type: application
-version: 0.1.11
-appVersion: "1.0"
