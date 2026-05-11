@@ -1,0 +1,55 @@
+{{- if .Values.platformOpenshiftOperator.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platformopenshift-operator
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: operator
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.platformOpenshiftOperator.syncWave | quote }}
+spec:
+  project: services
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/platformopenshift-operator" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: platformopenshift-operator
+    targetRevision: {{ .Values.platformOpenshiftOperator.chartVersion | quote }}
+    helm:
+      releaseName: platformopenshift-operator
+      values: |
+        {{- toYaml .Values.platformOpenshiftOperator.values | nindent 8 }}
+
+  destination:
+    server: {{ .Values.servicesCluster.server | quote }}
+    namespace: {{ .Values.platformOpenshiftOperator.destinationNamespace }}
+
+  ignoreDifferences:
+    - group: ""
+      kind: ServiceAccount
+      jsonPointers:
+        - /imagePullSecrets
+        - /secrets
+    - group: ""
+      kind: Namespace
+      jsonPointers:
+        - /metadata/labels
+        - /metadata/annotations
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+{{- end }}

@@ -56,6 +56,11 @@ include make/upload-plugin-aap-chart.mk
 include make/upload-plugin-quay-chart.mk
 include make/upload-dashboard-chart.mk
 include make/upload-tenancy-dashboard-chart.mk
+include make/upload-team-operator-chart.mk
+include make/upload-assignment-operator-chart.mk
+include make/upload-project-operator-chart.mk
+include make/upload-platformopenshift-operator-chart.mk
+include make/upload-cloudoso-operator-chart.mk
 include make/ansible-runner.mk
 include make/init-central-argo.mk
 include make/init-services-pull-secrets.mk
@@ -87,7 +92,12 @@ UPLOAD_TARGETS := \
   upload-plugin-aap-chart \
   upload-plugin-quay-chart \
   upload-dashboard-chart \
-  upload-tenancy-dashboard-chart
+  upload-tenancy-dashboard-chart \
+  upload-team-operator-chart \
+  upload-assignment-operator-chart \
+  upload-project-operator-chart \
+  upload-platformopenshift-operator-chart \
+  upload-cloudoso-operator-chart
 
 .PHONY: upload-all-charts
 upload-all-charts: $(UPLOAD_TARGETS) ## Upload ALL Helm charts to OCI registry
