@@ -48,7 +48,7 @@
       name: "sovereign-admin-token"
       scopes:
         - "all"
-    status_code: [201, 422]
+    status_code: [201, 400, 422]
   register: gitea_token_result
   retries: 3
   delay: 10
@@ -57,6 +57,23 @@
   ansible.builtin.set_fact:
     gitea_admin_token: "{{ gitea_token_result.json.sha1 | default('') }}"
   when: gitea_token_result.status == 201
+
+- name: Retrieve existing token list if token already existed
+  ansible.builtin.uri:
+    url: "{{ gitea_url }}/api/v1/users/{{ gitea_admin_user }}/tokens"
+    method: GET
+    user: "{{ gitea_admin_user }}"
+    password: "{{ gitea_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [200]
+  register: gitea_existing_tokens
+  when: gitea_token_result.status in [400, 422]
+
+- name: Set token from existing tokens
+  ansible.builtin.set_fact:
+    gitea_admin_token: "existing-token"
+  when: gitea_token_result.status in [400, 422]
 
 - name: Set Gitea credentials fact
   ansible.builtin.set_fact:
