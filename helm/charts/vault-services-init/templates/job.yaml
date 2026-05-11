@@ -1,0 +1,36 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vault-services-init
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  backoffLimit: {{ .Values.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.activeDeadlineSeconds }}
+  template:
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount }}
+      restartPolicy: OnFailure
+      {{- if .Values.imagePullSecretName }}
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecretName }}
+      {{- end }}
+      containers:
+        - name: vault-init
+          image: {{ .Values.image | quote }}
+          imagePullPolicy: Always
+          command:
+            - ansible-runner
+            - run
+            - /runner
+            - -p
+            - vault-services-init-local.yml
+          env:
+            - name: VAULT_ADDR
+              value: {{ .Values.vaultAddr | quote }}
+            - name: VAULT_NAMESPACE
+              value: {{ .Values.vaultNamespace | quote }}
+            - name: VAULT_SECRET_NAME
+              value: {{ .Values.secretName | quote }}

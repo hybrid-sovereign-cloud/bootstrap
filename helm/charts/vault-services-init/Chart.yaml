@@ -1,0 +1,6 @@
+apiVersion: v2
+name: vault-services-init
+description: In-cluster Vault Services initialization Job and PushSecret
+type: application
+version: 0.1.0
+appVersion: "1.0"

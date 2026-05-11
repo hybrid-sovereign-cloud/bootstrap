@@ -171,7 +171,7 @@ vault:
 # ─── Vault Services ─────────────────────────────────────────────────────────
 vaultServices:
   enabled: true
-  chartVersion: "0.6.2"
+  chartVersion: "0.6.3"
   syncWave: "15"
   values:
     pushSecretToVault: false
@@ -180,21 +180,6 @@ vaultServices:
       vaultPath: "oci-credentials"
       secretStoreName: "vault-backend"
       secretStoreKind: "ClusterSecretStore"
-    vaultInit:
-      enabled: true
-      image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
-      imagePullSecretName: "quay-pull-secret"
-      serviceAccount: "vault-init-runner"
-      namespace: "vault"
-      secretName: "vault-services-init-secrets"
-      vaultAddr: "http://vault-services.vault.svc:8200"
-      vaultNamespace: "vault"
-      activeDeadlineSeconds: 600
-      backoffLimit: 5
-      syncWave: "18"
-      pushSecretToVaultCentral: true
-      pushSecretStoreName: "vault-backend"
-      vaultCentralPath: "central/data/vault-services-init"
     vault:
       global:
         openshift: true
@@ -238,6 +223,25 @@ vaultServices:
         image:
           repository: quay.signal9.gg/hybrid-sovereign/vault-k8s
           tag: "1.5.0"
+
+# ─── Vault Services Init (separate App to avoid StatefulSet health deadlock) ─
+vaultServicesInit:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "20"
+  values:
+    namespace: vault
+    serviceAccount: vault-init-runner
+    image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
+    imagePullSecretName: "quay-pull-secret"
+    secretName: "vault-services-init-secrets"
+    vaultAddr: "http://vault-services.vault.svc:8200"
+    vaultNamespace: "vault"
+    activeDeadlineSeconds: 600
+    backoffLimit: 5
+    pushSecretToVaultCentral: true
+    pushSecretStoreName: "vault-backend"
+    vaultCentralPath: "central/data/vault-services-init"
 
 # ─── RHACM ───────────────────────────────────────────────────────────────────
 rhacm:

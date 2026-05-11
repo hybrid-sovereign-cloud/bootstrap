@@ -1,0 +1,51 @@
+{{- if .Values.vaultServicesInit.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault-services-init
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: secrets
+    sovereign-cloud/target: services
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.vaultServicesInit.syncWave | default "20" | quote }}
+spec:
+  project: services
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/vault-services-init" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: vault-services-init
+    targetRevision: {{ .Values.vaultServicesInit.chartVersion | quote }}
+    helm:
+      releaseName: vault-services-init
+      valuesObject:
+        {{- toYaml .Values.vaultServicesInit.values | nindent 10 }}
+
+  destination:
+    server: {{ .Values.servicesCluster.server | quote }}
+    namespace: vault
+
+  ignoreDifferences:
+    - group: external-secrets.io
+      kind: PushSecret
+      jsonPointers:
+        - /spec
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
+{{- end }}

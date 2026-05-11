@@ -1,0 +1,13 @@
+namespace: vault
+serviceAccount: vault-init-runner
+image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
+imagePullSecretName: "quay-pull-secret"
+secretName: "vault-services-init-secrets"
+vaultAddr: "http://vault-services.vault.svc:8200"
+vaultNamespace: "vault"
+activeDeadlineSeconds: 600
+backoffLimit: 5
+
+pushSecretToVaultCentral: true
+pushSecretStoreName: "vault-backend"
+vaultCentralPath: "central/data/vault-services-init"

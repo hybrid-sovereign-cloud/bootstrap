@@ -49,6 +49,7 @@ include make/upload-vault-secret-store-chart.mk
 include make/upload-sovereign-jobs-chart.mk
 include make/upload-sovereign-job-chart.mk
 include make/upload-sovereign-job-rbac-chart.mk
+include make/upload-vault-services-init-chart.mk
 include make/ansible-runner.mk
 include make/init-central-argo.mk
 include make/init-services-pull-secrets.mk
@@ -73,7 +74,8 @@ UPLOAD_TARGETS := \
   upload-vault-secret-store-chart \
   upload-sovereign-jobs-chart \
   upload-sovereign-job-chart \
-  upload-sovereign-job-rbac-chart
+  upload-sovereign-job-rbac-chart \
+  upload-vault-services-init-chart
 
 .PHONY: upload-all-charts
 upload-all-charts: $(UPLOAD_TARGETS) ## Upload ALL Helm charts to OCI registry
