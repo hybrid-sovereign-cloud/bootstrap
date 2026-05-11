@@ -32,6 +32,11 @@ spec:
       jsonPointers:
         - /imagePullSecrets
         - /secrets
+    - group: ""
+      kind: Namespace
+      jsonPointers:
+        - /metadata/labels
+        - /metadata/annotations
 
   syncPolicy:
     automated:

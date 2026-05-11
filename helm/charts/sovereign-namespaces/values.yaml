@@ -1,8 +1,4 @@
 namespaces:
-  - name: sovereign-cloud
-    enabled: true
-  - name: sovereign-cloud-plugins
-    enabled: true
   - name: sovereign-cloud-jobs
     enabled: true
   - name: sovereign-cloud-helpers
