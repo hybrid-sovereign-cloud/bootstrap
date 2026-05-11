@@ -756,7 +756,7 @@ entityOperator:
 
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
-  enabled: false
+  enabled: true
   chartVersion: "0.3.0"
   syncWave: "40"
   destinationNamespace: sovereign-cloud
