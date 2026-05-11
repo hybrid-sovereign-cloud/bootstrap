@@ -26,6 +26,15 @@ vault:
           }
           storage "raft" {
             path = "/vault/data"
+            retry_join {
+              leader_api_addr = "http://vault-services-0.vault-services-internal.vault.svc:8200"
+            }
+            retry_join {
+              leader_api_addr = "http://vault-services-1.vault-services-internal.vault.svc:8200"
+            }
+            retry_join {
+              leader_api_addr = "http://vault-services-2.vault-services-internal.vault.svc:8200"
+            }
           }
           service_registration "kubernetes" {}
     dataStorage:
