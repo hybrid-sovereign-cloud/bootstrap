@@ -277,7 +277,7 @@ rhacm:
 # ─── AAP (services cluster) ─────────────────────────────────────────────────
 aap:
   enabled: true
-  chartVersion: "0.5.0"
+  chartVersion: "0.5.1"
   syncWave: "30"
   destinationNamespace: aap
   values:

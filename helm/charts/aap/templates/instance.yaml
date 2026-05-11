@@ -32,8 +32,7 @@ spec:
   eda:
     replicas: 1
   {{- end }}
-  {{- if .Values.hub.enabled }}
   hub:
-    replicas: 1
-  {{- end }}
+    disabled: true
+    replicas: 0
 {{- end }}
