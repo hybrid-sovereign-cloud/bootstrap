@@ -26,4 +26,10 @@ spec:
       managed: {{ .Values.registry.components.tls.managed }}
     - kind: monitoring
       managed: {{ .Values.registry.components.monitoring.managed }}
+    - kind: quay	
+      managed: true	
+    - kind: horizontalpodautoscaler	
+      managed: true	
+    - kind: clairpostgres	
+      managed: true
 {{- end }}
