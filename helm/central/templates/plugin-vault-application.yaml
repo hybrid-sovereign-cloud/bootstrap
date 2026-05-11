@@ -1,0 +1,50 @@
+{{- if .Values.pluginVault.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: plugin-vault
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: operator
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.pluginVault.syncWave | quote }}
+spec:
+  project: services
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/plugin-vault" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: plugin-vault
+    targetRevision: {{ .Values.pluginVault.chartVersion | quote }}
+    helm:
+      releaseName: plugin-vault
+      values: |
+        {{- toYaml .Values.pluginVault.values | nindent 8 }}
+
+  destination:
+    server: {{ .Values.servicesCluster.server | quote }}
+    namespace: {{ .Values.pluginVault.destinationNamespace }}
+
+  ignoreDifferences:
+    - group: ""
+      kind: ServiceAccount
+      jsonPointers:
+        - /imagePullSecrets
+        - /secrets
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+{{- end }}
