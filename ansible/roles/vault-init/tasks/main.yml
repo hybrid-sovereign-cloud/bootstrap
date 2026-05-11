@@ -23,18 +23,18 @@
     container: vault
     command: vault status -format=json
   register: vault_status_raw
+  retries: 10
+  delay: 10
+  until: vault_status_raw.rc is defined
   ignore_errors: true
 
 - name: Parse vault status
   ansible.builtin.set_fact:
-    vault_initialized: "{{ (vault_status_raw.stdout | from_json).initialized | default(false) }}"
-  when: vault_status_raw.stdout is defined and vault_status_raw.stdout | length > 0
+    vault_initialized: >-
+      {{ (vault_status_raw.stdout | from_json).initialized | default(false)
+         if (vault_status_raw.stdout is defined and vault_status_raw.stdout | length > 0)
+         else false }}
   ignore_errors: true
-
-- name: Default initialization flag
-  ansible.builtin.set_fact:
-    vault_initialized: false
-  when: vault_initialized is not defined
 
 - name: Initialize Vault when not initialized
   when: not vault_initialized
@@ -52,7 +52,7 @@
       register: vault_init_result
       retries: 5
       delay: 10
-      until: vault_init_result.rc == 0
+      until: vault_init_result.rc is defined and vault_init_result.rc == 0
 
     - name: Parse init response
       ansible.builtin.set_fact:
