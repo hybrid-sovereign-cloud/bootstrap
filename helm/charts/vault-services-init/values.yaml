@@ -10,4 +10,4 @@ backoffLimit: 5
 
 pushSecretToVaultCentral: true
 pushSecretStoreName: "vault-backend"
-vaultCentralPath: "central/data/vault-services-init"
+vaultCentralPath: "vault-services-init"

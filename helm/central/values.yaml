@@ -236,7 +236,7 @@ vaultServices:
 # ─── Vault Services Init (separate App to avoid StatefulSet health deadlock) ─
 vaultServicesInit:
   enabled: true
-  chartVersion: "0.2.1"
+  chartVersion: "0.2.2"
   syncWave: "20"
   values:
     namespace: vault
@@ -250,7 +250,7 @@ vaultServicesInit:
     backoffLimit: 5
     pushSecretToVaultCentral: true
     pushSecretStoreName: "vault-backend"
-    vaultCentralPath: "central/data/vault-services-init"
+    vaultCentralPath: "vault-services-init"
 
 # ─── RHACM ───────────────────────────────────────────────────────────────────
 rhacm:
