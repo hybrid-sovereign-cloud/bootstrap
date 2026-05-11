@@ -776,14 +776,14 @@ pluginVault:
 # ─── Plugin AAP Operator (services cluster) ───────────────────────────────
 pluginAap:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.1.1"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
     namespace: sovereign-cloud-plugins
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-aap
-      tag: "0.0.1"
+      tag: "0.0.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
