@@ -17,5 +17,6 @@ upload-vault-chart: check-env ## Package and push Vault chart to OCI registry
 	@echo "$(BOLD)Packaging and pushing Vault chart...$(RESET)"
 	@helm dependency build helm/charts/vault > /dev/null 2>&1 || true
 	@helm package helm/charts/vault -d /tmp/helm-pkg > /dev/null
-	@helm push /tmp/helm-pkg/vault-*.tgz oci://$(OCI_HOST)/$(OCI_NAMESPACE)
+	@CHART_VER=$$(helm show chart helm/charts/vault | grep '^version:' | awk '{print $$2}'); \
+	 helm push /tmp/helm-pkg/vault-$${CHART_VER}.tgz oci://$(OCI_HOST)/$(OCI_NAMESPACE)
 	$(call ok,Vault chart pushed to oci://$(OCI_HOST)/$(OCI_NAMESPACE)/vault)

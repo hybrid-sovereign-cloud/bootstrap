@@ -171,13 +171,13 @@ vault:
 # ─── Vault Services ─────────────────────────────────────────────────────────
 vaultServices:
   enabled: true
-  chartVersion: "0.6.1"
+  chartVersion: "0.6.2"
   syncWave: "15"
   values:
     pushSecretToVault: false
     ociCredentials:
       enabled: true
-      vaultPath: "central/data/oci-credentials"
+      vaultPath: "oci-credentials"
       secretStoreName: "vault-backend"
       secretStoreKind: "ClusterSecretStore"
     vaultInit:

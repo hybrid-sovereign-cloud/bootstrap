@@ -3,7 +3,7 @@ pushSecretToVault: false
 # ─── OCI pull secret via ExternalSecret (for services cluster vault namespace) ─
 ociCredentials:
   enabled: false
-  vaultPath: "central/data/oci-credentials"
+  vaultPath: "oci-credentials"
   secretStoreName: "vault-backend"
   secretStoreKind: "ClusterSecretStore"
 
