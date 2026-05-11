@@ -11,61 +11,78 @@
   until: pod_seal_status.status == 200
   ignore_errors: true
 
-- name: "Join raft cluster from {{ pod_addr }}"
+- name: "Join raft cluster from {{ pod_addr }} (if sealed and not already leader)"
   ansible.builtin.uri:
     url: "{{ pod_addr }}/v1/sys/storage/raft/join"
     method: POST
     validate_certs: false
     body_format: json
     body:
-      leader_api_addr: "{{ vault_pod_addrs[0] }}"
+      leader_api_addr: "{{ vault_addr }}"
     status_code: [200, 204, 400]
   when:
     - pod_seal_status.status is defined
     - pod_seal_status.status == 200
     - pod_seal_status.json.sealed | default(true)
-    - pod_addr != vault_pod_addrs[0]
-  retries: 3
+  retries: 5
   delay: 5
   ignore_errors: true
 
-- name: "Unseal {{ pod_addr }} — apply all threshold keys atomically via curl loop"
+- name: "Unseal {{ pod_addr }} — apply threshold keys atomically"
   ansible.builtin.shell: |
     KEYS='{{ vault_unseal_keys[:vault_key_threshold | int] | to_json }}'
     N=$(echo "$KEYS" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))")
-    i=0
-    while [ "$i" -lt "$N" ]; do
-      KEY=$(echo "$KEYS" | python3 -c "import sys,json; print(json.load(sys.stdin)[$i])")
-      HTTP_CODE=$(curl -s -o /tmp/unseal_resp.json -w "%{http_code}" -X PUT '{{ pod_addr }}/v1/sys/unseal' \
-        -H 'Content-Type: application/json' \
-        -d "{\"key\":\"$KEY\"}" 2>/dev/null || echo "000")
-      if [ "$HTTP_CODE" = "200" ]; then
-        SEALED=$(python3 -c "import json; d=json.load(open('/tmp/unseal_resp.json')); print(d.get('sealed','true'))" 2>/dev/null || echo "true")
-        if [ "$SEALED" = "False" ]; then
-          echo "Vault pod unsealed successfully after $((i+1)) key(s)."
-          exit 0
+    MAX_RETRIES=5
+    attempt=0
+    while [ "$attempt" -lt "$MAX_RETRIES" ]; do
+      i=0
+      success=0
+      while [ "$i" -lt "$N" ]; do
+        KEY=$(echo "$KEYS" | python3 -c "import sys,json; print(json.load(sys.stdin)[$i])")
+        HTTP_CODE=$(curl -s --connect-timeout 10 --max-time 30 \
+          -o /tmp/unseal_resp.json -w "%{http_code}" \
+          -X PUT '{{ pod_addr }}/v1/sys/unseal' \
+          -H 'Content-Type: application/json' \
+          -d "{\"key\":\"$KEY\"}" 2>/dev/null || echo "000")
+        if [ "$HTTP_CODE" = "200" ]; then
+          SEALED=$(python3 -c "import json; d=json.load(open('/tmp/unseal_resp.json')); print(d.get('sealed','true'))" 2>/dev/null || echo "true")
+          if [ "$SEALED" = "False" ]; then
+            echo "Pod {{ pod_addr }} unsealed after $((i+1)) key(s)."
+            exit 0
+          fi
+          i=$((i+1))
+        elif [ "$HTTP_CODE" = "400" ]; then
+          ERR=$(python3 -c "import json; d=json.load(open('/tmp/unseal_resp.json')); print(' '.join(d.get('errors',[''])))" 2>/dev/null || echo "")
+          if echo "$ERR" | grep -qi "not.*init"; then
+            echo "Pod {{ pod_addr }} not initialized yet, skipping unseal."
+            exit 0
+          fi
+          echo "HTTP 400 on key $i (${ERR}), retrying from key 0..."
+          sleep 3
+          break
+        else
+          echo "HTTP $HTTP_CODE on key $i, retrying..."
+          sleep 5
+          break
         fi
-        i=$((i+1))
-      else
-        echo "Got HTTP $HTTP_CODE applying key $i, resetting to start of key sequence..."
-        sleep 2
-        i=0
-      fi
+      done
+      attempt=$((attempt+1))
+      sleep 5
     done
-    # Verify final seal status
-    FINAL=$(curl -sf '{{ pod_addr }}/v1/sys/seal-status' 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('sealed','true'))" 2>/dev/null)
+    FINAL=$(curl -sf --connect-timeout 10 '{{ pod_addr }}/v1/sys/seal-status' 2>/dev/null | \
+      python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('sealed','true'))" 2>/dev/null)
     if [ "$FINAL" = "False" ]; then
-      echo "Vault pod unsealed."
+      echo "Pod {{ pod_addr }} unsealed."
       exit 0
     fi
-    echo "Vault pod still sealed after applying $N keys."
+    echo "Pod {{ pod_addr }} still sealed after $MAX_RETRIES attempts."
     exit 1
   when:
     - pod_seal_status.status is defined
     - pod_seal_status.status == 200
     - pod_seal_status.json.sealed | default(true)
   register: unseal_result
-  retries: 5
-  delay: 15
+  retries: 3
+  delay: 20
   until: unseal_result.rc == 0
   changed_when: "'unsealed' in (unseal_result.stdout | lower)"

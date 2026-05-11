@@ -5,7 +5,7 @@
   gather_facts: false
 
   vars:
-    vault_addr: "{{ lookup('env', 'VAULT_ADDR') | default('http://vault-services.vault.svc:8200', true) }}"
+    vault_addr: "{{ lookup('env', 'VAULT_ADDR') | default('http://vault-services-0.vault-services-internal.vault.svc:8200', true) }}"
     vault_namespace: "{{ lookup('env', 'VAULT_NAMESPACE') | default('vault', true) }}"
     vault_secret_name: "{{ lookup('env', 'VAULT_SECRET_NAME') | default('vault-services-init-secrets', true) }}"
     vault_key_shares: 5

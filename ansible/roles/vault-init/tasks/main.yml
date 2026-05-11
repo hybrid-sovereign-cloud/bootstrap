@@ -51,6 +51,56 @@
       retries: 3
       delay: 5
 
+    - name: Unseal the raft leader via ClusterIP service
+      ansible.builtin.shell: |
+        KEYS='{{ vault_unseal_keys[:vault_key_threshold | int] | to_json }}'
+        N=$(echo "$KEYS" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))")
+        i=0
+        while [ "$i" -lt "$N" ]; do
+          KEY=$(echo "$KEYS" | python3 -c "import sys,json; print(json.load(sys.stdin)[$i])")
+          HTTP_CODE=$(curl -s --connect-timeout 10 --max-time 30 \
+            -o /tmp/unseal_resp.json -w "%{http_code}" \
+            -X PUT '{{ vault_addr }}/v1/sys/unseal' \
+            -H 'Content-Type: application/json' \
+            -d "{\"key\":\"$KEY\"}" 2>/dev/null || echo "000")
+          if [ "$HTTP_CODE" = "200" ]; then
+            SEALED=$(python3 -c "import json; d=json.load(open('/tmp/unseal_resp.json')); print(d.get('sealed','true'))" 2>/dev/null || echo "true")
+            if [ "$SEALED" = "False" ]; then
+              echo "Vault leader unsealed after $((i+1)) key(s)."
+              exit 0
+            fi
+            i=$((i+1))
+          else
+            echo "HTTP $HTTP_CODE on key $i, retrying..."
+            sleep 3
+            i=0
+          fi
+        done
+        FINAL=$(curl -sf --connect-timeout 10 '{{ vault_addr }}/v1/sys/seal-status' 2>/dev/null | \
+          python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('sealed','true'))" 2>/dev/null)
+        if [ "$FINAL" = "False" ]; then
+          echo "Vault leader unsealed."
+          exit 0
+        fi
+        echo "Leader still sealed after applying keys."
+        exit 1
+      register: leader_unseal
+      retries: 5
+      delay: 15
+      until: leader_unseal.rc == 0
+      changed_when: "'unsealed' in (leader_unseal.stdout | lower)"
+
+    - name: Wait for Vault leader to be active
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/sys/health"
+        method: GET
+        validate_certs: false
+        status_code: [200]
+      retries: 30
+      delay: 5
+      until: vault_active_health.status is defined and vault_active_health.status == 200
+      register: vault_active_health
+
 - name: Load existing credentials when already initialized
   when: vault_init_status.json.initialized
   block:
@@ -83,7 +133,7 @@
   ansible.builtin.set_fact:
     vault_pod_addrs: "{{ vault_pods.resources | map(attribute='metadata') | map(attribute='name') | map('regex_replace', '^(.*)$', 'http://\\1.' + vault_internal_svc_name + '.' + vault_namespace + '.svc:8200') | list }}"
 
-- name: Unseal each Vault pod directly
+- name: Join and unseal each Vault pod via individual address
   ansible.builtin.include_tasks: unseal-pod.yml
   loop: "{{ vault_pod_addrs }}"
   loop_control:
