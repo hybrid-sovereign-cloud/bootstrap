@@ -170,7 +170,7 @@ vault:
 
 # ─── Vault Services ─────────────────────────────────────────────────────────
 vaultServices:
-  enabled: false
+  enabled: true
   chartVersion: "0.5.0"
   syncWave: "15"
   values:
