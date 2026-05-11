@@ -1,38 +1,63 @@
 ---
-- name: Check Vault initialization status
-  ansible.builtin.uri:
-    url: "{{ vault_addr }}/v1/sys/init"
-    method: GET
-    validate_certs: false
-    status_code: [200]
-  register: vault_init_status
-  retries: 10
+- name: Wait for Vault pods to be Running
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: "{{ vault_namespace }}"
+    label_selectors: "{{ vault_pod_label_selectors }}"
+  register: vault_pods
+  retries: 30
   delay: 10
-  until: vault_init_status.status == 200
+  until:
+    - vault_pods.resources | length > 0
+    - vault_pods.resources | map(attribute='status.phase') | select('equalto', 'Running') | list | length == vault_pods.resources | length
+
+- name: Set leader pod name
+  ansible.builtin.set_fact:
+    vault_leader_pod: "{{ vault_pods.resources | sort(attribute='metadata.name') | first | json_query('metadata.name') }}"
+    vault_all_pods: "{{ vault_pods.resources | map(attribute='metadata.name') | sort | list }}"
+
+- name: Check Vault initialization status via exec
+  kubernetes.core.k8s_exec:
+    namespace: "{{ vault_namespace }}"
+    pod: "{{ vault_leader_pod }}"
+    container: vault
+    command: vault status -format=json
+  register: vault_status_raw
+  ignore_errors: true
+
+- name: Parse vault status
+  ansible.builtin.set_fact:
+    vault_initialized: "{{ (vault_status_raw.stdout | from_json).initialized | default(false) }}"
+  when: vault_status_raw.stdout is defined and vault_status_raw.stdout | length > 0
+  ignore_errors: true
+
+- name: Default initialization flag
+  ansible.builtin.set_fact:
+    vault_initialized: false
+  when: vault_initialized is not defined
 
 - name: Initialize Vault when not initialized
-  when: not vault_init_status.json.initialized
+  when: not vault_initialized
   block:
-    - name: Initialize Vault
-      ansible.builtin.uri:
-        url: "{{ vault_addr }}/v1/sys/init"
-        method: PUT
-        validate_certs: false
-        body_format: json
-        body:
-          secret_shares: "{{ vault_key_shares }}"
-          secret_threshold: "{{ vault_key_threshold }}"
-        status_code: [200]
-      register: vault_init_response
-      retries: 3
-      delay: 5
-      until: vault_init_response.status == 200
+    - name: Run vault operator init on leader pod
+      kubernetes.core.k8s_exec:
+        namespace: "{{ vault_namespace }}"
+        pod: "{{ vault_leader_pod }}"
+        container: vault
+        command: >-
+          vault operator init
+          -key-shares={{ vault_key_shares }}
+          -key-threshold={{ vault_key_threshold }}
+          -format=json
+      register: vault_init_result
+      retries: 5
+      delay: 10
+      until: vault_init_result.rc == 0
 
-    - name: Set init data from initialization response
+    - name: Parse init response
       ansible.builtin.set_fact:
-        vault_root_token: "{{ vault_init_response.json.root_token }}"
-        vault_unseal_keys: "{{ vault_init_response.json['keys'] }}"
-        vault_unseal_keys_base64: "{{ vault_init_response.json['keys_base64'] }}"
+        vault_root_token: "{{ (vault_init_result.stdout | from_json).root_token }}"
+        vault_unseal_keys: "{{ (vault_init_result.stdout | from_json).unseal_keys_b64 }}"
 
     - name: Store init secrets as Kubernetes Secret
       kubernetes.core.k8s:
@@ -47,62 +72,12 @@
           stringData:
             root_token: "{{ vault_root_token }}"
             unseal_keys: "{{ vault_unseal_keys | to_json }}"
-            unseal_keys_base64: "{{ vault_unseal_keys_base64 | to_json }}"
+            unseal_keys_base64: "{{ vault_unseal_keys | to_json }}"
       retries: 3
       delay: 5
 
-    - name: Unseal the raft leader via ClusterIP service
-      ansible.builtin.shell: |
-        KEYS='{{ vault_unseal_keys[:vault_key_threshold | int] | to_json }}'
-        N=$(echo "$KEYS" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))")
-        i=0
-        while [ "$i" -lt "$N" ]; do
-          KEY=$(echo "$KEYS" | python3 -c "import sys,json; print(json.load(sys.stdin)[$i])")
-          HTTP_CODE=$(curl -s --connect-timeout 10 --max-time 30 \
-            -o /tmp/unseal_resp.json -w "%{http_code}" \
-            -X PUT '{{ vault_addr }}/v1/sys/unseal' \
-            -H 'Content-Type: application/json' \
-            -d "{\"key\":\"$KEY\"}" 2>/dev/null || echo "000")
-          if [ "$HTTP_CODE" = "200" ]; then
-            SEALED=$(python3 -c "import json; d=json.load(open('/tmp/unseal_resp.json')); print(d.get('sealed','true'))" 2>/dev/null || echo "true")
-            if [ "$SEALED" = "False" ]; then
-              echo "Vault leader unsealed after $((i+1)) key(s)."
-              exit 0
-            fi
-            i=$((i+1))
-          else
-            echo "HTTP $HTTP_CODE on key $i, retrying..."
-            sleep 3
-            i=0
-          fi
-        done
-        FINAL=$(curl -sf --connect-timeout 10 '{{ vault_addr }}/v1/sys/seal-status' 2>/dev/null | \
-          python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('sealed','true'))" 2>/dev/null)
-        if [ "$FINAL" = "False" ]; then
-          echo "Vault leader unsealed."
-          exit 0
-        fi
-        echo "Leader still sealed after applying keys."
-        exit 1
-      register: leader_unseal
-      retries: 5
-      delay: 15
-      until: leader_unseal.rc == 0
-      changed_when: "'unsealed' in (leader_unseal.stdout | lower)"
-
-    - name: Wait for Vault leader to be active
-      ansible.builtin.uri:
-        url: "{{ vault_addr }}/v1/sys/health"
-        method: GET
-        validate_certs: false
-        status_code: [200]
-      retries: 30
-      delay: 5
-      until: vault_active_health.status is defined and vault_active_health.status == 200
-      register: vault_active_health
-
 - name: Load existing credentials when already initialized
-  when: vault_init_status.json.initialized
+  when: vault_initialized
   block:
     - name: Retrieve existing secrets
       kubernetes.core.k8s_info:
@@ -119,22 +94,8 @@
         vault_root_token: "{{ (existing_secret.resources[0].data.root_token | b64decode) }}"
         vault_unseal_keys: "{{ (existing_secret.resources[0].data.unseal_keys | b64decode) | from_json }}"
 
-- name: Discover Vault pods
-  kubernetes.core.k8s_info:
-    kind: Pod
-    namespace: "{{ vault_namespace }}"
-    label_selectors: "{{ vault_pod_label_selectors }}"
-  register: vault_pods
-  retries: 5
-  delay: 5
-  until: vault_pods.resources | length > 0
-
-- name: Build list of Vault pod addresses
-  ansible.builtin.set_fact:
-    vault_pod_addrs: "{{ vault_pods.resources | map(attribute='metadata') | map(attribute='name') | map('regex_replace', '^(.*)$', 'http://\\1.' + vault_internal_svc_name + '.' + vault_namespace + '.svc:8200') | list }}"
-
-- name: Join and unseal each Vault pod via individual address
+- name: Unseal each Vault pod
   ansible.builtin.include_tasks: unseal-pod.yml
-  loop: "{{ vault_pod_addrs }}"
+  loop: "{{ vault_all_pods }}"
   loop_control:
-    loop_var: pod_addr
+    loop_var: pod_name

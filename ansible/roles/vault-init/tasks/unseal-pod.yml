@@ -1,88 +1,67 @@
 ---
-- name: "Check seal status of {{ pod_addr }}"
-  ansible.builtin.uri:
-    url: "{{ pod_addr }}/v1/sys/seal-status"
-    method: GET
-    validate_certs: false
-    status_code: [200, 000]
-  register: pod_seal_status
+- name: "Check seal status of {{ pod_name }}"
+  kubernetes.core.k8s_exec:
+    namespace: "{{ vault_namespace }}"
+    pod: "{{ pod_name }}"
+    container: vault
+    command: vault status -format=json
+  register: pod_status_raw
   retries: 10
   delay: 10
-  until: pod_seal_status.status == 200
+  until: pod_status_raw.rc is defined
   ignore_errors: true
 
-- name: "Join raft cluster from {{ pod_addr }} (if sealed and not already leader)"
-  ansible.builtin.uri:
-    url: "{{ pod_addr }}/v1/sys/storage/raft/join"
-    method: POST
-    validate_certs: false
-    body_format: json
-    body:
-      leader_api_addr: "{{ vault_addr }}"
-    status_code: [200, 204, 400]
-  when:
-    - pod_seal_status.status is defined
-    - pod_seal_status.status == 200
-    - pod_seal_status.json.sealed | default(true)
+- name: "Parse seal status for {{ pod_name }}"
+  ansible.builtin.set_fact:
+    pod_sealed: "{{ (pod_status_raw.stdout | from_json).sealed | default(true) }}"
+  when: pod_status_raw.stdout is defined and pod_status_raw.stdout | length > 0
+  ignore_errors: true
+
+- name: "Default sealed flag for {{ pod_name }}"
+  ansible.builtin.set_fact:
+    pod_sealed: true
+  when: pod_sealed is not defined
+
+- name: "Join raft cluster from {{ pod_name }}"
+  kubernetes.core.k8s_exec:
+    namespace: "{{ vault_namespace }}"
+    pod: "{{ pod_name }}"
+    container: vault
+    command: >-
+      vault operator raft join
+      http://{{ vault_leader_pod }}.{{ vault_internal_svc_name }}.{{ vault_namespace }}.svc:8200
+  when: pod_sealed | bool and pod_name != vault_leader_pod
+  register: raft_join_result
   retries: 5
   delay: 5
   ignore_errors: true
 
-- name: "Unseal {{ pod_addr }} — apply threshold keys atomically"
-  ansible.builtin.shell: |
-    KEYS='{{ vault_unseal_keys[:vault_key_threshold | int] | to_json }}'
-    N=$(echo "$KEYS" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))")
-    MAX_RETRIES=5
-    attempt=0
-    while [ "$attempt" -lt "$MAX_RETRIES" ]; do
-      i=0
-      success=0
-      while [ "$i" -lt "$N" ]; do
-        KEY=$(echo "$KEYS" | python3 -c "import sys,json; print(json.load(sys.stdin)[$i])")
-        HTTP_CODE=$(curl -s --connect-timeout 10 --max-time 30 \
-          -o /tmp/unseal_resp.json -w "%{http_code}" \
-          -X PUT '{{ pod_addr }}/v1/sys/unseal' \
-          -H 'Content-Type: application/json' \
-          -d "{\"key\":\"$KEY\"}" 2>/dev/null || echo "000")
-        if [ "$HTTP_CODE" = "200" ]; then
-          SEALED=$(python3 -c "import json; d=json.load(open('/tmp/unseal_resp.json')); print(d.get('sealed','true'))" 2>/dev/null || echo "true")
-          if [ "$SEALED" = "False" ]; then
-            echo "Pod {{ pod_addr }} unsealed after $((i+1)) key(s)."
-            exit 0
-          fi
-          i=$((i+1))
-        elif [ "$HTTP_CODE" = "400" ]; then
-          ERR=$(python3 -c "import json; d=json.load(open('/tmp/unseal_resp.json')); print(' '.join(d.get('errors',[''])))" 2>/dev/null || echo "")
-          if echo "$ERR" | grep -qi "not.*init"; then
-            echo "Pod {{ pod_addr }} not initialized yet, skipping unseal."
-            exit 0
-          fi
-          echo "HTTP 400 on key $i (${ERR}), retrying from key 0..."
-          sleep 3
-          break
-        else
-          echo "HTTP $HTTP_CODE on key $i, retrying..."
-          sleep 5
-          break
-        fi
-      done
-      attempt=$((attempt+1))
-      sleep 5
-    done
-    FINAL=$(curl -sf --connect-timeout 10 '{{ pod_addr }}/v1/sys/seal-status' 2>/dev/null | \
-      python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('sealed','true'))" 2>/dev/null)
-    if [ "$FINAL" = "False" ]; then
-      echo "Pod {{ pod_addr }} unsealed."
-      exit 0
-    fi
-    echo "Pod {{ pod_addr }} still sealed after $MAX_RETRIES attempts."
-    exit 1
-  when:
-    - pod_seal_status.status is defined
-    - pod_seal_status.status == 200
-    - pod_seal_status.json.sealed | default(true)
+- name: "Unseal {{ pod_name }} with threshold keys"
+  kubernetes.core.k8s_exec:
+    namespace: "{{ vault_namespace }}"
+    pod: "{{ pod_name }}"
+    container: vault
+    command: "vault operator unseal {{ item }}"
+  loop: "{{ vault_unseal_keys[:vault_key_threshold | int] }}"
+  loop_control:
+    label: "key-{{ ansible_loop.index }}"
+    extended: true
+  when: pod_sealed | bool
   register: unseal_result
   retries: 3
-  delay: 20
-  until: unseal_result.rc == 0
-  changed_when: "'unsealed' in (unseal_result.stdout | lower)"
+  delay: 5
+  ignore_errors: true
+
+- name: "Verify {{ pod_name }} is unsealed"
+  kubernetes.core.k8s_exec:
+    namespace: "{{ vault_namespace }}"
+    pod: "{{ pod_name }}"
+    container: vault
+    command: vault status -format=json
+  register: verify_status
+  retries: 10
+  delay: 5
+  until: >-
+    verify_status.stdout is defined and
+    not (verify_status.stdout | from_json).sealed | default(true)
+  when: pod_sealed | bool
