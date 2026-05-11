@@ -64,6 +64,39 @@
   delay: 5
   when: ocp_services_server | length > 0
 
+- name: Read services cluster ingress CA
+  kubernetes.core.k8s_info:
+    host: "{{ ocp_services_server }}"
+    api_key: "{{ services_cluster_token }}"
+    validate_certs: false
+    kind: ConfigMap
+    name: default-ingress-cert
+    namespace: openshift-config-managed
+  register: _svc_ingress_ca
+  retries: 3
+  delay: 5
+  when: ocp_services_server | length > 0
+
+- name: Create CA ConfigMap for services Keycloak IDP
+  kubernetes.core.k8s:
+    host: "{{ ocp_services_server }}"
+    api_key: "{{ services_cluster_token }}"
+    validate_certs: false
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: keycloak-services-ca
+        namespace: openshift-config
+      data:
+        ca.crt: "{{ _svc_ingress_ca.resources[0].data['ca-bundle.crt'] }}"
+  retries: 3
+  delay: 5
+  when:
+    - ocp_services_server | length > 0
+    - _svc_ingress_ca.resources | length > 0
+
 - name: Add Keycloak as OAuth identity provider on services cluster
   kubernetes.core.k8s:
     host: "{{ ocp_services_server }}"
@@ -85,6 +118,8 @@
               clientID: "{{ services_oauth_client_id }}"
               clientSecret:
                 name: sovereign-services-oauth-secret
+              ca:
+                name: keycloak-services-ca
               issuer: "{{ keycloak_services_url }}/realms/{{ services_realm }}"
               claims:
                 preferredUsername:

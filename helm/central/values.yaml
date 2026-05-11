@@ -720,14 +720,14 @@ sovereignJobs:
 # ─── Plugin RBAC Operator (services cluster) ────────────────────────────────
 pluginRbac:
   enabled: true
-  chartVersion: "0.2.0"
+  chartVersion: "0.3.0"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
     namespace: sovereign-cloud-plugins
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-rbac
-      tag: "0.0.2"
+      tag: "0.0.3"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
