@@ -277,7 +277,7 @@ rhacm:
 # ─── AAP (services cluster) ─────────────────────────────────────────────────
 aap:
   enabled: true
-  chartVersion: "0.4.0"
+  chartVersion: "0.5.0"
   syncWave: "30"
   destinationNamespace: aap
   values:
@@ -290,12 +290,9 @@ aap:
     eda:
       enabled: true
     hub:
-      enabled: true
+      enabled: false
     postgres:
-      enabled: true
-      name: aap-pgcluster
-      instances: 1
-      storage: 10Gi
+      enabled: false
 
 # ─── ODF / Noobaa (central) ─────────────────────────────────────────────────
 odf:
