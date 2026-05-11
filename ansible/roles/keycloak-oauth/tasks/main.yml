@@ -14,6 +14,30 @@
   retries: 5
   delay: 5
 
+- name: Read central cluster ingress CA
+  kubernetes.core.k8s_info:
+    kind: ConfigMap
+    name: default-ingress-cert
+    namespace: openshift-config-managed
+  register: _central_ingress_ca
+  retries: 3
+  delay: 5
+
+- name: Create CA ConfigMap for central Keycloak IDP
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: keycloak-central-ca
+        namespace: openshift-config
+      data:
+        ca.crt: "{{ _central_ingress_ca.resources[0].data['ca-bundle.crt'] }}"
+  retries: 3
+  delay: 5
+  when: _central_ingress_ca.resources | length > 0
+
 - name: Add Keycloak as OAuth identity provider on central cluster
   kubernetes.core.k8s:
     state: present
@@ -32,6 +56,8 @@
               clientID: "{{ central_oauth_client_id }}"
               clientSecret:
                 name: sovereign-central-oauth-secret
+              ca:
+                name: keycloak-central-ca
               issuer: "{{ keycloak_central_url }}/realms/{{ central_realm }}"
               claims:
                 preferredUsername:
