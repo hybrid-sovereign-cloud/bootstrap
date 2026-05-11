@@ -590,7 +590,7 @@ sovereignJobs:
         - name: SERVICES_REALM_NAME
           value: "sovereign-tenants"
     giteaInit:
-      enabled: false
+      enabled: true
       playbook: gitea-init.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
