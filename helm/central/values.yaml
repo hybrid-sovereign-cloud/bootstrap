@@ -574,7 +574,7 @@ sovereignJobs:
       syncWave: "27"
       env:
         - name: KEYCLOAK_CENTRAL_URL
-          value: "http://rhbk-central-service.rhbk.svc:8080"
+          value: "https://rhbk-central.apps.shc-central.lab.signal9.gg"
         - name: KEYCLOAK_SERVICES_URL
           value: "https://rhbk-services.apps.shcservices.lab.signal9.gg"
         - name: KEYCLOAK_ADMIN_SECRET
