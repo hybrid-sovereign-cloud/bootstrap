@@ -1,0 +1,54 @@
+{{- if .Values.tenancyDashboard.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tenancy-dashboard
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: dashboard
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.tenancyDashboard.syncWave | quote }}
+spec:
+  project: services
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/tenancy-dashboard" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: tenancy-dashboard
+    targetRevision: {{ .Values.tenancyDashboard.chartVersion | quote }}
+    helm:
+      releaseName: tenancy-dashboard
+      values: |
+        {{- toYaml .Values.tenancyDashboard.values | nindent 8 }}
+
+  destination:
+    server: {{ .Values.servicesCluster.server | quote }}
+    namespace: {{ .Values.tenancyDashboard.destinationNamespace }}
+
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      jsonPointers:
+        - /data
+    - group: ""
+      kind: Namespace
+      jsonPointers:
+        - /metadata/labels
+        - /metadata/annotations
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+{{- end }}

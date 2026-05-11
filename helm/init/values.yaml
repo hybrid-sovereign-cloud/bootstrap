@@ -56,8 +56,6 @@ pullSecretNamespaces:
   - vault
   - gitea
   - rhbk
-  - sovereign-cloud
-  - sovereign-cloud-plugins
   - sovereign-cloud-helpers
   - sovereign-cloud-jobs
   - external-secrets

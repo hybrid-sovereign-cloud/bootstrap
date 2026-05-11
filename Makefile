@@ -53,6 +53,7 @@ include make/upload-vault-services-init-chart.mk
 include make/upload-entity-operator-chart.mk
 include make/upload-plugin-rbac-chart.mk
 include make/upload-dashboard-chart.mk
+include make/upload-tenancy-dashboard-chart.mk
 include make/ansible-runner.mk
 include make/init-central-argo.mk
 include make/init-services-pull-secrets.mk
@@ -81,7 +82,8 @@ UPLOAD_TARGETS := \
   upload-vault-services-init-chart \
   upload-entity-operator-chart \
   upload-plugin-rbac-chart \
-  upload-dashboard-chart
+  upload-dashboard-chart \
+  upload-tenancy-dashboard-chart
 
 .PHONY: upload-all-charts
 upload-all-charts: $(UPLOAD_TARGETS) ## Upload ALL Helm charts to OCI registry

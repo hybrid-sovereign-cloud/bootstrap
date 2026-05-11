@@ -720,21 +720,29 @@ sovereignJobs:
 # ─── Plugin RBAC Operator (services cluster) ────────────────────────────────
 pluginRbac:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
     namespace: sovereign-cloud-plugins
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-rbac
-      tag: "0.0.1"
+      tag: "0.0.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
-    oidc:
-      issuerUrl: "https://rhbk-services.apps.shcservices.lab.signal9.gg/realms/sovereign-tenants"
-      realm: "sovereign-tenants"
-      keycloakUrl: "https://rhbk-services.apps.shcservices.lab.signal9.gg"
+    externalSecret:
+      enabled: true
+      targetSecretName: rhbk-services-admin
+      secretStoreName: vault-backend
+      secretStoreKind: ClusterSecretStore
+      vaultPath: rhbk-services-admin
+      refreshInterval: "1h"
+    defaultRbacConfig:
+      enabled: true
+      name: keycloak-sovereign-tenants-services
+      type: keycloak
+      secret: rhbk-services-admin
 
 # ─── Entity Operator (services cluster) ─────────────────────────────────────
 entityOperator:
@@ -754,7 +762,7 @@ entityOperator:
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
   enabled: true
-  chartVersion: "0.3.1"
+  chartVersion: "0.3.2"
   syncWave: "40"
   destinationNamespace: sovereign-cloud
   values:
@@ -762,7 +770,7 @@ sovereignDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/sovereign-cloud-dashboard
-      tag: "1.2.0"
+      tag: "1.2.1"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -773,4 +781,27 @@ sovereignDashboard:
       enabled: true
     env:
       ENTITY_NAMESPACE: sovereign-cloud
+      NODE_ENV: production
+
+# ─── Tenancy Dashboard (services cluster) ────────────────────────────────
+tenancyDashboard:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "41"
+  destinationNamespace: sovereign-cloud
+  values:
+    namespace: sovereign-cloud
+    clusterDomain: apps.shcservices.lab.signal9.gg
+    image:
+      repository: quay.signal9.gg/hybrid-sovereign/tenancy-dashboard
+      tag: "1.0.0"
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: quay-pull-secret
+    oauthProxy:
+      image: registry.redhat.io/openshift4/ose-oauth-proxy:v4.14
+      cookieSecret: "xK7mP2qR4sT8vW1yZ3bN5dF7hJ9kL0n"
+    route:
+      enabled: true
+    env:
       NODE_ENV: production
