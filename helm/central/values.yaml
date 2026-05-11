@@ -747,14 +747,14 @@ pluginRbac:
 # ─── Plugin Vault Operator (services cluster) ──────────────────────────────
 pluginVault:
   enabled: true
-  chartVersion: "0.1.1"
+  chartVersion: "0.1.2"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
     namespace: sovereign-cloud-plugins
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-vault
-      tag: "0.0.2"
+      tag: "0.0.3"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -859,7 +859,7 @@ entityOperator:
 # ─── Team Operator (services cluster) ─────────────────────────────────────
 teamOperator:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -870,11 +870,18 @@ teamOperator:
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
+    samples:
+      enabled: true
+      items:
+        - name: platform-engineering
+          namespace: entity-acme-corp
+        - name: security-team
+          namespace: entity-globex-industries
 
 # ─── Assignment Operator (services cluster) ────────────────────────────────
 assignmentOperator:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -885,11 +892,18 @@ assignmentOperator:
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
+    samples:
+      enabled: true
+      items:
+        - name: frontend-team
+          namespace: entity-acme-corp
+        - name: backend-team
+          namespace: entity-globex-industries
 
 # ─── Project Operator (services cluster) ───────────────────────────────────
 projectOperator:
   enabled: true
-  chartVersion: "0.1.1"
+  chartVersion: "0.2.0"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -900,11 +914,18 @@ projectOperator:
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
+    samples:
+      enabled: true
+      items:
+        - name: website-redesign
+          namespace: entity-acme-corp
+        - name: api-gateway
+          namespace: entity-globex-industries
 
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
   enabled: true
-  chartVersion: "0.1.1"
+  chartVersion: "0.2.0"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -915,11 +936,18 @@ platformOpenshiftOperator:
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
+    samples:
+      enabled: true
+      items:
+        - name: production-cluster
+          namespace: entity-acme-corp
+        - name: staging-cluster
+          namespace: entity-globex-industries
 
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -930,6 +958,13 @@ cloudOSOOperator:
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
+    samples:
+      enabled: true
+      items:
+        - name: managed-openstack
+          namespace: entity-acme-corp
+        - name: private-cloud
+          namespace: entity-globex-industries
 
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
