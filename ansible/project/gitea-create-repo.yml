@@ -1,0 +1,26 @@
+---
+- name: Create Gitea repository
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    gitea_url: "{{ lookup('env', 'GITEA_URL') }}"
+    gitea_admin_user: "{{ lookup('env', 'GITEA_ADMIN_USER') | default('gitea_admin', true) }}"
+    gitea_admin_password: "{{ lookup('env', 'GITEA_ADMIN_PASSWORD') }}"
+    repo_name: "{{ lookup('env', 'REPO_NAME') | default('tenancy_repo', true) }}"
+
+  pre_tasks:
+    - name: Wait for Gitea to be reachable
+      ansible.builtin.uri:
+        url: "{{ gitea_url }}/api/v1/version"
+        method: GET
+        validate_certs: false
+        status_code: [200]
+      retries: 30
+      delay: 10
+      register: gitea_health
+      until: gitea_health.status == 200
+
+  roles:
+    - gitea-create-repo

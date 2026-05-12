@@ -1,0 +1,5 @@
+---
+gitea_url: ""
+gitea_admin_user: "gitea_admin"
+gitea_admin_password: ""
+repo_name: "tenancy_repo"

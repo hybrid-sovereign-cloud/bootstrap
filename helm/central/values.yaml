@@ -696,6 +696,20 @@ sovereignJobs:
           value: "S0v3r31gn!G1t34@2026"
         - name: SECRETS_NAMESPACE
           value: "sovereign-cloud-jobs"
+    giteaCreateRepo:
+      enabled: true
+      playbook: gitea-create-repo.yml
+      activeDeadlineSeconds: 300
+      syncWave: "28"
+      env:
+        - name: GITEA_URL
+          value: "https://gitea-gitea.apps.shcservices.lab.signal9.gg"
+        - name: GITEA_ADMIN_USER
+          value: "gitea_admin"
+        - name: GITEA_ADMIN_PASSWORD
+          value: "S0v3r31gn!G1t34@2026"
+        - name: REPO_NAME
+          value: "tenancy_repo"
     keycloakServicesRealms:
       enabled: true
       playbook: keycloak-realms.yml

@@ -1,0 +1,38 @@
+---
+- name: Check if repository already exists
+  ansible.builtin.uri:
+    url: "{{ gitea_url }}/api/v1/repos/{{ gitea_admin_user }}/{{ repo_name }}"
+    method: GET
+    user: "{{ gitea_admin_user }}"
+    password: "{{ gitea_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [200, 404]
+  register: repo_check
+
+- name: Create repository
+  ansible.builtin.uri:
+    url: "{{ gitea_url }}/api/v1/user/repos"
+    method: POST
+    user: "{{ gitea_admin_user }}"
+    password: "{{ gitea_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    body_format: json
+    body:
+      name: "{{ repo_name }}"
+      description: "Infrastructure as Code repository for all hybridsovereign.redhat CRs"
+      private: false
+      auto_init: true
+      default_branch: "main"
+      readme: "Default"
+    status_code: [201]
+  register: repo_result
+  when: repo_check.status == 404
+
+- name: Repository creation result
+  ansible.builtin.debug:
+    msg: >-
+      {{ 'Repository created: ' ~ repo_result.json.html_url
+         if repo_check.status == 404
+         else 'Repository already exists: ' ~ repo_check.json.html_url }}
