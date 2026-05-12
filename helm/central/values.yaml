@@ -877,7 +877,7 @@ pluginQuay:
 # ─── Plugin IaaC Operator (services cluster) ────────────────────────────────
 pluginIaac:
   enabled: true
-  chartVersion: "0.1.2"
+  chartVersion: "0.1.3"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-plugins
   values:
