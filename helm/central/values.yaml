@@ -877,7 +877,7 @@ pluginQuay:
 # ─── Plugin IaaC Operator (services cluster) ────────────────────────────────
 pluginIaac:
   enabled: true
-  chartVersion: "0.1.1"
+  chartVersion: "0.1.2"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -983,7 +983,7 @@ platformOpenshiftOperator:
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
   enabled: true
-  chartVersion: "0.1.1"
+  chartVersion: "0.1.2"
   syncWave: "36"
   destinationNamespace: sovereign-cloud-helpers
   values:
