@@ -1009,7 +1009,7 @@ helperCloudOSO:
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
   enabled: true
-  chartVersion: "0.3.0"
+  chartVersion: "0.3.1"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
