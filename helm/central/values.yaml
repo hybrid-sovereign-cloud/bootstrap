@@ -859,14 +859,14 @@ entityOperator:
 # ─── Team Operator (services cluster) ─────────────────────────────────────
 teamOperator:
   enabled: true
-  chartVersion: "0.2.0"
+  chartVersion: "0.3.3"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/team-operator
-      tag: "0.0.1"
+      tag: "0.0.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -875,42 +875,64 @@ teamOperator:
       items:
         - name: platform-engineering
           namespace: entity-acme-corp
+          features:
+            istio: true
+            argo: true
+          rbacConfig: keycloak-sovereign-tenants-services
+          teamAdmin:
+            - platform-admins
         - name: security-team
           namespace: entity-globex-industries
+          features:
+            istio: false
+            argo: true
+          rbacConfig: keycloak-sovereign-tenants-services
+          teamAdmin:
+            - security-leads
 
 # ─── Assignment Operator (services cluster) ────────────────────────────────
 assignmentOperator:
   enabled: true
-  chartVersion: "0.2.0"
-  syncWave: "38"
+  chartVersion: "0.3.3"
+  syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/assignment-operator
-      tag: "0.0.1"
+      tag: "0.0.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
     samples:
       enabled: true
       items:
-        - name: frontend-team
+        - name: platform-eng-assignment
           namespace: entity-acme-corp
-        - name: backend-team
+          team: platform-engineering
+          projects:
+            - website-redesign
+          openshift:
+            - production-cluster
+        - name: security-assignment
           namespace: entity-globex-industries
+          team: security-team
+          projects:
+            - api-gateway
+          openshift:
+            - staging-cluster
 
 # ─── Project Operator (services cluster) ───────────────────────────────────
 projectOperator:
   enabled: true
-  chartVersion: "0.2.0"
+  chartVersion: "0.3.3"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/project-operator
-      tag: "0.0.1"
+      tag: "0.0.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -919,8 +941,14 @@ projectOperator:
       items:
         - name: website-redesign
           namespace: entity-acme-corp
+          rbacConfig: keycloak-sovereign-tenants-services
+          projectAdmin:
+            - platform-admins
         - name: api-gateway
           namespace: entity-globex-industries
+          rbacConfig: keycloak-sovereign-tenants-services
+          projectAdmin:
+            - api-team-leads
 
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
@@ -969,7 +997,7 @@ cloudOSOOperator:
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
   enabled: true
-  chartVersion: "0.5.0"
+  chartVersion: "0.6.0"
   syncWave: "40"
   destinationNamespace: sovereign-cloud
   values:
@@ -977,7 +1005,7 @@ sovereignDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/sovereign-cloud-dashboard
-      tag: "1.2.3"
+      tag: "1.1.0"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -994,7 +1022,7 @@ sovereignDashboard:
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
   enabled: true
-  chartVersion: "0.7.0"
+  chartVersion: "0.9.0"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
   values:
@@ -1002,7 +1030,7 @@ tenancyDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/tenancy-dashboard
-      tag: "2.0.0"
+      tag: "3.0.0"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
