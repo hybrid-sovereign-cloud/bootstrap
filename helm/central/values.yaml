@@ -871,24 +871,7 @@ teamOperator:
     imagePullSecrets:
       - name: quay-pull-secret
     samples:
-      enabled: true
-      items:
-        - name: platform-engineering
-          namespace: entity-acme-corp
-          features:
-            istio: true
-            argo: true
-          rbacConfig: keycloak-sovereign-tenants-services
-          teamAdmin:
-            - platform-admins
-        - name: security-team
-          namespace: entity-globex-industries
-          features:
-            istio: false
-            argo: true
-          rbacConfig: keycloak-sovereign-tenants-services
-          teamAdmin:
-            - security-leads
+      enabled: false
 
 # ─── Assignment Operator (services cluster) ────────────────────────────────
 assignmentOperator:
@@ -905,22 +888,7 @@ assignmentOperator:
     imagePullSecrets:
       - name: quay-pull-secret
     samples:
-      enabled: true
-      items:
-        - name: platform-eng-assignment
-          namespace: entity-acme-corp
-          team: platform-engineering
-          projects:
-            - website-redesign
-          openshift:
-            - production-cluster
-        - name: security-assignment
-          namespace: entity-globex-industries
-          team: security-team
-          projects:
-            - api-gateway
-          openshift:
-            - staging-cluster
+      enabled: false
 
 # ─── Project Operator (services cluster) ───────────────────────────────────
 projectOperator:
@@ -937,18 +905,7 @@ projectOperator:
     imagePullSecrets:
       - name: quay-pull-secret
     samples:
-      enabled: true
-      items:
-        - name: website-redesign
-          namespace: entity-acme-corp
-          rbacConfig: keycloak-sovereign-tenants-services
-          projectAdmin:
-            - platform-admins
-        - name: api-gateway
-          namespace: entity-globex-industries
-          rbacConfig: keycloak-sovereign-tenants-services
-          projectAdmin:
-            - api-team-leads
+      enabled: false
 
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
@@ -965,12 +922,7 @@ platformOpenshiftOperator:
     imagePullSecrets:
       - name: quay-pull-secret
     samples:
-      enabled: true
-      items:
-        - name: production-cluster
-          namespace: entity-acme-corp
-        - name: staging-cluster
-          namespace: entity-globex-industries
+      enabled: false
 
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
@@ -987,12 +939,7 @@ cloudOSOOperator:
     imagePullSecrets:
       - name: quay-pull-secret
     samples:
-      enabled: true
-      items:
-        - name: managed-openstack
-          namespace: entity-acme-corp
-        - name: private-cloud
-          namespace: entity-globex-industries
+      enabled: false
 
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
