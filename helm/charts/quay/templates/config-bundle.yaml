@@ -1,0 +1,15 @@
+{{- if .Values.registry.enabled }}
+{{- if .Values.registry.configBundle }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.registry.configBundleSecretName | default (printf "%s-config-bundle" .Values.registry.name) }}
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+type: Opaque
+stringData:
+  config.yaml: |
+    {{- .Values.registry.configBundle | nindent 4 }}
+{{- end }}
+{{- end }}

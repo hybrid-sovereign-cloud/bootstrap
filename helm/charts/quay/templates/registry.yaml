@@ -9,6 +9,9 @@ metadata:
     argocd.argoproj.io/sync-wave: "5"
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
+{{- if .Values.registry.configBundle }}
+  configBundleSecret: {{ .Values.registry.configBundleSecretName | default (printf "%s-config-bundle" .Values.registry.name) }}
+{{- end }}
   components:
     - kind: objectstorage
       managed: {{ .Values.registry.components.objectstorage.managed }}
@@ -26,10 +29,10 @@ spec:
       managed: {{ .Values.registry.components.tls.managed }}
     - kind: monitoring
       managed: {{ .Values.registry.components.monitoring.managed }}
-    - kind: quay	
-      managed: true	
-    - kind: horizontalpodautoscaler	
-      managed: true	
-    - kind: clairpostgres	
+    - kind: quay
       managed: true
+    - kind: horizontalpodautoscaler
+      managed: {{ .Values.registry.components.horizontalpodautoscaler.managed | default true }}
+    - kind: clairpostgres
+      managed: {{ .Values.registry.components.clairpostgres.managed | default true }}
 {{- end }}

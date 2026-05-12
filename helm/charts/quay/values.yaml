@@ -29,6 +29,10 @@ registry:
       managed: true
     monitoring:
       managed: true
+    horizontalpodautoscaler:
+      managed: true
+    clairpostgres:
+      managed: true
 
 objectStorage:
   bucketName: "quay-datastorage"

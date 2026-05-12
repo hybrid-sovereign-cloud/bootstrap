@@ -352,7 +352,7 @@ quay:
 # ─── Quay (services) ────────────────────────────────────────────────────────
 quayServices:
   enabled: true
-  chartVersion: "0.5.1"
+  chartVersion: "0.5.2"
   syncWave: "35"
   destinationNamespace: quay-enterprise
   values:
@@ -362,19 +362,34 @@ quayServices:
     registry:
       enabled: true
       name: svc-sovereign-registry
+      configBundle: |
+        FEATURE_USER_INITIALIZE: true
+        FEATURE_SUPERUSERS_FULL_ACCESS: true
+        SUPER_USERS:
+          - sovereign_admin
+        FEATURE_USER_CREATION: true
+      configBundleSecretName: svc-sovereign-registry-config-bundle
       components:
         objectstorage:
           managed: true
         postgres:
           managed: true
         clair:
-          managed: true
+          managed: false
         redis:
           managed: true
         mirror:
-          managed: true
+          managed: false
         monitoring:
           managed: false
+        horizontalpodautoscaler:
+          managed: false
+        clairpostgres:
+          managed: false
+        route:
+          managed: true
+        tls:
+          managed: true
 
 # ─── Gitea (services cluster) ──────────────────────────────────────────────
 gitea:
