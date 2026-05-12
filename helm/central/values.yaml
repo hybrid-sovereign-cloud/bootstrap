@@ -376,10 +376,10 @@ quayServices:
         monitoring:
           managed: false
 
-# ─── Gitea (central only) ───────────────────────────────────────────────────
+# ─── Gitea (services cluster) ──────────────────────────────────────────────
 gitea:
   enabled: true
-  chartVersion: "0.3.0"
+  chartVersion: "0.4.0"
   syncWave: "18"
   values:
     gitea:
@@ -395,10 +395,14 @@ gitea:
         tag: "1.25.5"
         rootless: true
       gitea:
+        admin:
+          username: gitea_admin
+          password: "S0v3r31gn!G1t34@2026"
+          email: "admin@sovereign.local"
         config:
           server:
-            DOMAIN: ""
-            ROOT_URL: ""
+            DOMAIN: "gitea-gitea.apps.shcservices.lab.signal9.gg"
+            ROOT_URL: "https://gitea-gitea.apps.shcservices.lab.signal9.gg"
           database:
             DB_TYPE: postgres
           session:
@@ -444,6 +448,17 @@ gitea:
         size: 10Gi
       route:
         enabled: true
+    pullSecret:
+      enabled: true
+      dockerconfigjson: "eyJhdXRocyI6eyJxdWF5LnNpZ25hbDkuZ2ciOnsidXNlcm5hbWUiOiJoeWJyaWQtc292ZXJlaWduK3B1bGwiLCJwYXNzd29yZCI6Ilg4WFAwRzNDTVEyMVRXTFVET0JUU0VZWTAzNkZaTDlVWENWVzg3VDNNSlQ3OEtITlExTTZOUzZCUjRHMVVOS1QiLCJhdXRoIjoiYUhsaWNtbGtMWE52ZG1WeVpXbG5iaXR3ZFd4c09sZzRXRkF3UnpORFRWRXlNVlJYVEZWRVQwSlVVMFZaV1RBek5rWmFURGxWV0VOV1Z6ZzNWRE5OU2xRM09FdElUbEV4VFRaT1V6WkNValJITVZWT1MxUT0ifX19"
+    giteaTokenExternalSecret:
+      enabled: true
+      targetNamespace: sovereign-cloud-plugins
+      targetSecretName: gitea-admin-token
+      secretStoreName: vault-backend
+      secretStoreKind: ClusterSecretStore
+      vaultPath: gitea-admin
+      refreshInterval: "1h"
 
 # ─── Crunchy Postgres (central) ─────────────────────────────────────────────
 crunchyPostgres:
@@ -674,7 +689,11 @@ sovereignJobs:
               property: admin_token
       env:
         - name: GITEA_URL
-          value: "http://gitea-http.gitea.svc:3000"
+          value: "https://gitea-gitea.apps.shcservices.lab.signal9.gg"
+        - name: GITEA_ADMIN_USER
+          value: "gitea_admin"
+        - name: GITEA_ADMIN_PASSWORD
+          value: "S0v3r31gn!G1t34@2026"
         - name: SECRETS_NAMESPACE
           value: "sovereign-cloud-jobs"
     keycloakServicesRealms:

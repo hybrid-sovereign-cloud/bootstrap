@@ -11,7 +11,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: {{ .Values.gitea.syncWave | quote }}
 spec:
-  project: central
+  project: services
 
   source:
     repoURL: {{ printf "oci://%s/%s/gitea" .Values.oci.registry .Values.oci.repositoryBase | quote }}
@@ -23,7 +23,7 @@ spec:
         {{- toYaml .Values.gitea.values | nindent 8 }}
 
   destination:
-    server: https://kubernetes.default.svc
+    server: {{ .Values.servicesCluster.server | quote }}
     namespace: gitea
 
   ignoreDifferences:

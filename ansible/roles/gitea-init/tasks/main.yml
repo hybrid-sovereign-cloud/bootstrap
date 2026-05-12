@@ -1,28 +1,8 @@
 ---
-- name: Get Gitea admin password from deployment
-  kubernetes.core.k8s_info:
-    kind: Deployment
-    name: gitea
-    namespace: gitea
-  register: gitea_deploy
-  retries: 10
-  delay: 10
-  until: gitea_deploy.resources | length > 0
-
-- name: Extract admin password from init container env
+- name: Set admin credentials from environment
   ansible.builtin.set_fact:
-    gitea_admin_password: >-
-      {{ gitea_deploy.resources[0].spec.template.spec.initContainers
-         | selectattr('name', 'equalto', 'configure-gitea')
-         | map(attribute='env') | first
-         | selectattr('name', 'equalto', 'GITEA_ADMIN_PASSWORD')
-         | map(attribute='value') | first }}
-    gitea_admin_user: >-
-      {{ gitea_deploy.resources[0].spec.template.spec.initContainers
-         | selectattr('name', 'equalto', 'configure-gitea')
-         | map(attribute='env') | first
-         | selectattr('name', 'equalto', 'GITEA_ADMIN_USERNAME')
-         | map(attribute='value') | first }}
+    gitea_admin_user: "{{ lookup('env', 'GITEA_ADMIN_USER') | default('gitea_admin', true) }}"
+    gitea_admin_password: "{{ lookup('env', 'GITEA_ADMIN_PASSWORD') }}"
 
 - name: Wait for Gitea API to be reachable
   ansible.builtin.uri:

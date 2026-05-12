@@ -76,3 +76,16 @@ gitea:
 
   route:
     enabled: true
+
+pullSecret:
+  enabled: false
+  dockerconfigjson: ""
+
+giteaTokenExternalSecret:
+  enabled: false
+  targetNamespace: sovereign-cloud-plugins
+  targetSecretName: gitea-admin-token
+  secretStoreName: vault-backend
+  secretStoreKind: ClusterSecretStore
+  vaultPath: gitea-admin
+  refreshInterval: "1h"
