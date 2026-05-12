@@ -874,6 +874,29 @@ pluginQuay:
       secret: quay-admin-credentials
       rbacConfig: keycloak-sovereign-tenants-services
 
+# ─── Plugin IaaC Operator (services cluster) ────────────────────────────────
+pluginIaac:
+  enabled: true
+  chartVersion: "0.1.1"
+  syncWave: "40"
+  destinationNamespace: sovereign-cloud-plugins
+  values:
+    namespace: sovereign-cloud-plugins
+    image:
+      repository: quay.signal9.gg/hybrid-sovereign/plugin-iaac
+      tag: "0.0.1"
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: quay-pull-secret
+    gitea:
+      url: "https://gitea-gitea.apps.shcservices.lab.signal9.gg"
+      repoOwner: "gitea_admin"
+      repoName: "tenancy_repo"
+      secretName: "gitea-admin-token"
+    defaultIaac:
+      enabled: true
+      name: iaac
+
 # ─── Entity Operator (services cluster) ─────────────────────────────────────
 entityOperator:
   enabled: true
@@ -956,6 +979,32 @@ platformOpenshiftOperator:
       - name: quay-pull-secret
     samples:
       enabled: false
+
+# ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
+helperCloudOSO:
+  enabled: true
+  chartVersion: "0.1.1"
+  syncWave: "36"
+  destinationNamespace: sovereign-cloud-helpers
+  values:
+    namespace: sovereign-cloud-helpers
+    image:
+      repository: quay.signal9.gg/hybrid-sovereign/helper-cloudoso
+      tag: "0.0.1"
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: quay-pull-secret
+    openstackSecret:
+      name: atuin-cloud
+      mountPath: /etc/openstack
+    crossClusterSA:
+      enabled: true
+      name: osohelper-creator-sa
+      pushSecret:
+        enabled: true
+        secretStoreName: vault-backend
+        secretStoreKind: ClusterSecretStore
+        vaultPath: osohelper-creator-sa
 
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
