@@ -42,4 +42,4 @@
             admin_user: "{{ gitea_credentials.admin_user }}"
             admin_password: "{{ gitea_credentials.admin_password }}"
             admin_token: "{{ gitea_credentials.admin_token }}"
-      when: gitea_credentials is defined
+      when: gitea_credentials is defined and gitea_credentials.admin_token != 'existing-token'
