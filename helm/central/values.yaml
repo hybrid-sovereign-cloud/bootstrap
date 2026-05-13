@@ -1038,14 +1038,14 @@ helperCloudOSO:
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
   enabled: true
-  chartVersion: "0.3.1"
+  chartVersion: "0.3.2"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/cloudoso-operator
-      tag: "0.0.2"
+      tag: "0.0.3"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1093,7 +1093,7 @@ sovereignDashboard:
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
   enabled: true
-  chartVersion: "0.9.1"
+  chartVersion: "0.9.2"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
   values:
@@ -1101,7 +1101,7 @@ tenancyDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/tenancy-dashboard
-      tag: "3.0.1"
+      tag: "3.0.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
