@@ -394,7 +394,7 @@ quayServices:
 # ─── Gitea (services cluster) ──────────────────────────────────────────────
 gitea:
   enabled: true
-  chartVersion: "0.4.2"
+  chartVersion: "0.4.3"
   syncWave: "18"
   values:
     gitea:
