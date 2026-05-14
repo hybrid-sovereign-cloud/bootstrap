@@ -1,0 +1,14 @@
+---
+# Phase 3: Cleanup ArgoCD configuration.
+# Removes all Applications, ApplicationSets, registered clusters (except in-cluster),
+# repos, and AppProjects (except default).
+# Preserves ArgoCD installation itself.
+# Run LAST — after cleanup-services-cluster and cleanup-central-cluster.
+#
+- name: Cleanup ArgoCD Configuration
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  roles:
+    - role: cleanup-argocd

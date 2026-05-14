@@ -1,0 +1,38 @@
+---
+# Phase 3: Full cleanup of services cluster workloads.
+# Leaves the cluster itself intact. Removes all platform-deployed resources.
+# Run AFTER disabling ArgoCD auto-sync to prevent immediate re-creation.
+#
+# Prerequisites:
+#   - VAULT_SECRET_NAME / VAULT_SECRET_NAMESPACE set (for services cluster token)
+#   - OCP_SERVICES_SERVER set
+#
+- name: Cleanup Services Cluster — Platform Workloads
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    ocp_services_server: "{{ lookup('env', 'OCP_SERVICES_SERVER') }}"
+
+  pre_tasks:
+    - name: Get services cluster bearer token from ArgoCD cluster secret
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Secret
+        name: argocd-cluster-services
+        namespace: openshift-gitops
+      register: argocd_cluster_secret
+      retries: 5
+      delay: 10
+      until: argocd_cluster_secret.resources | length > 0
+
+    - name: Extract services cluster bearer token
+      ansible.builtin.set_fact:
+        services_bearer_token: >-
+          {{ (argocd_cluster_secret.resources[0].data.config | b64decode | from_json).bearerToken }}
+
+  roles:
+    - role: cleanup-services-cluster
+      services_api_host: "{{ ocp_services_server }}"
+      services_api_token: "{{ services_bearer_token }}"

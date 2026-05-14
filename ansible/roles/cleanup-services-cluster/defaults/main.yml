@@ -1,0 +1,57 @@
+---
+services_api_host: ""
+services_api_token: ""
+
+# Namespaces to delete entirely (platform-provisioned, non-sovereign-* prefix)
+services_platform_namespaces:
+  - vault
+  - rhbk
+  - aap
+  - quay-enterprise
+  - gitea
+  - openshift-storage
+
+# CR groups to remove from all namespaces
+services_cr_groups:
+  - group: hybridsovereign.redhat
+    version: v1alpha1
+    kinds:
+      - Entity
+      - Team
+      - Assignment
+      - Project
+      - PlatformOpenshift
+      - RbacConfig
+      - Rbac
+      - AAPConfig
+      - AAPOrg
+      - QuayConfig
+      - QuayOrg
+      - Iaac
+      - Vault
+      - VaultKV
+      - CloudOSO
+
+# OLM subscription and CSV names (operator lifecycle manager)
+services_olm_subscriptions:
+  - namespace: sovereign-cloud-plugins
+    names:
+      - plugin-rbac-operator
+      - plugin-vault-operator
+      - plugin-aap-operator
+      - plugin-quay-operator
+      - plugin-iaac-operator
+  - namespace: sovereign-cloud
+    names:
+      - entity-operator
+      - team-operator
+      - assignment-operator
+      - project-operator
+      - platformopenshift-operator
+
+# Namespaces NOT to delete (sovereign-* prefix protected)
+protected_namespace_prefixes:
+  - sovereign-
+
+# Dynamic plugin ConfigMaps to remove from openshift-gitops
+dynamic_plugin_configmaps: []

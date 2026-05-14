@@ -1,0 +1,12 @@
+---
+# Phase 3: Full cleanup of central cluster platform workloads.
+# Does NOT remove ArgoCD itself (openshift-gitops namespace preserved).
+# Run AFTER disabling ArgoCD auto-sync and AFTER cleanup-services-cluster.
+#
+- name: Cleanup Central Cluster — Platform Workloads
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  roles:
+    - role: cleanup-central-cluster

@@ -1,0 +1,27 @@
+---
+# Namespaces to delete entirely on the central cluster
+central_platform_namespaces:
+  - vault
+  - rhbk
+  - quay-enterprise
+  - openshift-storage
+  - gitea
+  - external-secrets
+  - vault-central
+
+# OLM subscriptions to delete from central cluster
+central_olm_subscriptions:
+  - namespace: openshift-operators
+    names:
+      - rhbk-operator
+      - odf-operator
+      - quay-operator
+      - crunchy-postgres-operator
+      - rhacm
+  - namespace: sovereign-cloud-helpers
+    names:
+      - helper-cloudoso-operator
+
+# RHACM MultiClusterHub to remove
+remove_multicluster_hub: true
+multicluster_hub_namespace: open-cluster-management

@@ -1,0 +1,39 @@
+---
+- name: "Delete subscriptions in {{ olm_entry.namespace }}"
+  kubernetes.core.k8s:
+    host: "{{ services_api_host }}"
+    api_key: "{{ services_api_token }}"
+    validate_certs: false
+    state: absent
+    api_version: operators.coreos.com/v1alpha1
+    kind: Subscription
+    name: "{{ sub_name }}"
+    namespace: "{{ olm_entry.namespace }}"
+  loop: "{{ olm_entry.names }}"
+  loop_control:
+    loop_var: sub_name
+  ignore_errors: true
+
+- name: "List CSVs in {{ olm_entry.namespace }}"
+  kubernetes.core.k8s_info:
+    host: "{{ services_api_host }}"
+    api_key: "{{ services_api_token }}"
+    validate_certs: false
+    api_version: operators.coreos.com/v1alpha1
+    kind: ClusterServiceVersion
+    namespace: "{{ olm_entry.namespace }}"
+  register: csvs
+  ignore_errors: true
+
+- name: "Delete all CSVs in {{ olm_entry.namespace }}"
+  kubernetes.core.k8s:
+    host: "{{ services_api_host }}"
+    api_key: "{{ services_api_token }}"
+    validate_certs: false
+    state: absent
+    api_version: operators.coreos.com/v1alpha1
+    kind: ClusterServiceVersion
+    name: "{{ item.metadata.name }}"
+    namespace: "{{ olm_entry.namespace }}"
+  loop: "{{ csvs.resources | default([]) }}"
+  ignore_errors: true

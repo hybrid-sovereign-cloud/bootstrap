@@ -1,0 +1,123 @@
+---
+# ─── Step 1: Disable auto-sync on all Applications ───────────────────────────
+- name: List all ArgoCD Applications
+  kubernetes.core.k8s_info:
+    api_version: argoproj.io/v1alpha1
+    kind: Application
+    namespace: "{{ argocd_namespace }}"
+  register: all_applications
+
+- name: Disable auto-sync on all Applications
+  kubernetes.core.k8s:
+    state: patched
+    api_version: argoproj.io/v1alpha1
+    kind: Application
+    name: "{{ item.metadata.name }}"
+    namespace: "{{ argocd_namespace }}"
+    definition:
+      spec:
+        syncPolicy: {}
+  loop: "{{ all_applications.resources | default([]) }}"
+  ignore_errors: true
+
+# ─── Step 2: Delete all Applications ──────────────────────────────────────────
+- name: Delete all ArgoCD Applications (except preserved)
+  kubernetes.core.k8s:
+    state: absent
+    api_version: argoproj.io/v1alpha1
+    kind: Application
+    name: "{{ item.metadata.name }}"
+    namespace: "{{ argocd_namespace }}"
+  loop: "{{ all_applications.resources | default([]) }}"
+  when: item.metadata.name not in preserved_applications
+  ignore_errors: true
+
+# ─── Step 3: Delete all ApplicationSets ───────────────────────────────────────
+- name: List all ArgoCD ApplicationSets
+  kubernetes.core.k8s_info:
+    api_version: argoproj.io/v1alpha1
+    kind: ApplicationSet
+    namespace: "{{ argocd_namespace }}"
+  register: all_appsets
+
+- name: Delete all ApplicationSets (except preserved)
+  kubernetes.core.k8s:
+    state: absent
+    api_version: argoproj.io/v1alpha1
+    kind: ApplicationSet
+    name: "{{ item.metadata.name }}"
+    namespace: "{{ argocd_namespace }}"
+  loop: "{{ all_appsets.resources | default([]) }}"
+  when: item.metadata.name not in preserved_appsets
+  ignore_errors: true
+
+# ─── Step 4: Delete registered clusters (except in-cluster) ───────────────────
+- name: List all cluster secrets in ArgoCD namespace
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    namespace: "{{ argocd_namespace }}"
+    label_selectors:
+      - "argocd.argoproj.io/secret-type=cluster"
+  register: cluster_secrets
+
+- name: Delete external cluster secrets
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Secret
+    name: "{{ item.metadata.name }}"
+    namespace: "{{ argocd_namespace }}"
+  loop: "{{ cluster_secrets.resources | default([]) }}"
+  when: (item.data.server | b64decode) not in preserved_clusters
+  ignore_errors: true
+
+# ─── Step 5: Delete ArgoCD repository secrets ─────────────────────────────────
+- name: List all repo secrets in ArgoCD namespace
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    namespace: "{{ argocd_namespace }}"
+    label_selectors:
+      - "argocd.argoproj.io/secret-type=repository"
+  register: repo_secrets
+
+- name: Delete all repo secrets
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Secret
+    name: "{{ item.metadata.name }}"
+    namespace: "{{ argocd_namespace }}"
+  loop: "{{ repo_secrets.resources | default([]) }}"
+  ignore_errors: true
+
+# ─── Step 6: Delete AppProjects (except default) ──────────────────────────────
+- name: List all AppProjects
+  kubernetes.core.k8s_info:
+    api_version: argoproj.io/v1alpha1
+    kind: AppProject
+    namespace: "{{ argocd_namespace }}"
+  register: all_projects
+
+- name: Delete non-default AppProjects
+  kubernetes.core.k8s:
+    state: absent
+    api_version: argoproj.io/v1alpha1
+    kind: AppProject
+    name: "{{ item.metadata.name }}"
+    namespace: "{{ argocd_namespace }}"
+  loop: "{{ all_projects.resources | default([]) }}"
+  when: item.metadata.name != "default"
+  ignore_errors: true
+
+- name: Cleanup summary
+  ansible.builtin.debug:
+    msg: |
+      ArgoCD cleanup complete.
+      Deleted {{ all_applications.resources | length }} Applications
+      Deleted {{ all_appsets.resources | length }} ApplicationSets
+      Deleted {{ cluster_secrets.resources | length }} cluster secrets
+      Deleted {{ repo_secrets.resources | length }} repo secrets
+      Deleted {{ all_projects.resources | length }} AppProjects
+      ArgoCD installation preserved in {{ argocd_namespace }}.

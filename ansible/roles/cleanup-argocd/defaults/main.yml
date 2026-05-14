@@ -1,0 +1,9 @@
+---
+argocd_namespace: openshift-gitops
+# Application and AppSet names to preserve (NOT deleted)
+preserved_applications: []
+preserved_appsets:
+  - sovereign-central-apps
+# The in-cluster server URL (always preserved)
+preserved_clusters:
+  - https://kubernetes.default.svc

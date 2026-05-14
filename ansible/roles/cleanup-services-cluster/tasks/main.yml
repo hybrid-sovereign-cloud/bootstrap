@@ -1,0 +1,60 @@
+---
+# ─── Step 1: Delete all platform CRs from all namespaces ──────────────────────
+- name: Delete all platform CRs from services cluster
+  ansible.builtin.include_tasks: delete-crs.yml
+  loop: "{{ services_cr_groups }}"
+  loop_control:
+    loop_var: cr_group
+
+# ─── Step 2: Delete OLM subscriptions and CSVs ────────────────────────────────
+- name: Delete OLM subscriptions from services cluster
+  ansible.builtin.include_tasks: delete-olm.yml
+  loop: "{{ services_olm_subscriptions }}"
+  loop_control:
+    loop_var: olm_entry
+
+# ─── Step 3: Delete dynamic plugin resources ──────────────────────────────────
+- name: Delete dynamic plugin configs from openshift-gitops
+  kubernetes.core.k8s:
+    host: "{{ services_api_host }}"
+    api_key: "{{ services_api_token }}"
+    validate_certs: false
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: "{{ item }}"
+        namespace: openshift-gitops
+  loop: "{{ dynamic_plugin_configmaps }}"
+  ignore_errors: true
+
+# ─── Step 4: Delete platform namespaces ───────────────────────────────────────
+- name: Delete platform namespaces on services cluster
+  kubernetes.core.k8s:
+    host: "{{ services_api_host }}"
+    api_key: "{{ services_api_token }}"
+    validate_certs: false
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item }}"
+  loop: "{{ services_platform_namespaces }}"
+  ignore_errors: true
+
+- name: Wait for platform namespaces to terminate
+  kubernetes.core.k8s_info:
+    host: "{{ services_api_host }}"
+    api_key: "{{ services_api_token }}"
+    validate_certs: false
+    api_version: v1
+    kind: Namespace
+    name: "{{ item }}"
+  register: ns_status
+  loop: "{{ services_platform_namespaces }}"
+  retries: 30
+  delay: 10
+  until: ns_status.resources | length == 0
+  ignore_errors: true
