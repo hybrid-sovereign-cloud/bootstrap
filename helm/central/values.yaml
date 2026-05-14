@@ -952,7 +952,9 @@ pluginRbac:
         cpu: 10m
         memory: 512Mi
     externalSecret:
-      enabled: true
+      # Disabled: plugin-vault already deploys rhbk-services-admin ExternalSecret.
+      # Dual ownership causes ArgoCD label drift (Issue 19).
+      enabled: false
       targetSecretName: rhbk-services-admin
       secretStoreName: vault-backend
       secretStoreKind: ClusterSecretStore
