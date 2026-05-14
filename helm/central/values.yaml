@@ -276,7 +276,7 @@ rhacm:
 
 # ─── AAP (services cluster) ─────────────────────────────────────────────────
 aap:
-  enabled: false
+  enabled: true
   chartVersion: "0.5.1"
   syncWave: "30"
   destinationNamespace: aap
@@ -921,7 +921,7 @@ sovereignJobs:
 
 # ─── Plugin RBAC Operator (services cluster) ────────────────────────────────
 pluginRbac:
-  enabled: false
+  enabled: true
   chartVersion: "0.4.3"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -955,7 +955,7 @@ pluginRbac:
 
 # ─── Plugin Vault Operator (services cluster) ──────────────────────────────
 pluginVault:
-  enabled: false
+  enabled: true
   chartVersion: "0.2.9"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -984,7 +984,7 @@ pluginVault:
 
 # ─── Plugin AAP Operator (services cluster) ───────────────────────────────
 pluginAap:
-  enabled: false
+  enabled: true
   chartVersion: "0.2.2"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -1012,14 +1012,15 @@ pluginAap:
       vaultPath: aap-admin
       refreshInterval: "1h"
     defaultAAPConfig:
-      enabled: true
+      # Disabled until AAP is fully deployed and credentials are in vault
+      enabled: false
       name: aap-sovereign-services
       secret: aap-admin-credentials
       rbacConfig: keycloak-sovereign-tenants-services
 
 # ─── Plugin Quay Operator (services cluster) ──────────────────────────────
 pluginQuay:
-  enabled: false
+  enabled: true
   chartVersion: "0.2.5"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -1045,14 +1046,15 @@ pluginQuay:
       vaultPath: quay-admin
       refreshInterval: "1h"
     defaultQuayConfig:
-      enabled: true
+      # Disabled until Quay is fully deployed and credentials are in vault
+      enabled: false
       name: quay-sovereign-services
       secret: quay-admin-credentials
       rbacConfig: keycloak-sovereign-tenants-services
 
 # ─── Plugin IaaC Operator (services cluster) ────────────────────────────────
 pluginIaac:
-  enabled: false
+  enabled: true
   chartVersion: "0.1.4"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-plugins
@@ -1075,7 +1077,7 @@ pluginIaac:
 
 # ─── Entity Operator (services cluster) ─────────────────────────────────────
 entityOperator:
-  enabled: false
+  enabled: true
   chartVersion: "0.6.2"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1087,10 +1089,12 @@ entityOperator:
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
+    samples:
+      enabled: true
 
 # ─── Team Operator (services cluster) ─────────────────────────────────────
 teamOperator:
-  enabled: false
+  enabled: true
   chartVersion: "0.3.4"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1103,11 +1107,11 @@ teamOperator:
     imagePullSecrets:
       - name: quay-pull-secret
     samples:
-      enabled: false
+      enabled: true
 
 # ─── Assignment Operator (services cluster) ────────────────────────────────
 assignmentOperator:
-  enabled: false
+  enabled: true
   chartVersion: "0.3.4"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
@@ -1120,11 +1124,11 @@ assignmentOperator:
     imagePullSecrets:
       - name: quay-pull-secret
     samples:
-      enabled: false
+      enabled: true
 
 # ─── Project Operator (services cluster) ───────────────────────────────────
 projectOperator:
-  enabled: false
+  enabled: true
   chartVersion: "0.3.4"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1137,11 +1141,11 @@ projectOperator:
     imagePullSecrets:
       - name: quay-pull-secret
     samples:
-      enabled: false
+      enabled: true
 
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
-  enabled: false
+  enabled: true
   chartVersion: "0.2.1"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1154,7 +1158,7 @@ platformOpenshiftOperator:
     imagePullSecrets:
       - name: quay-pull-secret
     samples:
-      enabled: false
+      enabled: true
 
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
@@ -1221,7 +1225,7 @@ cloudOSOOperator:
 
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
-  enabled: false
+  enabled: true
   chartVersion: "0.8.0"
   syncWave: "40"
   destinationNamespace: sovereign-cloud
@@ -1254,7 +1258,7 @@ sovereignDashboard:
 
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
-  enabled: false
+  enabled: true
   chartVersion: "0.9.3"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
