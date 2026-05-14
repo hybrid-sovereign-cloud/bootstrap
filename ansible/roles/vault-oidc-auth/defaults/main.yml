@@ -1,0 +1,32 @@
+---
+vault_addr: "http://vault-active.vault.svc:8200"
+vault_root_token: ""
+
+# Services vault
+vault_services_addr: ""
+vault_services_root_token: ""
+
+# Central keycloak OIDC settings
+keycloak_central_url: ""
+keycloak_central_realm: "sovereign-central"
+vault_oidc_mount: "oidc"
+
+# Services keycloak OIDC settings
+keycloak_services_url: ""
+keycloak_services_realm: "sovereign-tenants"
+keycloak_services_admin_user: "admin"
+keycloak_services_admin_password: ""
+
+# Vault client IDs in each keycloak realm
+vault_central_client_id: "vault"
+vault_services_client_id: "vault"
+
+# Vault admin group (Keycloak group that gets admin policy in Vault)
+vault_admin_group: "sovereign-admin"
+admin_policy_name: "sovereign-admin-policy"
+oidc_role_name: "sovereign-admin"
+
+# Default redirect URIs for Vault UI
+vault_redirect_uris:
+  - "http://localhost:8250/oidc/callback"
+  - "https://ui.vault.hashicorp.com/oidc/callback"

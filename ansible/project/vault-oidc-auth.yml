@@ -1,0 +1,85 @@
+---
+- name: Configure Vault OIDC Authentication with Keycloak
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    vault_addr: "{{ lookup('env', 'VAULT_ADDR') | default('http://vault-active.vault.svc:8200', true) }}"
+    vault_namespace: "{{ lookup('env', 'VAULT_SECRET_NAMESPACE') | default('vault', true) }}"
+    vault_secret_name: "{{ lookup('env', 'VAULT_SECRET_NAME') | default('vault-init-secrets', true) }}"
+    vault_services_addr: "{{ lookup('env', 'VAULT_SERVICES_ADDR') | default('', true) }}"
+    keycloak_central_url: "{{ lookup('env', 'KEYCLOAK_CENTRAL_URL') }}"
+    keycloak_services_url: "{{ lookup('env', 'KEYCLOAK_SERVICES_URL') | default('', true) }}"
+    keycloak_central_realm: "{{ lookup('env', 'KEYCLOAK_CENTRAL_REALM') | default('sovereign-central', true) }}"
+    keycloak_services_realm: "{{ lookup('env', 'KEYCLOAK_SERVICES_REALM') | default('sovereign-tenants', true) }}"
+    keycloak_services_admin_secret_name: "{{ lookup('env', 'KEYCLOAK_SERVICES_ADMIN_SECRET') | default('rhbk-services-admin', true) }}"
+    keycloak_services_admin_secret_ns: "{{ lookup('env', 'KEYCLOAK_SERVICES_ADMIN_SECRET_NS') | default('sovereign-cloud-jobs', true) }}"
+
+  pre_tasks:
+    - name: Retrieve central Vault root token
+      kubernetes.core.k8s_info:
+        kind: Secret
+        name: "{{ vault_secret_name }}"
+        namespace: "{{ vault_namespace }}"
+      register: vault_secret
+      retries: 10
+      delay: 10
+      until: vault_secret.resources | length > 0
+
+    - name: Set root token fact
+      ansible.builtin.set_fact:
+        vault_root_token: "{{ vault_secret.resources[0].data.root_token | b64decode }}"
+
+    - name: Read services vault init token from central vault KV
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/central/data/vault-services-init"
+        method: GET
+        validate_certs: false
+        headers:
+          X-Vault-Token: "{{ vault_root_token }}"
+        status_code: [200, 404]
+      register: vault_services_init_kv
+      when: vault_services_addr | length > 0
+      retries: 5
+      delay: 10
+      until: vault_services_init_kv.status in [200, 404]
+
+    - name: Set services vault root token from KV
+      ansible.builtin.set_fact:
+        vault_services_root_token: >-
+          {{ vault_services_init_kv.json.data.data.root_token
+             if (vault_services_init_kv.status == 200 and vault_services_init_kv.json is defined)
+             else '' }}
+      when: vault_services_addr | length > 0
+
+    - name: Read services keycloak admin secret
+      kubernetes.core.k8s_info:
+        kind: Secret
+        name: "{{ keycloak_services_admin_secret_name }}"
+        namespace: "{{ keycloak_services_admin_secret_ns }}"
+      register: kc_services_admin_secret
+      when: keycloak_services_url | length > 0
+      retries: 5
+      delay: 5
+      until: kc_services_admin_secret.resources | length > 0
+      ignore_errors: true
+
+    - name: Set services keycloak admin password
+      ansible.builtin.set_fact:
+        keycloak_services_admin_password: >-
+          {{ kc_services_admin_secret.resources[0].data.password | b64decode
+             if (kc_services_admin_secret.resources is defined and kc_services_admin_secret.resources | length > 0)
+             else '' }}
+      when: keycloak_services_url | length > 0
+
+  roles:
+    - role: vault-oidc-auth
+      keycloak_central_url: "{{ keycloak_central_url }}"
+      keycloak_central_realm: "{{ keycloak_central_realm }}"
+      keycloak_services_url: "{{ keycloak_services_url | default('') }}"
+      keycloak_services_realm: "{{ keycloak_services_realm }}"
+      keycloak_services_admin_user: "admin"
+      keycloak_services_admin_password: "{{ keycloak_services_admin_password | default('') }}"
+      vault_services_addr: "{{ vault_services_addr }}"
+      vault_services_root_token: "{{ vault_services_root_token | default('') }}"

@@ -1,0 +1,27 @@
+---
+vault_addr: "http://vault-active.vault.svc:8200"
+vault_root_token: ""
+
+# Mount names for the two k8s auth backends on central vault
+vault_k8s_central_mount: "kubernetes-central"
+vault_k8s_services_mount: "kubernetes-services"
+
+# ESO ServiceAccount that authenticates to Vault
+eso_service_account: "external-secrets-vault-sa"
+eso_namespace: "external-secrets"
+
+# Vault policy name granted to ESO for reading platform secrets
+eso_policy_name: "external-secrets-policy"
+
+# Vault role name bound to the ESO SA
+eso_role_name: "external-secrets"
+
+# Services cluster API URL (required for kubernetes-services auth mount)
+ocp_services_server: ""
+
+# Services vault settings (for enabling k8s auth on services-vault)
+vault_services_addr: ""
+vault_services_root_token: ""
+
+# Vault policy for admin access
+admin_policy_name: "sovereign-admin-policy"

@@ -411,9 +411,11 @@ gitea:
         rootless: true
       gitea:
         admin:
-          username: gitea_admin
-          password: "S0v3r31gn!G1t34@2026"
-          email: "admin@sovereign.local"
+          # Credentials sourced from k8s Secret 'gitea-admin-credentials' (created by init chart from env vars)
+          # DEVIATION: Gitea chart deploys at wave 18, before Vault is initialized (wave 23).
+          # A k8s Secret pre-created during 'make init-central-argo' is used as a bridge.
+          # Post-init, credentials are pushed to Vault via PushSecret in giteaInit job.
+          existingSecret: "gitea-admin-credentials"
         config:
           server:
             DOMAIN: "gitea-gitea.apps.shcservices.lab.signal9.gg"
@@ -464,8 +466,10 @@ gitea:
       route:
         enabled: true
     pullSecret:
-      enabled: true
-      dockerconfigjson: "eyJhdXRocyI6eyJxdWF5LnNpZ25hbDkuZ2ciOnsidXNlcm5hbWUiOiJoeWJyaWQtc292ZXJlaWduK3B1bGwiLCJwYXNzd29yZCI6Ilg4WFAwRzNDTVEyMVRXTFVET0JUU0VZWTAzNkZaTDlVWENWVzg3VDNNSlQ3OEtITlExTTZOUzZCUjRHMVVOS1QiLCJhdXRoIjoiYUhsaWNtbGtMWE52ZG1WeVpXbG5iaXR3ZFd4c09sZzRXRkF3UnpORFRWRXlNVlJYVEZWRVQwSlVVMFZaV1RBek5rWmFURGxWV0VOV1Z6ZzNWRE5OU2xRM09FdElUbEV4VFRaT1V6WkNValJITVZWT1MxUT0ifX19"
+      # Disabled: quay-pull-secret is provisioned by the init chart via make init-central-argo.
+      # The OCI robot credentials must NEVER be committed to git.
+      enabled: false
+      dockerconfigjson: ""
     giteaTokenExternalSecret:
       enabled: true
       targetNamespace: sovereign-cloud-plugins
@@ -520,32 +524,54 @@ externalSecretsServices:
       sourceNamespace: openshift-marketplace
     namespace: external-secrets
 
-# ─── Vault ClusterSecretStore (central) ─────────────────────────────────────
+# ─── Vault Central Namespace (backup copies of init secrets) ─────────────────
+vaultCentralNamespace:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "27"
+  values:
+    namespace: vault-central
+    secretStore:
+      name: vault-backend
+      kind: ClusterSecretStore
+    vaultInitSecretsCopy:
+      enabled: true
+    vaultServicesInitSecretsCopy:
+      enabled: true
+
+# ─── Vault ClusterSecretStore (central) — uses k8s auth ─────────────────────
 vaultSecretStore:
   enabled: true
-  chartVersion: "0.2.1"
+  chartVersion: "0.3.0"
   syncWave: "22"
   values:
     vault:
       server: "http://vault-active.vault.svc:8200"
       path: "central"
-      tokenSecretName: "vault-init-secrets"
-      tokenSecretNamespace: "vault"
-      tokenSecretKey: "root_token"
+    auth:
+      type: kubernetes
+      mountPath: "kubernetes-central"
+      role: "external-secrets"
+      serviceAccountName: "external-secrets-vault-sa"
+      serviceAccountNamespace: "external-secrets"
 
 # ─── Vault ClusterSecretStore (services → vault-central via external route) ─
+# Uses kubernetes-services auth mount on central vault (k8s auth, no root token)
 vaultSecretStoreServices:
   enabled: true
-  chartVersion: "0.2.1"
+  chartVersion: "0.3.0"
   syncWave: "22"
   values:
     vault:
       server: "https://vault-central.apps.shc-central.lab.signal9.gg"
       path: "central"
       caBundle: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURlVENDQW1HZ0F3SUJBZ0lJTDg3TExQVUdvbU13RFFZSktvWklodmNOQVFFTEJRQXdKakVrTUNJR0ExVUUKQXd3YmFXNW5jbVZ6Y3kxdmNHVnlZWFJ2Y2tBeE56YzRORE01TURrM01CNFhEVEkyTURVeE1ERTROVEl4TWxvWApEVEk0TURVd09URTROVEl4TTFvd0xERXFNQ2dHQTFVRUF3d2hLaTVoY0hCekxuTm9ZeTFqWlc1MGNtRnNMbXhoCllpNXphV2R1WVd3NUxtZG5NSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQW8vU0UKQkFwaGc4bnBaZkZESldCRFZGMVhlVDVFVTRtanJWSGNXdUREdXY5dm1JdG44aWVScGduK1NVTW1LaWxoQkJKegoycENSUGtrTXdlMTZDbis4MTl0ZGw1NFE4NXFwblRQeFpuck44WUlMN2dKNlV2RGR5QWNINXZmSjA4VDZWUGJ0CnppeHlVaVYrNGJtenZwZ0VSTWNVS1hxQThZNFpkYkVHSUdZY29OVjAwN2hYTjJKdGRtZC9VMzNQSDl6M2VMalgKWFdVeUsvYlNGK1ZtWmN1VnM2YlUreEVtS3FpdDZrUCtCTGE1MzIyWnZWMTBtZGZ1NklqZW5BWEpHUnh5M0V6WQpVVVkySnAxcWlZTGI3dXBKU2kyRXNRYm9waFhCbVZlMHJYL2xLZkswSlh6eENFK045QzVNM2taU3drMW02bTNLCm5hNXkrazdjSjhsTTZrbXAvUUlEQVFBQm80R2tNSUdoTUE0R0ExVWREd0VCL3dRRUF3SUZvREFUQmdOVkhTVUUKRERBS0JnZ3JCZ0VGQlFjREFUQU1CZ05WSFJNQkFmOEVBakFBTUIwR0ExVWREZ1FXQkJRTGhNVmpyZE1TQ2hqaApIUVNnU3JUVnl5eHpnVEFmQmdOVkhTTUVHREFXZ0JUWDRtNDJBS2NXZ3lVS0hsYUVzc25jZDJFWVZ6QXNCZ05WCkhSRUVKVEFqZ2lFcUxtRndjSE11YzJoakxXTmxiblJ5WVd3dWJHRmlMbk5wWjI1aGJEa3VaMmN3RFFZSktvWkkKaHZjTkFRRUxCUUFEZ2dFQkFMM2tFUVRhTGhqK2hzaTFFOFlMc0NyS042ZVV3ZHk1T3lmbkk3dGM0TGZ6ODl1MApUZnRWTE1nYit2QWN4WUpLWW04ZDQydmhvLzMyUVdnRHVWU3BDcFZvT3RRZ3pZajMyVlA3UDlPU0ZEQWxZQXJZClY2bmdUUDFEaGNBR01NWmVxZDAySVFST2tLSmhLNFJ2a2tPNFVYQXV4enYrRVViZ1NrRkdrT2lpU1Y3RHBRVkUKbnFOUnF6M2VRcGRacHJtanFWNFVHalN2MEtybDBqdXBzZStUUDlWUTBkRTk0eVBnQlk2Q1lkYlNPQ0JqODlDTwppSkM5dGQ0NWdxQTlueTdLUU9RQnlRam9ISFM5czZTbGthN0N4YnI5Yk05enJ3R2dwajhxc2VFeFoyUlptc1p6CndkWUIzWm9WcGZ1ZU8yRXFFbnJ6R1k5bThxVXlwS0d0TG11Z2Fydz0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQotLS0tLUJFR0lOIENFUlRJRklDQVRFLS0tLS0KTUlJREREQ0NBZlNnQXdJQkFnSUJBVEFOQmdrcWhraUc5dzBCQVFzRkFEQW1NU1F3SWdZRFZRUUREQnRwYm1keQpaWE56TFc5d1pYSmhkRzl5UURFM056ZzBNemt3T1Rjd0hoY05Nall3TlRFd01UZzFNVE0yV2hjTk1qZ3dOVEE1Ck1UZzFNVE0zV2pBbU1TUXdJZ1lEVlFRRERCdHBibWR5WlhOekxXOXdaWEpoZEc5eVFERTNOemcwTXprd09UY3cKZ2dFaU1BMEdDU3FHU0liM0RRRUJBUVVBQTRJQkR3QXdnZ0VLQW9JQkFRREdsd1RTOUthSXlrd2JKcExYLzRXTwpzdndWakxhRGxVNmtQZ1ZwK2ZnMWRQTTBzMXN2K1N4SmVaRi9QN3BobEoxWFJIQXAwR1BCalhvZVp5SW1DT1VZClEvYXVWNFgzTlA3T1pjNHZIdy9DcndDVWV2bDdIRzhkbGlWMUZYczljcGVKRkk2MDFSa3R0dnJMWURjZmpRRSsKOUxhQ1h6c3JaZWtFSWhINmxXbzFpU09GWVNmRnVZVXJFNDY2M0Z5bFZKbmJwNTFzaWNWMHFxcjBFbjlkRlZGZgprOHNEQmVoODM2QlR1Z2VkaUpnVUc4aXpVeEhEaDkxTFVGeGF4NllVYzl0UkFuN1BoY1REQ2pEOVoyMjdEY2QrCjVLcHV2dEVsMTg0MDAwQXpqRUNMOEFNd0x3dkZFS3RJckxId0pvZlpCT05rbFdDQkN0NXIvWGNyRFNPdW1hcFIKQWdNQkFBR2pSVEJETUE0R0ExVWREd0VCL3dRRUF3SUNwREFTQmdOVkhSTUJBZjhFQ0RBR0FRSC9BZ0VBTUIwRwpBMVVkRGdRV0JCVFg0bTQyQUtjV2d5VUtIbGFFc3NuY2QyRVlWekFOQmdrcWhraUc5dzBCQVFzRkFBT0NBUUVBClc3cjl4a0F1NytsL01kaC9Fbmt0ODNiZmQzMm1Bc2NHRXVQbVVaQjA5VzFzUmtrbmI2R0h3QnA0clcvdEQ5cCsKS0VjOW52VFZUcHZZNzlyek9DVXJzQzIrKzcxUU85RXROYmVMZE5yT3BxNUJlTVJ2Z0xUaFg5dGtaTjdwdUF3Vgp3NVZqQVZSM3h4RGM3eVpxUW1TU2N1d0RvZ0FCbWt1aFZyNCttaHhJMXdIcXhhRUpPSUlSKzRJOFQ2Y1dpYW5DCnU4TlRTNnFFT0h4Y0JUOXlIV2RQYUxjNEZYUzJ5cXpoWStmUnROckdxbWdNMjFEMzhHTXJrNjI5NXFiMTBsaE4KeWJsM2hFaEJqaFp1L2MzZWNqTGZaVkczVG9uRmx2cHArWUlNdmxuRUNSVXFYOVNIYU52TS9pVkFoMkZHRDlWVAovUHpVY0lvQ0dNcFhhUXhNUlhicENBPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo="
-      tokenSecretName: "vault-central-token"
-      tokenSecretNamespace: "vault"
-      tokenSecretKey: "root_token"
+    auth:
+      type: kubernetes
+      mountPath: "kubernetes-services"
+      role: "external-secrets"
+      serviceAccountName: "external-secrets-vault-sa"
+      serviceAccountNamespace: "external-secrets"
 
 # ─── Sovereign Jobs RBAC ────────────────────────────────────────────────────
 sovereignJobsRbac:
@@ -596,6 +622,18 @@ sovereignJobs:
           value: "vault"
         - name: TARGET_SECRET_NAME
           value: "vault-central-token"
+    vaultK8sAuth:
+      enabled: true
+      playbook: vault-k8s-auth.yml
+      activeDeadlineSeconds: 600
+      syncWave: "26"
+      env:
+        - name: VAULT_ADDR
+          value: "http://vault-active.vault.svc:8200"
+        - name: VAULT_SERVICES_ADDR
+          value: "http://vault-services-active.vault.svc:8200"
+        - name: OCP_SERVICES_SERVER
+          value: "https://api.shcservices.lab.signal9.gg:6443"
     keycloakRealms:
       enabled: true
       playbook: keycloak-realms.yml
@@ -708,7 +746,10 @@ sovereignJobs:
         - name: GITEA_ADMIN_USER
           value: "gitea_admin"
         - name: GITEA_ADMIN_PASSWORD
-          value: "S0v3r31gn!G1t34@2026"
+          valueFrom:
+            secretKeyRef:
+              name: gitea-admin-credentials
+              key: admin_password
         - name: SECRETS_NAMESPACE
           value: "sovereign-cloud-jobs"
     giteaCreateRepo:
@@ -722,7 +763,10 @@ sovereignJobs:
         - name: GITEA_ADMIN_USER
           value: "gitea_admin"
         - name: GITEA_ADMIN_PASSWORD
-          value: "S0v3r31gn!G1t34@2026"
+          valueFrom:
+            secretKeyRef:
+              name: gitea-admin-credentials
+              key: admin_password
         - name: REPO_NAME
           value: "tenancy_repo"
     keycloakServicesRealms:
@@ -763,6 +807,28 @@ sovereignJobs:
         - name: VAULT_SECRET_NAME
           value: "vault-services-init-secrets"
         - name: VAULT_SECRET_NAMESPACE
+          value: "sovereign-cloud-jobs"
+    vaultOidcAuth:
+      enabled: true
+      playbook: vault-oidc-auth.yml
+      activeDeadlineSeconds: 600
+      syncWave: "29"
+      env:
+        - name: VAULT_ADDR
+          value: "http://vault-active.vault.svc:8200"
+        - name: VAULT_SERVICES_ADDR
+          value: "https://vault-services.apps.shcservices.lab.signal9.gg"
+        - name: KEYCLOAK_CENTRAL_URL
+          value: "https://rhbk-central.apps.shc-central.lab.signal9.gg"
+        - name: KEYCLOAK_SERVICES_URL
+          value: "https://rhbk-services.apps.shcservices.lab.signal9.gg"
+        - name: KEYCLOAK_CENTRAL_REALM
+          value: "sovereign-central"
+        - name: KEYCLOAK_SERVICES_REALM
+          value: "sovereign-tenants"
+        - name: KEYCLOAK_SERVICES_ADMIN_SECRET
+          value: "rhbk-services-admin"
+        - name: KEYCLOAK_SERVICES_ADMIN_SECRET_NS
           value: "sovereign-cloud-jobs"
 
 # ─── Plugin RBAC Operator (services cluster) ────────────────────────────────
@@ -1082,8 +1148,16 @@ sovereignDashboard:
       - name: quay-pull-secret
     oauthProxy:
       image: registry.redhat.io/openshift4/ose-oauth-proxy:v4.14
-      cookieSecret: "1RYh2dMWh0FoJZIfW8LqIWojyDPN6vPD"
-      clientSecret: "je33LwhD66xymdCzeH1qJrxXVxHTwb-3KZCTsFZVy8c"
+      # cookieSecret and clientSecret are NOT stored here.
+      # They are stored in Vault at central/data/dashboard-oauth and
+      # delivered via ExternalSecret into the sovereign-cloud namespace.
+      # Pre-populate Vault path before deploying dashboards.
+      externalSecret:
+        enabled: true
+        secretStoreName: vault-backend
+        secretStoreKind: ClusterSecretStore
+        vaultPath: "central/data/dashboard-oauth"
+        refreshInterval: "1h"
     route:
       enabled: true
     env:
@@ -1107,8 +1181,16 @@ tenancyDashboard:
       - name: quay-pull-secret
     oauthProxy:
       image: registry.redhat.io/openshift4/ose-oauth-proxy:v4.14
-      cookieSecret: "xK7mP2qR4sT8vW1yZ3bN5dF7hJ9kL0n"
-      clientSecret: "N8vFqcbzwUav5pe1QsTheUxGbU7zTIHhYWUGiRgY1uw"
+      # cookieSecret and clientSecret are NOT stored here.
+      # They are stored in Vault at central/data/tenancy-dashboard-oauth and
+      # delivered via ExternalSecret into the sovereign-cloud namespace.
+      # Pre-populate Vault path before deploying dashboards.
+      externalSecret:
+        enabled: true
+        secretStoreName: vault-backend
+        secretStoreKind: ClusterSecretStore
+        vaultPath: "central/data/tenancy-dashboard-oauth"
+        refreshInterval: "1h"
     route:
       enabled: true
     env:

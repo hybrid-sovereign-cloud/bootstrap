@@ -1,0 +1,262 @@
+---
+# ─── Read local pod SA token + CA cert (in-cluster job) ──────────────────────
+- name: Read local service account token
+  ansible.builtin.slurp:
+    src: /var/run/secrets/kubernetes.io/serviceaccount/token
+  register: sa_token_raw
+
+- name: Read local Kubernetes CA cert
+  ansible.builtin.slurp:
+    src: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+  register: k8s_ca_raw
+
+- name: Set SA token and CA facts
+  ansible.builtin.set_fact:
+    central_sa_token: "{{ sa_token_raw.content | b64decode }}"
+    central_k8s_ca: "{{ k8s_ca_raw.content | b64decode }}"
+
+# ─── Read ArgoCD cluster secret for services cluster API token ────────────────
+- name: Read ArgoCD cluster secret for services bearer token
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: argocd-cluster-services
+    namespace: openshift-gitops
+  register: argocd_cluster_secret
+  retries: 5
+  delay: 10
+  until: argocd_cluster_secret.resources | length > 0
+
+- name: Extract services cluster bearer token
+  ansible.builtin.set_fact:
+    services_bearer_token: >-
+      {{ (argocd_cluster_secret.resources[0].data.config | b64decode | from_json).bearerToken }}
+
+# ─── Central vault: enable kubernetes-central auth mount ─────────────────────
+- name: Check existing auth methods on central vault
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/sys/auth"
+    method: GET
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    status_code: [200]
+  register: vault_auth_methods
+  retries: 10
+  delay: 10
+  until: vault_auth_methods.status == 200
+
+- name: Enable kubernetes-central auth method on central vault
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/sys/auth/{{ vault_k8s_central_mount }}"
+    method: POST
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      type: kubernetes
+      description: "Kubernetes auth for central cluster workloads"
+    status_code: [200, 204]
+  when: (vault_k8s_central_mount + '/') not in vault_auth_methods.json
+  retries: 3
+  delay: 5
+
+- name: Configure kubernetes-central auth method
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/auth/{{ vault_k8s_central_mount }}/config"
+    method: POST
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      kubernetes_host: "https://kubernetes.default.svc"
+      kubernetes_ca_cert: "{{ central_k8s_ca }}"
+      token_reviewer_jwt: "{{ central_sa_token }}"
+      issuer: "https://kubernetes.default.svc"
+    status_code: [200, 204]
+  retries: 3
+  delay: 5
+
+# ─── Central vault: enable kubernetes-services auth mount ────────────────────
+- name: Enable kubernetes-services auth method on central vault
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/sys/auth/{{ vault_k8s_services_mount }}"
+    method: POST
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      type: kubernetes
+      description: "Kubernetes auth for services cluster workloads"
+    status_code: [200, 204]
+  when: (vault_k8s_services_mount + '/') not in vault_auth_methods.json
+  retries: 3
+  delay: 5
+
+- name: Configure kubernetes-services auth method with services cluster API
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/auth/{{ vault_k8s_services_mount }}/config"
+    method: POST
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      kubernetes_host: "{{ ocp_services_server }}"
+      token_reviewer_jwt: "{{ services_bearer_token }}"
+      disable_local_ca_jwt: true
+    status_code: [200, 204]
+  retries: 3
+  delay: 5
+
+# ─── Central vault: create ESO read policy ────────────────────────────────────
+- name: Create external-secrets-policy on central vault
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/sys/policies/acl/{{ eso_policy_name }}"
+    method: POST
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      policy: |
+        path "central/data/*" {
+          capabilities = ["read", "list"]
+        }
+        path "central/metadata/*" {
+          capabilities = ["read", "list"]
+        }
+    status_code: [200, 204]
+  retries: 3
+  delay: 5
+
+# ─── Central vault: create sovereign-admin-policy ─────────────────────────────
+- name: Create sovereign-admin-policy on central vault
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/sys/policies/acl/{{ admin_policy_name }}"
+    method: POST
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      policy: |
+        path "*" {
+          capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+        }
+    status_code: [200, 204]
+  retries: 3
+  delay: 5
+
+# ─── Central vault: create ESO role on kubernetes-central mount ───────────────
+- name: Create external-secrets role on kubernetes-central mount
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/auth/{{ vault_k8s_central_mount }}/role/{{ eso_role_name }}"
+    method: POST
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      bound_service_account_names:
+        - "{{ eso_service_account }}"
+      bound_service_account_namespaces:
+        - "{{ eso_namespace }}"
+      policies:
+        - "{{ eso_policy_name }}"
+      ttl: "1h"
+      max_ttl: "4h"
+    status_code: [200, 204]
+  retries: 3
+  delay: 5
+
+# ─── Central vault: create ESO role on kubernetes-services mount ──────────────
+- name: Create external-secrets role on kubernetes-services mount
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/auth/{{ vault_k8s_services_mount }}/role/{{ eso_role_name }}"
+    method: POST
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      bound_service_account_names:
+        - "{{ eso_service_account }}"
+      bound_service_account_namespaces:
+        - "{{ eso_namespace }}"
+      policies:
+        - "{{ eso_policy_name }}"
+      ttl: "1h"
+      max_ttl: "4h"
+    status_code: [200, 204]
+  retries: 3
+  delay: 5
+
+# ─── Services vault: enable kubernetes auth ──────────────────────────────────
+- name: Enable kubernetes auth on services vault
+  when: vault_services_addr | length > 0 and vault_services_root_token | length > 0
+  block:
+    - name: Check existing auth methods on services vault
+      ansible.builtin.uri:
+        url: "{{ vault_services_addr }}/v1/sys/auth"
+        method: GET
+        validate_certs: false
+        headers:
+          X-Vault-Token: "{{ vault_services_root_token }}"
+        status_code: [200]
+      register: svc_vault_auth_methods
+      retries: 10
+      delay: 10
+      until: svc_vault_auth_methods.status == 200
+
+    - name: Enable kubernetes auth on services vault
+      ansible.builtin.uri:
+        url: "{{ vault_services_addr }}/v1/sys/auth/kubernetes"
+        method: POST
+        validate_certs: false
+        headers:
+          X-Vault-Token: "{{ vault_services_root_token }}"
+        body_format: json
+        body:
+          type: kubernetes
+          description: "Kubernetes auth for services cluster workloads"
+        status_code: [200, 204]
+      when: "('kubernetes/' not in svc_vault_auth_methods.json)"
+      retries: 3
+      delay: 5
+
+    - name: Configure kubernetes auth on services vault
+      ansible.builtin.uri:
+        url: "{{ vault_services_addr }}/v1/auth/kubernetes/config"
+        method: POST
+        validate_certs: false
+        headers:
+          X-Vault-Token: "{{ vault_services_root_token }}"
+        body_format: json
+        body:
+          kubernetes_host: "{{ ocp_services_server }}"
+          token_reviewer_jwt: "{{ services_bearer_token }}"
+          disable_local_ca_jwt: true
+        status_code: [200, 204]
+      retries: 3
+      delay: 5
+
+    - name: Create sovereign-admin-policy on services vault
+      ansible.builtin.uri:
+        url: "{{ vault_services_addr }}/v1/sys/policies/acl/{{ admin_policy_name }}"
+        method: POST
+        validate_certs: false
+        headers:
+          X-Vault-Token: "{{ vault_services_root_token }}"
+        body_format: json
+        body:
+          policy: |
+            path "*" {
+              capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+            }
+        status_code: [200, 204]
+      retries: 3
+      delay: 5

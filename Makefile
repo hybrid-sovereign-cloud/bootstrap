@@ -7,7 +7,8 @@ REQUIRED_VARS := \
   OCI_REGISTRY OCI_REGISTRY_TOKEN \
   OCI_ROBOT_USERNAME OCI_ROBOT_PASSWORD \
   GITHUB_URL GITHUB_TOKEN \
-  IMAGE_REGISTRY IMAGE_REGISTRY_USERNAME IMAGE_REGISTRY_PASSWORD
+  IMAGE_REGISTRY IMAGE_REGISTRY_USERNAME IMAGE_REGISTRY_PASSWORD \
+  GITEA_ADMIN_PASSWORD
 
 # ─── Derived OCI values ──────────────────────────────────────────────────────
 OCI_HOST := $(shell echo "$(OCI_REGISTRY)" | sed -E 's|^https?://||' | cut -d'/' -f1)
@@ -46,6 +47,7 @@ include make/upload-gitea-chart.mk
 include make/upload-external-secrets-chart.mk
 include make/upload-ansible-job-chart.mk
 include make/upload-vault-secret-store-chart.mk
+include make/upload-vault-central-namespace-chart.mk
 include make/upload-sovereign-job-chart.mk
 include make/upload-sovereign-job-rbac-chart.mk
 include make/upload-vault-services-init-chart.mk
@@ -97,7 +99,8 @@ UPLOAD_TARGETS := \
   upload-assignment-operator-chart \
   upload-project-operator-chart \
   upload-platformopenshift-operator-chart \
-  upload-cloudoso-operator-chart
+  upload-cloudoso-operator-chart \
+  upload-vault-central-namespace-chart
 
 .PHONY: upload-all-charts
 upload-all-charts: $(UPLOAD_TARGETS) ## Upload ALL Helm charts to OCI registry

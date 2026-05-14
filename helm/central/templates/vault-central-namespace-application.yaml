@@ -1,0 +1,49 @@
+{{- if .Values.vaultCentralNamespace.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault-central-namespace
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: secrets
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.vaultCentralNamespace.syncWave | quote }}
+spec:
+  project: central
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/vault-central-namespace" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: vault-central-namespace
+    targetRevision: {{ .Values.vaultCentralNamespace.chartVersion | quote }}
+    helm:
+      releaseName: vault-central-namespace
+      values: |
+        {{- toYaml .Values.vaultCentralNamespace.values | nindent 8 }}
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vault-central
+
+  ignoreDifferences:
+    - group: external-secrets.io
+      kind: ExternalSecret
+      jsonPointers:
+        - /metadata/annotations
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
+{{- end }}

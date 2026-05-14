@@ -1,0 +1,33 @@
+namespace: vault-central
+
+secretStore:
+  name: vault-backend
+  kind: ClusterSecretStore
+
+# Copy of central vault init secrets (backup reference)
+vaultInitSecretsCopy:
+  enabled: true
+  targetSecretName: vault-init-secrets-copy
+  refreshInterval: "1h"
+  vaultPath: "central/data/vault-init"
+  keys:
+    - secretKey: root_token
+      property: root_token
+    - secretKey: unseal_keys
+      property: unseal_keys
+    - secretKey: unseal_keys_base64
+      property: unseal_keys_base64
+
+# Copy of services vault init secrets (backup reference)
+vaultServicesInitSecretsCopy:
+  enabled: true
+  targetSecretName: vault-services-init-secrets-copy
+  refreshInterval: "1h"
+  vaultPath: "central/data/vault-services-init"
+  keys:
+    - secretKey: root_token
+      property: root_token
+    - secretKey: unseal_keys
+      property: unseal_keys
+    - secretKey: unseal_keys_base64
+      property: unseal_keys_base64

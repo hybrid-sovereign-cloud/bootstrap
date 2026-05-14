@@ -1,0 +1,325 @@
+---
+# ─── Read vault client secret for central keycloak ───────────────────────────
+- name: Read vault client secret from central vault KV
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/central/data/keycloak-clients"
+    method: GET
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    status_code: [200]
+  register: keycloak_clients_secret
+  retries: 10
+  delay: 10
+  until: keycloak_clients_secret.status == 200
+
+- name: Set vault central client secret fact
+  ansible.builtin.set_fact:
+    vault_central_client_secret: "{{ keycloak_clients_secret.json.data.data.vault }}"
+
+# ─── Central vault: enable and configure OIDC auth ───────────────────────────
+- name: Check existing auth methods on central vault
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/sys/auth"
+    method: GET
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    status_code: [200]
+  register: central_vault_auth_methods
+  retries: 5
+  delay: 5
+  until: central_vault_auth_methods.status == 200
+
+- name: Enable OIDC auth method on central vault
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/sys/auth/{{ vault_oidc_mount }}"
+    method: POST
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      type: oidc
+      description: "Keycloak OIDC authentication"
+    status_code: [200, 204]
+  when: (vault_oidc_mount + '/') not in central_vault_auth_methods.json
+  retries: 3
+  delay: 5
+
+- name: Configure OIDC auth on central vault with central keycloak
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/auth/{{ vault_oidc_mount }}/config"
+    method: POST
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      oidc_discovery_url: "{{ keycloak_central_url }}/realms/{{ keycloak_central_realm }}"
+      oidc_client_id: "{{ vault_central_client_id }}"
+      oidc_client_secret: "{{ vault_central_client_secret }}"
+      default_role: "{{ oidc_role_name }}"
+    status_code: [200, 204]
+  retries: 3
+  delay: 5
+
+- name: Create OIDC role for sovereign-admin on central vault
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/auth/{{ vault_oidc_mount }}/role/{{ oidc_role_name }}"
+    method: POST
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      role_type: oidc
+      bound_audiences:
+        - "{{ vault_central_client_id }}"
+      user_claim: "sub"
+      groups_claim: "groups"
+      allowed_redirect_uris: "{{ vault_redirect_uris }}"
+      policies:
+        - "{{ admin_policy_name }}"
+      ttl: "8h"
+    status_code: [200, 204]
+  retries: 3
+  delay: 5
+
+- name: Create OIDC group alias mapping sovereign-admin → admin policy on central vault
+  block:
+    - name: Create external group for sovereign-admin on central vault
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/identity/group"
+        method: POST
+        validate_certs: false
+        headers:
+          X-Vault-Token: "{{ vault_root_token }}"
+        body_format: json
+        body:
+          name: "{{ vault_admin_group }}"
+          type: external
+          policies:
+            - "{{ admin_policy_name }}"
+        status_code: [200]
+      register: admin_group_result
+      retries: 3
+      delay: 5
+
+    - name: Get OIDC accessor for central vault
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/sys/auth"
+        method: GET
+        validate_certs: false
+        headers:
+          X-Vault-Token: "{{ vault_root_token }}"
+        status_code: [200]
+      register: central_auth_methods_for_accessor
+
+    - name: Set OIDC accessor fact
+      ansible.builtin.set_fact:
+        oidc_accessor: "{{ central_auth_methods_for_accessor.json[vault_oidc_mount + '/'].accessor }}"
+
+    - name: Create group alias for sovereign-admin claim
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/identity/group-alias"
+        method: POST
+        validate_certs: false
+        headers:
+          X-Vault-Token: "{{ vault_root_token }}"
+        body_format: json
+        body:
+          name: "{{ vault_admin_group }}"
+          canonical_id: "{{ admin_group_result.json.data.id }}"
+          mount_accessor: "{{ oidc_accessor }}"
+        status_code: [200]
+      retries: 3
+      delay: 5
+
+# ─── Services vault: create vault client on services keycloak ─────────────────
+- name: Configure OIDC on services vault
+  when: vault_services_addr | length > 0 and vault_services_root_token | length > 0
+  block:
+    - name: Authenticate to services keycloak
+      ansible.builtin.uri:
+        url: "{{ keycloak_services_url }}/realms/master/protocol/openid-connect/token"
+        method: POST
+        validate_certs: false
+        body_format: form-urlencoded
+        body:
+          grant_type: password
+          client_id: admin-cli
+          username: "{{ keycloak_services_admin_user }}"
+          password: "{{ keycloak_services_admin_password }}"
+        status_code: [200]
+      register: kc_services_token_result
+      retries: 5
+      delay: 10
+      until: kc_services_token_result.status == 200
+
+    - name: Set services keycloak admin token
+      ansible.builtin.set_fact:
+        kc_services_token: "{{ kc_services_token_result.json.access_token }}"
+
+    - name: Check if vault client exists in sovereign-tenants realm
+      ansible.builtin.uri:
+        url: "{{ keycloak_services_url }}/admin/realms/{{ keycloak_services_realm }}/clients"
+        method: GET
+        validate_certs: false
+        headers:
+          Authorization: "Bearer {{ kc_services_token }}"
+        params:
+          clientId: "{{ vault_services_client_id }}"
+        status_code: [200]
+      register: vault_services_client_check
+      retries: 5
+      delay: 5
+      until: vault_services_client_check.status == 200
+
+    - name: Create vault client in sovereign-tenants realm if not present
+      ansible.builtin.uri:
+        url: "{{ keycloak_services_url }}/admin/realms/{{ keycloak_services_realm }}/clients"
+        method: POST
+        validate_certs: false
+        headers:
+          Authorization: "Bearer {{ kc_services_token }}"
+          Content-Type: application/json
+        body_format: json
+        body:
+          clientId: "{{ vault_services_client_id }}"
+          name: "HashiCorp Vault Services"
+          enabled: true
+          publicClient: false
+          standardFlowEnabled: true
+          implicitFlowEnabled: false
+          directAccessGrantsEnabled: false
+          redirectUris:
+            - "https://vault-services.apps.shcservices.lab.signal9.gg/ui/vault/auth/oidc/oidc/callback"
+            - "http://localhost:8250/oidc/callback"
+          webOrigins:
+            - "+"
+        status_code: [201]
+      register: vault_services_client_create
+      when: vault_services_client_check.json | length == 0
+      retries: 3
+      delay: 5
+
+    - name: Get vault client secret from services keycloak
+      ansible.builtin.uri:
+        url: "{{ keycloak_services_url }}/admin/realms/{{ keycloak_services_realm }}/clients/{{ vault_services_client_check.json[0].id | default(vault_services_client_create.json.id) }}/client-secret"
+        method: GET
+        validate_certs: false
+        headers:
+          Authorization: "Bearer {{ kc_services_token }}"
+        status_code: [200]
+      register: vault_services_client_secret_result
+      when: vault_services_client_check.json | length > 0 or vault_services_client_create is defined
+      retries: 3
+      delay: 5
+
+    - name: Set services vault client secret
+      ansible.builtin.set_fact:
+        vault_services_client_secret: "{{ vault_services_client_secret_result.json.value }}"
+      when: vault_services_client_secret_result is defined and vault_services_client_secret_result.json is defined
+
+    - name: Store services vault client secret in central vault KV
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/central/data/vault-services-client"
+        method: POST
+        validate_certs: false
+        headers:
+          X-Vault-Token: "{{ vault_root_token }}"
+        body_format: json
+        body:
+          data:
+            client_id: "{{ vault_services_client_id }}"
+            client_secret: "{{ vault_services_client_secret }}"
+            realm: "{{ keycloak_services_realm }}"
+        status_code: [200, 204]
+      retries: 3
+      delay: 5
+
+    - name: Check existing auth methods on services vault
+      ansible.builtin.uri:
+        url: "{{ vault_services_addr }}/v1/sys/auth"
+        method: GET
+        validate_certs: false
+        headers:
+          X-Vault-Token: "{{ vault_services_root_token }}"
+        status_code: [200]
+      register: svc_vault_auth_methods_oidc
+      retries: 10
+      delay: 10
+      until: svc_vault_auth_methods_oidc.status == 200
+
+    - name: Enable OIDC auth on services vault
+      ansible.builtin.uri:
+        url: "{{ vault_services_addr }}/v1/sys/auth/oidc"
+        method: POST
+        validate_certs: false
+        headers:
+          X-Vault-Token: "{{ vault_services_root_token }}"
+        body_format: json
+        body:
+          type: oidc
+          description: "Keycloak services OIDC authentication"
+        status_code: [200, 204]
+      when: "'oidc/' not in svc_vault_auth_methods_oidc.json"
+      retries: 3
+      delay: 5
+
+    - name: Configure OIDC on services vault with services keycloak
+      ansible.builtin.uri:
+        url: "{{ vault_services_addr }}/v1/auth/oidc/config"
+        method: POST
+        validate_certs: false
+        headers:
+          X-Vault-Token: "{{ vault_services_root_token }}"
+        body_format: json
+        body:
+          oidc_discovery_url: "{{ keycloak_services_url }}/realms/{{ keycloak_services_realm }}"
+          oidc_client_id: "{{ vault_services_client_id }}"
+          oidc_client_secret: "{{ vault_services_client_secret }}"
+          default_role: "{{ oidc_role_name }}"
+        status_code: [200, 204]
+      retries: 3
+      delay: 5
+
+    - name: Create sovereign-admin-policy on services vault
+      ansible.builtin.uri:
+        url: "{{ vault_services_addr }}/v1/sys/policies/acl/{{ admin_policy_name }}"
+        method: POST
+        validate_certs: false
+        headers:
+          X-Vault-Token: "{{ vault_services_root_token }}"
+        body_format: json
+        body:
+          policy: |
+            path "*" {
+              capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+            }
+        status_code: [200, 204]
+      retries: 3
+      delay: 5
+
+    - name: Create OIDC role for sovereign-admin on services vault
+      ansible.builtin.uri:
+        url: "{{ vault_services_addr }}/v1/auth/oidc/role/{{ oidc_role_name }}"
+        method: POST
+        validate_certs: false
+        headers:
+          X-Vault-Token: "{{ vault_services_root_token }}"
+        body_format: json
+        body:
+          role_type: oidc
+          bound_audiences:
+            - "{{ vault_services_client_id }}"
+          user_claim: "sub"
+          groups_claim: "groups"
+          allowed_redirect_uris: "{{ vault_redirect_uris }}"
+          policies:
+            - "{{ admin_policy_name }}"
+          ttl: "8h"
+        status_code: [200, 204]
+      retries: 3
+      delay: 5

@@ -52,6 +52,14 @@ oci:
 pushSecrets:
   enabled: true
 
+# ─── Gitea admin bootstrap credentials ──────────────────────────────────────
+# These must be provided via --set during 'make init-central-argo'.
+# NEVER hardcode values here. Pass via env: GITEA_ADMIN_PASSWORD
+gitea:
+  adminUser: "gitea_admin"
+  adminPassword: ""
+  adminEmail: "admin@sovereign.local"
+
 pullSecretNamespaces:
   - vault
   - gitea

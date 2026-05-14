@@ -1,0 +1,53 @@
+---
+- name: Configure Vault Kubernetes Authentication
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    vault_addr: "{{ lookup('env', 'VAULT_ADDR') | default('http://vault-active.vault.svc:8200', true) }}"
+    vault_namespace: "{{ lookup('env', 'VAULT_SECRET_NAMESPACE') | default('vault', true) }}"
+    vault_secret_name: "{{ lookup('env', 'VAULT_SECRET_NAME') | default('vault-init-secrets', true) }}"
+    vault_services_addr: "{{ lookup('env', 'VAULT_SERVICES_ADDR') | default('', true) }}"
+    ocp_services_server: "{{ lookup('env', 'OCP_SERVICES_SERVER') | default('', true) }}"
+
+  pre_tasks:
+    - name: Retrieve Vault root token from secret
+      kubernetes.core.k8s_info:
+        kind: Secret
+        name: "{{ vault_secret_name }}"
+        namespace: "{{ vault_namespace }}"
+      register: vault_secret
+      retries: 10
+      delay: 10
+      until: vault_secret.resources | length > 0
+
+    - name: Set root token fact
+      ansible.builtin.set_fact:
+        vault_root_token: "{{ vault_secret.resources[0].data.root_token | b64decode }}"
+
+    - name: Retrieve services vault root token (if present)
+      kubernetes.core.k8s_info:
+        kind: Secret
+        name: vault-services-init-secrets
+        namespace: vault
+      register: vault_services_secret
+      when: vault_services_addr | length > 0
+      retries: 5
+      delay: 5
+      until: vault_services_secret.resources | length > 0
+      ignore_errors: true
+
+    - name: Set services vault root token fact
+      ansible.builtin.set_fact:
+        vault_services_root_token: >-
+          {{ vault_services_secret.resources[0].data.root_token | b64decode
+             if (vault_services_secret.resources is defined and vault_services_secret.resources | length > 0)
+             else '' }}
+      when: vault_services_addr | length > 0
+
+  roles:
+    - role: vault-k8s-auth
+      vault_services_addr: "{{ vault_services_addr }}"
+      vault_services_root_token: "{{ vault_services_root_token | default('') }}"
+      ocp_services_server: "{{ ocp_services_server }}"
