@@ -27,6 +27,11 @@ spec:
     namespace: gitea
 
   ignoreDifferences:
+    - group: external-secrets.io
+      kind: ExternalSecret
+      jsonPointers:
+        - /spec/dataFrom
+        - /metadata/annotations
     - group: apps
       kind: StatefulSet
       jsonPointers:

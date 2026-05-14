@@ -28,6 +28,11 @@ spec:
 
   ignoreDifferences:
     - group: ""
+      kind: Namespace
+      jsonPointers:
+        - /metadata/labels
+        - /metadata/annotations
+    - group: ""
       kind: ServiceAccount
       jsonPointers:
         - /imagePullSecrets
