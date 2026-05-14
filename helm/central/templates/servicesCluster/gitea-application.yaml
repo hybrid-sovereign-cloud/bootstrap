@@ -31,6 +31,13 @@ spec:
       kind: ExternalSecret
       jsonPointers:
         - /spec/dataFrom
+        - /spec/data
+        - /spec/target
+        - /metadata/annotations
+    - group: ""
+      kind: Namespace
+      jsonPointers:
+        - /metadata/labels
         - /metadata/annotations
     - group: apps
       kind: StatefulSet
