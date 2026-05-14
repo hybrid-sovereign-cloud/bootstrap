@@ -25,9 +25,13 @@
       delay: 10
       until: kc_central_secret.resources | length > 0
 
-    - name: Set central admin password
+    - name: Set central admin credentials
       ansible.builtin.set_fact:
         keycloak_central_admin_password: "{{ kc_central_secret.resources[0].data.password | b64decode }}"
+        keycloak_central_admin_user: >-
+          {{ kc_central_secret.resources[0].data.username | b64decode
+             if kc_central_secret.resources[0].data.username is defined
+             else 'admin' }}
 
     - name: Read services Keycloak admin secret
       kubernetes.core.k8s_info:
@@ -40,9 +44,13 @@
       delay: 10
       until: kc_services_secret.resources | length > 0
 
-    - name: Set services admin password
+    - name: Set services admin credentials
       ansible.builtin.set_fact:
         keycloak_services_admin_password: "{{ kc_services_secret.resources[0].data.password | b64decode }}"
+        keycloak_services_admin_user: >-
+          {{ kc_services_secret.resources[0].data.username | b64decode
+             if kc_services_secret.resources[0].data.username is defined
+             else 'admin' }}
       when: keycloak_services_url | length > 0
 
   roles:
