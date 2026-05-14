@@ -574,7 +574,7 @@ vaultSecretStoreServices:
 
 # ─── Sovereign Jobs RBAC ────────────────────────────────────────────────────
 sovereignJobsRbac:
-  enabled: false
+  enabled: true
   chartVersion: "0.1.0"
   syncWave: "3"
   values:
@@ -634,7 +634,7 @@ sovereignJobs:
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
     keycloakRealms:
-      enabled: false
+      enabled: true
       playbook: keycloak-realms.yml
       activeDeadlineSeconds: 600
       syncWave: "26"
