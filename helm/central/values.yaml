@@ -769,7 +769,7 @@ sovereignJobs:
         - name: REPO_NAME
           value: "tenancy_repo"
     keycloakServicesRealms:
-      enabled: false
+      enabled: true
       playbook: keycloak-realms.yml
       activeDeadlineSeconds: 600
       syncWave: "28"
@@ -844,9 +844,9 @@ sovereignJobs:
         - name: KEYCLOAK_SERVICES_REALM
           value: "sovereign-tenants"
         - name: KEYCLOAK_CENTRAL_ADMIN_SECRET
-          value: "rhbk-central-admin"
+          value: "rhbk-central-initial-admin"
         - name: KEYCLOAK_CENTRAL_ADMIN_SECRET_NS
-          value: "sovereign-cloud-jobs"
+          value: "rhbk"
         - name: KEYCLOAK_SERVICES_ADMIN_SECRET
           value: "rhbk-services-admin"
         - name: KEYCLOAK_SERVICES_ADMIN_SECRET_NS
