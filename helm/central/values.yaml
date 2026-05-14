@@ -13,7 +13,7 @@ oci:
 
 # ─── Sovereign Namespaces (central cluster) ──────────────────────────────────
 sovereignNamespaces:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.1"
   syncWave: "1"
   values:
@@ -25,7 +25,7 @@ sovereignNamespaces:
 
 # ─── Sovereign Namespaces (services cluster) ────────────────────────────────
 sovereignNamespacesServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.1"
   syncWave: "1"
   values:
@@ -37,7 +37,7 @@ sovereignNamespacesServices:
 
 # ─── RHBK Central (Keycloak) ─────────────────────────────────────────────────
 rhbk:
-  enabled: true
+  enabled: false
   chartVersion: "0.10.0"
   syncWave: "20"
   destinationNamespace: rhbk
@@ -59,7 +59,7 @@ rhbk:
 
 # ─── RHBK Services (Keycloak) ────────────────────────────────────────────────
 rhbkServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.10.0"
   syncWave: "20"
   destinationNamespace: rhbk
@@ -119,7 +119,7 @@ acsServices:
 
 # ─── Vault Central ───────────────────────────────────────────────────────────
 vault:
-  enabled: true
+  enabled: false
   chartVersion: "0.5.0"
   syncWave: "15"
   values:
@@ -170,7 +170,7 @@ vault:
 
 # ─── Vault Services ─────────────────────────────────────────────────────────
 vaultServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.6.4"
   syncWave: "15"
   values:
@@ -235,7 +235,7 @@ vaultServices:
 
 # ─── Vault Services Init (separate App to avoid StatefulSet health deadlock) ─
 vaultServicesInit:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.2"
   syncWave: "20"
   values:
@@ -254,7 +254,7 @@ vaultServicesInit:
 
 # ─── RHACM ───────────────────────────────────────────────────────────────────
 rhacm:
-  enabled: true
+  enabled: false
   chartVersion: "0.5.0"
   enableMultiClusterHub: true
   destinationNamespace: open-cluster-management
@@ -276,7 +276,7 @@ rhacm:
 
 # ─── AAP (services cluster) ─────────────────────────────────────────────────
 aap:
-  enabled: true
+  enabled: false
   chartVersion: "0.5.1"
   syncWave: "30"
   destinationNamespace: aap
@@ -296,7 +296,7 @@ aap:
 
 # ─── ODF / Noobaa (central) ─────────────────────────────────────────────────
 odf:
-  enabled: true
+  enabled: false
   chartVersion: "0.5.0"
   syncWave: "12"
   destinationNamespace: openshift-storage
@@ -308,7 +308,7 @@ odf:
 
 # ─── ODF / Noobaa (services) ────────────────────────────────────────────────
 odfServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.5.0"
   syncWave: "12"
   destinationNamespace: openshift-storage
@@ -322,7 +322,7 @@ odfServices:
 
 # ─── Quay (central) ─────────────────────────────────────────────────────────
 quay:
-  enabled: true
+  enabled: false
   chartVersion: "0.5.1"
   syncWave: "35"
   destinationNamespace: quay-enterprise
@@ -351,7 +351,7 @@ quay:
 
 # ─── Quay (services) ────────────────────────────────────────────────────────
 quayServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.5.2"
   syncWave: "35"
   destinationNamespace: quay-enterprise
@@ -393,7 +393,7 @@ quayServices:
 
 # ─── Gitea (services cluster) ──────────────────────────────────────────────
 gitea:
-  enabled: true
+  enabled: false
   chartVersion: "0.4.0"
   syncWave: "18"
   values:
@@ -481,7 +481,7 @@ gitea:
 
 # ─── Crunchy Postgres (central) ─────────────────────────────────────────────
 crunchyPostgres:
-  enabled: true
+  enabled: false
   chartVersion: "0.4.0"
   syncWave: "11"
   destinationNamespace: openshift-operators
@@ -490,7 +490,7 @@ crunchyPostgres:
 
 # ─── Crunchy Postgres (services) ────────────────────────────────────────────
 crunchyPostgresServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.4.0"
   syncWave: "11"
   destinationNamespace: openshift-operators
@@ -500,7 +500,7 @@ crunchyPostgresServices:
 
 # ─── External Secrets Operator (central) ────────────────────────────────────
 externalSecrets:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.2"
   syncWave: "5"
   values:
@@ -513,7 +513,7 @@ externalSecrets:
 
 # ─── External Secrets Operator (services) ───────────────────────────────────
 externalSecretsServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.2"
   syncWave: "5"
   values:
@@ -526,7 +526,7 @@ externalSecretsServices:
 
 # ─── Vault Central Namespace (backup copies of init secrets) ─────────────────
 vaultCentralNamespace:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.0"
   syncWave: "27"
   values:
@@ -541,7 +541,7 @@ vaultCentralNamespace:
 
 # ─── Vault ClusterSecretStore (central) — uses k8s auth ─────────────────────
 vaultSecretStore:
-  enabled: true
+  enabled: false
   chartVersion: "0.3.0"
   syncWave: "22"
   values:
@@ -558,7 +558,7 @@ vaultSecretStore:
 # ─── Vault ClusterSecretStore (services → vault-central via external route) ─
 # Uses kubernetes-services auth mount on central vault (k8s auth, no root token)
 vaultSecretStoreServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.3.0"
   syncWave: "22"
   values:
@@ -575,7 +575,7 @@ vaultSecretStoreServices:
 
 # ─── Sovereign Jobs RBAC ────────────────────────────────────────────────────
 sovereignJobsRbac:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.0"
   syncWave: "3"
   values:
@@ -833,7 +833,7 @@ sovereignJobs:
 
 # ─── Plugin RBAC Operator (services cluster) ────────────────────────────────
 pluginRbac:
-  enabled: true
+  enabled: false
   chartVersion: "0.4.2"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -867,7 +867,7 @@ pluginRbac:
 
 # ─── Plugin Vault Operator (services cluster) ──────────────────────────────
 pluginVault:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.8"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -896,7 +896,7 @@ pluginVault:
 
 # ─── Plugin AAP Operator (services cluster) ───────────────────────────────
 pluginAap:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.1"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -931,7 +931,7 @@ pluginAap:
 
 # ─── Plugin Quay Operator (services cluster) ──────────────────────────────
 pluginQuay:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.4"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -964,7 +964,7 @@ pluginQuay:
 
 # ─── Plugin IaaC Operator (services cluster) ────────────────────────────────
 pluginIaac:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.4"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-plugins
@@ -987,7 +987,7 @@ pluginIaac:
 
 # ─── Entity Operator (services cluster) ─────────────────────────────────────
 entityOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.6.1"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1002,7 +1002,7 @@ entityOperator:
 
 # ─── Team Operator (services cluster) ─────────────────────────────────────
 teamOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.3.4"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1019,7 +1019,7 @@ teamOperator:
 
 # ─── Assignment Operator (services cluster) ────────────────────────────────
 assignmentOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.3.4"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
@@ -1036,7 +1036,7 @@ assignmentOperator:
 
 # ─── Project Operator (services cluster) ───────────────────────────────────
 projectOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.3.4"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1053,7 +1053,7 @@ projectOperator:
 
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.1"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1070,7 +1070,7 @@ platformOpenshiftOperator:
 
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.6"
   syncWave: "36"
   destinationNamespace: sovereign-cloud-helpers
@@ -1103,7 +1103,7 @@ helperCloudOSO:
 
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.3.3"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1133,7 +1133,7 @@ cloudOSOOperator:
 
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
-  enabled: true
+  enabled: false
   chartVersion: "0.8.0"
   syncWave: "40"
   destinationNamespace: sovereign-cloud
@@ -1166,7 +1166,7 @@ sovereignDashboard:
 
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
-  enabled: true
+  enabled: false
   chartVersion: "0.9.3"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
