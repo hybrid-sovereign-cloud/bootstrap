@@ -894,6 +894,8 @@ sovereignJobs:
           value: "rhbk-services-admin"
         - name: KEYCLOAK_SERVICES_ADMIN_SECRET_NS
           value: "sovereign-cloud-jobs"
+        - name: OCP_SERVICES_SERVER
+          value: "https://api.shcservices.lab.signal9.gg:6443"
     keycloakTestUsers:
       enabled: true
       playbook: keycloak-test-users.yml
