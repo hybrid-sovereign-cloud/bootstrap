@@ -830,11 +830,33 @@ sovereignJobs:
           value: "rhbk-services-admin"
         - name: KEYCLOAK_SERVICES_ADMIN_SECRET_NS
           value: "sovereign-cloud-jobs"
+    keycloakTestUsers:
+      enabled: true
+      playbook: keycloak-test-users.yml
+      activeDeadlineSeconds: 300
+      syncWave: "32"
+      env:
+        - name: KEYCLOAK_CENTRAL_URL
+          value: "https://rhbk-central.apps.shc-central.lab.signal9.gg"
+        - name: KEYCLOAK_SERVICES_URL
+          value: "https://rhbk-services.apps.shcservices.lab.signal9.gg"
+        - name: KEYCLOAK_CENTRAL_REALM
+          value: "sovereign-central"
+        - name: KEYCLOAK_SERVICES_REALM
+          value: "sovereign-tenants"
+        - name: KEYCLOAK_CENTRAL_ADMIN_SECRET
+          value: "rhbk-central-admin"
+        - name: KEYCLOAK_CENTRAL_ADMIN_SECRET_NS
+          value: "sovereign-cloud-jobs"
+        - name: KEYCLOAK_SERVICES_ADMIN_SECRET
+          value: "rhbk-services-admin"
+        - name: KEYCLOAK_SERVICES_ADMIN_SECRET_NS
+          value: "sovereign-cloud-jobs"
 
 # ─── Plugin RBAC Operator (services cluster) ────────────────────────────────
 pluginRbac:
   enabled: false
-  chartVersion: "0.4.2"
+  chartVersion: "0.4.3"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -868,7 +890,7 @@ pluginRbac:
 # ─── Plugin Vault Operator (services cluster) ──────────────────────────────
 pluginVault:
   enabled: false
-  chartVersion: "0.2.8"
+  chartVersion: "0.2.9"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -897,7 +919,7 @@ pluginVault:
 # ─── Plugin AAP Operator (services cluster) ───────────────────────────────
 pluginAap:
   enabled: false
-  chartVersion: "0.2.1"
+  chartVersion: "0.2.2"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -932,7 +954,7 @@ pluginAap:
 # ─── Plugin Quay Operator (services cluster) ──────────────────────────────
 pluginQuay:
   enabled: false
-  chartVersion: "0.2.4"
+  chartVersion: "0.2.5"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -988,7 +1010,7 @@ pluginIaac:
 # ─── Entity Operator (services cluster) ─────────────────────────────────────
 entityOperator:
   enabled: false
-  chartVersion: "0.6.1"
+  chartVersion: "0.6.2"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:

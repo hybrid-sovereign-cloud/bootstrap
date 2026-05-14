@@ -1,0 +1,28 @@
+---
+keycloak_central_url: ""
+keycloak_services_url: ""
+keycloak_central_realm: "sovereign-central"
+keycloak_services_realm: "sovereign-tenants"
+keycloak_central_admin_user: "admin"
+keycloak_central_admin_password: ""
+keycloak_services_admin_user: "admin"
+keycloak_services_admin_password: ""
+
+# Test users to create; deleted after smoke test, groups left intact
+keycloak_test_users:
+  - realm: "sovereign-central"
+    keycloak_url_key: central
+    username: "sovereign-test-admin"
+    email: "sovereign-test-admin@example.com"
+    firstName: "Test"
+    lastName: "Admin"
+    groups:
+      - "sovereign-admin"
+  - realm: "sovereign-tenants"
+    keycloak_url_key: services
+    username: "tenant-test-user"
+    email: "tenant-test-user@example.com"
+    firstName: "Tenant"
+    lastName: "User"
+    groups:
+      - "sovereign-admin"

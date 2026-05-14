@@ -1,0 +1,22 @@
+---
+- name: "Look up group {{ group_name }} in {{ test_user.realm }}"
+  ansible.builtin.uri:
+    url: "{{ _kc_url }}/admin/realms/{{ test_user.realm }}/groups?search={{ group_name }}&exact=true"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ _kc_token }}"
+    validate_certs: false
+    status_code: [200]
+  register: group_lookup
+  retries: 3
+  delay: 3
+
+- name: "Add user to group {{ group_name }}"
+  ansible.builtin.uri:
+    url: "{{ _kc_url }}/admin/realms/{{ test_user.realm }}/users/{{ _user_id }}/groups/{{ group_lookup.json[0].id }}"
+    method: PUT
+    headers:
+      Authorization: "Bearer {{ _kc_token }}"
+    validate_certs: false
+    status_code: [204]
+  when: group_lookup.json | length > 0

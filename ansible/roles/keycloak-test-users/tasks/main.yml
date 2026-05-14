@@ -1,0 +1,58 @@
+---
+- name: Obtain central Keycloak admin token
+  ansible.builtin.uri:
+    url: "{{ keycloak_central_url }}/realms/master/protocol/openid-connect/token"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      client_id: admin-cli
+      grant_type: password
+      username: "{{ keycloak_central_admin_user }}"
+      password: "{{ keycloak_central_admin_password }}"
+    validate_certs: false
+    status_code: [200]
+  register: kc_central_token_resp
+  retries: 5
+  delay: 10
+
+- name: Set central admin token
+  ansible.builtin.set_fact:
+    kc_central_token: "{{ kc_central_token_resp.json.access_token }}"
+
+- name: Obtain services Keycloak admin token
+  ansible.builtin.uri:
+    url: "{{ keycloak_services_url }}/realms/master/protocol/openid-connect/token"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      client_id: admin-cli
+      grant_type: password
+      username: "{{ keycloak_services_admin_user }}"
+      password: "{{ keycloak_services_admin_password }}"
+    validate_certs: false
+    status_code: [200]
+  register: kc_services_token_resp
+  retries: 5
+  delay: 10
+  when: keycloak_services_url | length > 0
+
+- name: Set services admin token
+  ansible.builtin.set_fact:
+    kc_services_token: "{{ kc_services_token_resp.json.access_token }}"
+  when: keycloak_services_url | length > 0
+
+- name: Create test users
+  include_tasks: create-test-user.yml
+  loop: "{{ keycloak_test_users }}"
+  loop_control:
+    loop_var: test_user
+
+- name: Pause to allow test user logins to settle
+  ansible.builtin.pause:
+    seconds: 10
+
+- name: Delete test users (leave groups)
+  include_tasks: delete-test-user.yml
+  loop: "{{ keycloak_test_users }}"
+  loop_control:
+    loop_var: test_user

@@ -1,0 +1,27 @@
+---
+- name: "Set token for {{ test_user.realm }}"
+  ansible.builtin.set_fact:
+    _kc_token: "{{ kc_central_token if test_user.keycloak_url_key == 'central' else kc_services_token }}"
+    _kc_url: "{{ keycloak_central_url if test_user.keycloak_url_key == 'central' else keycloak_services_url }}"
+
+- name: "Get user ID for {{ test_user.username }}"
+  ansible.builtin.uri:
+    url: "{{ _kc_url }}/admin/realms/{{ test_user.realm }}/users?username={{ test_user.username }}&exact=true"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ _kc_token }}"
+    validate_certs: false
+    status_code: [200]
+  register: user_lookup
+  retries: 3
+  delay: 3
+
+- name: "Delete test user {{ test_user.username }}"
+  ansible.builtin.uri:
+    url: "{{ _kc_url }}/admin/realms/{{ test_user.realm }}/users/{{ user_lookup.json[0].id }}"
+    method: DELETE
+    headers:
+      Authorization: "Bearer {{ _kc_token }}"
+    validate_certs: false
+    status_code: [204, 404]
+  when: user_lookup.json | length > 0

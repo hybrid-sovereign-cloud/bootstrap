@@ -1,0 +1,55 @@
+---
+- name: Create and test Keycloak users, then delete (leave groups)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    keycloak_central_url: "{{ lookup('env', 'KEYCLOAK_CENTRAL_URL') }}"
+    keycloak_services_url: "{{ lookup('env', 'KEYCLOAK_SERVICES_URL') | default('', true) }}"
+    keycloak_central_realm: "{{ lookup('env', 'KEYCLOAK_CENTRAL_REALM') | default('sovereign-central', true) }}"
+    keycloak_services_realm: "{{ lookup('env', 'KEYCLOAK_SERVICES_REALM') | default('sovereign-tenants', true) }}"
+    keycloak_central_admin_secret_name: "{{ lookup('env', 'KEYCLOAK_CENTRAL_ADMIN_SECRET') | default('rhbk-central-admin', true) }}"
+    keycloak_central_admin_secret_ns: "{{ lookup('env', 'KEYCLOAK_CENTRAL_ADMIN_SECRET_NS') | default('sovereign-cloud-jobs', true) }}"
+    keycloak_services_admin_secret_name: "{{ lookup('env', 'KEYCLOAK_SERVICES_ADMIN_SECRET') | default('rhbk-services-admin', true) }}"
+    keycloak_services_admin_secret_ns: "{{ lookup('env', 'KEYCLOAK_SERVICES_ADMIN_SECRET_NS') | default('sovereign-cloud-jobs', true) }}"
+
+  pre_tasks:
+    - name: Read central Keycloak admin secret
+      kubernetes.core.k8s_info:
+        kind: Secret
+        name: "{{ keycloak_central_admin_secret_name }}"
+        namespace: "{{ keycloak_central_admin_secret_ns }}"
+      register: kc_central_secret
+      retries: 10
+      delay: 10
+      until: kc_central_secret.resources | length > 0
+
+    - name: Set central admin password
+      ansible.builtin.set_fact:
+        keycloak_central_admin_password: "{{ kc_central_secret.resources[0].data.password | b64decode }}"
+
+    - name: Read services Keycloak admin secret
+      kubernetes.core.k8s_info:
+        kind: Secret
+        name: "{{ keycloak_services_admin_secret_name }}"
+        namespace: "{{ keycloak_services_admin_secret_ns }}"
+      register: kc_services_secret
+      when: keycloak_services_url | length > 0
+      retries: 10
+      delay: 10
+      until: kc_services_secret.resources | length > 0
+
+    - name: Set services admin password
+      ansible.builtin.set_fact:
+        keycloak_services_admin_password: "{{ kc_services_secret.resources[0].data.password | b64decode }}"
+      when: keycloak_services_url | length > 0
+
+  roles:
+    - role: keycloak-test-users
+      keycloak_central_url: "{{ keycloak_central_url }}"
+      keycloak_services_url: "{{ keycloak_services_url }}"
+      keycloak_central_realm: "{{ keycloak_central_realm }}"
+      keycloak_services_realm: "{{ keycloak_services_realm }}"
+      keycloak_central_admin_password: "{{ keycloak_central_admin_password }}"
+      keycloak_services_admin_password: "{{ keycloak_services_admin_password | default('') }}"
