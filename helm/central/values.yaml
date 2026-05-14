@@ -775,7 +775,7 @@ sovereignJobs:
       syncWave: "28"
       externalSecrets:
         rhbkServicesAdmin:
-          enabled: false
+          enabled: true
           targetSecretName: rhbk-services-admin
           data:
             - secretKey: username
