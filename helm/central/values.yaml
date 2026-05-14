@@ -595,7 +595,7 @@ sovereignJobs:
     - name: quay-pull-secret
   jobs:
     vaultInit:
-      enabled: true
+      enabled: false
       playbook: vault-init.yml
       activeDeadlineSeconds: 600
       syncWave: "23"
@@ -603,7 +603,7 @@ sovereignJobs:
         - name: VAULT_ADDR
           value: "http://vault.vault.svc:8200"
     vaultKv:
-      enabled: true
+      enabled: false
       playbook: vault-kv.yml
       activeDeadlineSeconds: 600
       syncWave: "24"
@@ -611,7 +611,7 @@ sovereignJobs:
         - name: VAULT_ADDR
           value: "http://vault.vault.svc:8200"
     deliverVaultToken:
-      enabled: true
+      enabled: false
       playbook: deliver-vault-token.yml
       activeDeadlineSeconds: 300
       syncWave: "25"
@@ -623,7 +623,7 @@ sovereignJobs:
         - name: TARGET_SECRET_NAME
           value: "vault-central-token"
     vaultK8sAuth:
-      enabled: true
+      enabled: false
       playbook: vault-k8s-auth.yml
       activeDeadlineSeconds: 600
       syncWave: "26"
@@ -635,7 +635,7 @@ sovereignJobs:
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
     keycloakRealms:
-      enabled: true
+      enabled: false
       playbook: keycloak-realms.yml
       activeDeadlineSeconds: 600
       syncWave: "26"
@@ -647,7 +647,7 @@ sovereignJobs:
         - name: KEYCLOAK_ADMIN_SECRET_NS
           value: "rhbk"
     keycloakGroups:
-      enabled: true
+      enabled: false
       playbook: keycloak-groups.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
@@ -659,13 +659,13 @@ sovereignJobs:
         - name: KEYCLOAK_ADMIN_SECRET_NS
           value: "rhbk"
     keycloakClients:
-      enabled: true
+      enabled: false
       playbook: keycloak-clients.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
       pushSecrets:
         pushKeycloakClientSecrets:
-          enabled: true
+          enabled: false
           secretName: keycloak-client-secrets
           data:
             - secretKey: quay-central
@@ -692,7 +692,7 @@ sovereignJobs:
         - name: SECRETS_NAMESPACE
           value: "sovereign-cloud-jobs"
     keycloakRbac:
-      enabled: true
+      enabled: false
       playbook: keycloak-rbac.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
@@ -700,7 +700,7 @@ sovereignJobs:
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
     keycloakOauth:
-      enabled: true
+      enabled: false
       playbook: keycloak-oauth.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
@@ -722,13 +722,13 @@ sovereignJobs:
         - name: SERVICES_REALM_NAME
           value: "sovereign-tenants"
     giteaInit:
-      enabled: true
+      enabled: false
       playbook: gitea-init.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
       pushSecrets:
         pushGiteaAdmin:
-          enabled: true
+          enabled: false
           secretName: gitea-credentials
           data:
             - secretKey: admin_user
@@ -753,7 +753,7 @@ sovereignJobs:
         - name: SECRETS_NAMESPACE
           value: "sovereign-cloud-jobs"
     giteaCreateRepo:
-      enabled: true
+      enabled: false
       playbook: gitea-create-repo.yml
       activeDeadlineSeconds: 300
       syncWave: "28"
@@ -770,13 +770,13 @@ sovereignJobs:
         - name: REPO_NAME
           value: "tenancy_repo"
     keycloakServicesRealms:
-      enabled: true
+      enabled: false
       playbook: keycloak-realms.yml
       activeDeadlineSeconds: 600
       syncWave: "28"
       externalSecrets:
         rhbkServicesAdmin:
-          enabled: true
+          enabled: false
           targetSecretName: rhbk-services-admin
           data:
             - secretKey: username
@@ -809,7 +809,7 @@ sovereignJobs:
         - name: VAULT_SECRET_NAMESPACE
           value: "sovereign-cloud-jobs"
     vaultOidcAuth:
-      enabled: true
+      enabled: false
       playbook: vault-oidc-auth.yml
       activeDeadlineSeconds: 600
       syncWave: "29"
@@ -831,7 +831,7 @@ sovereignJobs:
         - name: KEYCLOAK_SERVICES_ADMIN_SECRET_NS
           value: "sovereign-cloud-jobs"
     keycloakTestUsers:
-      enabled: true
+      enabled: false
       playbook: keycloak-test-users.yml
       activeDeadlineSeconds: 300
       syncWave: "32"
