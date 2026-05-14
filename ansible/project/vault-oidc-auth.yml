@@ -73,6 +73,59 @@
              else '' }}
       when: keycloak_services_url | length > 0
 
+    # Fetch cluster ingress CAs so Vault can verify TLS on OIDC discovery URLs
+    - name: Fetch central cluster ingress CA
+      kubernetes.core.k8s_info:
+        kind: ConfigMap
+        name: default-ingress-cert
+        namespace: openshift-config-managed
+      register: central_ingress_cm
+      retries: 3
+      delay: 5
+
+    - name: Set central ingress CA fact
+      ansible.builtin.set_fact:
+        central_ingress_ca_pem: "{{ central_ingress_cm.resources[0].data['ca-bundle.crt'] }}"
+      when: central_ingress_cm.resources | length > 0
+
+    - name: Fetch ArgoCD cluster secret for services bearer token
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Secret
+        name: argocd-cluster-services
+        namespace: openshift-gitops
+      register: argocd_cluster_secret_oidc
+      retries: 3
+      delay: 5
+      until: argocd_cluster_secret_oidc.resources | length > 0
+      when: vault_services_addr | length > 0
+
+    - name: Extract services bearer token
+      ansible.builtin.set_fact:
+        services_bearer_token_oidc: >-
+          {{ (argocd_cluster_secret_oidc.resources[0].data.config | b64decode | from_json).bearerToken }}
+      when: vault_services_addr | length > 0 and argocd_cluster_secret_oidc.resources | length > 0
+
+    - name: Fetch services cluster ingress CA
+      ansible.builtin.uri:
+        url: "{{ lookup('env', 'OCP_SERVICES_SERVER') | default('https://api.shcservices.lab.signal9.gg:6443') }}/api/v1/namespaces/openshift-config-managed/configmaps/default-ingress-cert"
+        method: GET
+        validate_certs: false
+        headers:
+          Authorization: "Bearer {{ services_bearer_token_oidc }}"
+        status_code: [200]
+      register: services_ingress_cm_resp
+      when: vault_services_addr | length > 0 and services_bearer_token_oidc is defined
+      retries: 3
+      delay: 5
+      until: services_ingress_cm_resp.status == 200
+      ignore_errors: true
+
+    - name: Set services ingress CA fact
+      ansible.builtin.set_fact:
+        services_ingress_ca_pem: "{{ services_ingress_cm_resp.json.data['ca-bundle.crt'] }}"
+      when: vault_services_addr | length > 0 and services_ingress_cm_resp is defined and services_ingress_cm_resp.status is defined and services_ingress_cm_resp.status == 200
+
   roles:
     # Do NOT pass play-scope vars explicitly to the role — same-named role defaults
     # cause infinite Ansible self-referencing recursion. Play-scope vars

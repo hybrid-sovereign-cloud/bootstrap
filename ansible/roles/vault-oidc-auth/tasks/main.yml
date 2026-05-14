@@ -60,6 +60,7 @@
       oidc_client_id: "{{ vault_central_client_id }}"
       oidc_client_secret: "{{ vault_central_client_secret }}"
       default_role: "{{ oidc_role_name }}"
+      oidc_discovery_ca_pem: "{{ central_ingress_ca_pem | default('') }}"
     status_code: [200, 204]
   retries: 3
   delay: 5
@@ -281,6 +282,7 @@
           oidc_client_id: "{{ vault_services_client_id }}"
           oidc_client_secret: "{{ vault_services_client_secret }}"
           default_role: "{{ oidc_role_name }}"
+          oidc_discovery_ca_pem: "{{ services_ingress_ca_pem | default('') }}"
         status_code: [200, 204]
       retries: 3
       delay: 5
