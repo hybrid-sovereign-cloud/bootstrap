@@ -1,0 +1,188 @@
+---
+- name: Create correct operator sample CRs on services cluster
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    services_server: "{{ lookup('env', 'OCP_SERVICES_SERVER') | default('', true) }}"
+    entity_namespace: "sovereign-cloud"
+    argocd_namespace: "openshift-gitops"
+    # Applications to resync after entity namespaces are ready
+    operator_apps_to_resync:
+      - entity-operator
+      - team-operator
+      - project-operator
+      - assignment-operator
+      - platformopenshift-operator
+      - plugin-rbac
+      - plugin-vault
+      - plugin-aap
+      - plugin-quay
+
+  pre_tasks:
+    - name: Read ArgoCD cluster secret for services bearer token
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Secret
+        name: argocd-cluster-services
+        namespace: "{{ argocd_namespace }}"
+      register: argocd_cluster_secret
+
+    - name: Fail if ArgoCD services cluster secret not found
+      ansible.builtin.fail:
+        msg: "Secret argocd-cluster-services not found in {{ argocd_namespace }}"
+      when: argocd_cluster_secret.resources | length == 0
+
+    - name: Extract services bearer token
+      ansible.builtin.set_fact:
+        services_bearer_token: >-
+          {{ (argocd_cluster_secret.resources[0].data.config | b64decode | from_json).bearerToken }}
+
+  tasks:
+    # ── Entity CRs (billingID uppercase D per CRD schema) ─────────────────────
+    - name: Create acme-corp Entity CR
+      kubernetes.core.k8s:
+        host: "{{ services_server }}"
+        api_key: "{{ services_bearer_token }}"
+        validate_certs: false
+        state: present
+        definition:
+          apiVersion: hybridsovereign.redhat/v1alpha1
+          kind: Entity
+          metadata:
+            name: acme-corp
+            namespace: "{{ entity_namespace }}"
+          spec:
+            billingID: "ACME-001"
+            description: "Acme Corporation"
+            websiteLink: "https://acme.example.com"
+
+    - name: Create globex-industries Entity CR
+      kubernetes.core.k8s:
+        host: "{{ services_server }}"
+        api_key: "{{ services_bearer_token }}"
+        validate_certs: false
+        state: present
+        definition:
+          apiVersion: hybridsovereign.redhat/v1alpha1
+          kind: Entity
+          metadata:
+            name: globex-industries
+            namespace: "{{ entity_namespace }}"
+          spec:
+            billingID: "GLOBEX-001"
+            description: "Globex Industries"
+            websiteLink: "https://globex.example.com"
+
+    # ── Wait for entity namespaces to be provisioned by the operator ───────────
+    - name: Wait for entity-acme-corp namespace to become Active
+      kubernetes.core.k8s_info:
+        host: "{{ services_server }}"
+        api_key: "{{ services_bearer_token }}"
+        validate_certs: false
+        api_version: v1
+        kind: Namespace
+        name: entity-acme-corp
+      register: acme_ns
+      retries: 30
+      delay: 15
+      until: >-
+        acme_ns.resources | length > 0 and
+        acme_ns.resources[0].status.phase == 'Active'
+
+    - name: Wait for entity-globex-industries namespace to become Active
+      kubernetes.core.k8s_info:
+        host: "{{ services_server }}"
+        api_key: "{{ services_bearer_token }}"
+        validate_certs: false
+        api_version: v1
+        kind: Namespace
+        name: entity-globex-industries
+      register: globex_ns
+      retries: 30
+      delay: 15
+      until: >-
+        globex_ns.resources | length > 0 and
+        globex_ns.resources[0].status.phase == 'Active'
+
+    # ── AAPOrg CRs (spec.aapConfig per CRD schema, NOT spec.config) ───────────
+    - name: Create AAPOrg for acme-corp
+      kubernetes.core.k8s:
+        host: "{{ services_server }}"
+        api_key: "{{ services_bearer_token }}"
+        validate_certs: false
+        state: present
+        definition:
+          apiVersion: hybridsovereign.redhat/v1alpha1
+          kind: AAPOrg
+          metadata:
+            name: automation
+            namespace: entity-acme-corp
+          spec:
+            aapConfig: "aap-sovereign-services"
+            description: "Automation org for Acme Corp"
+
+    - name: Create AAPOrg for globex-industries
+      kubernetes.core.k8s:
+        host: "{{ services_server }}"
+        api_key: "{{ services_bearer_token }}"
+        validate_certs: false
+        state: present
+        definition:
+          apiVersion: hybridsovereign.redhat/v1alpha1
+          kind: AAPOrg
+          metadata:
+            name: automation
+            namespace: entity-globex-industries
+          spec:
+            aapConfig: "aap-sovereign-services"
+            description: "Automation org for Globex Industries"
+
+    # ── QuayOrg CRs (spec.quayConfig per CRD schema, NOT spec.config) ─────────
+    - name: Create QuayOrg for acme-corp
+      kubernetes.core.k8s:
+        host: "{{ services_server }}"
+        api_key: "{{ services_bearer_token }}"
+        validate_certs: false
+        state: present
+        definition:
+          apiVersion: hybridsovereign.redhat/v1alpha1
+          kind: QuayOrg
+          metadata:
+            name: registry
+            namespace: entity-acme-corp
+          spec:
+            quayConfig: "quay-sovereign-services"
+
+    - name: Create QuayOrg for globex-industries
+      kubernetes.core.k8s:
+        host: "{{ services_server }}"
+        api_key: "{{ services_bearer_token }}"
+        validate_certs: false
+        state: present
+        definition:
+          apiVersion: hybridsovereign.redhat/v1alpha1
+          kind: QuayOrg
+          metadata:
+            name: registry
+            namespace: entity-globex-industries
+          spec:
+            quayConfig: "quay-sovereign-services"
+
+    # ── Clear stuck sync operations on affected Applications ───────────────────
+    # ArgoCD skips auto-sync on previously failed SHAs; clearing /operation
+    # allows selfHeal to re-compare and re-sync.
+    - name: Clear failed sync operation on operator Applications
+      ansible.builtin.uri:
+        url: "https://kubernetes.default.svc/apis/argoproj.io/v1alpha1/namespaces/{{ argocd_namespace }}/applications/{{ item }}"
+        method: PATCH
+        headers:
+          Authorization: "Bearer {{ lookup('file', '/var/run/secrets/kubernetes.io/serviceaccount/token') }}"
+          Content-Type: "application/json-patch+json"
+        body: '[{"op": "remove", "path": "/operation"}]'
+        body_format: json
+        validate_certs: false
+        status_code: [200, 422]
+      loop: "{{ operator_apps_to_resync }}"
+      ignore_errors: true

@@ -918,6 +918,17 @@ sovereignJobs:
           value: "rhbk-services-admin"
         - name: KEYCLOAK_SERVICES_ADMIN_SECRET_NS
           value: "sovereign-cloud-jobs"
+    # Creates Entity, AAPOrg, QuayOrg sample CRs via Ansible job.
+    # Runs after all operators are deployed (wave 45) so their CRDs exist.
+    # Disables broken chart-default samples that have incorrect field names.
+    operatorSamples:
+      enabled: true
+      playbook: operator-samples.yml
+      activeDeadlineSeconds: 900
+      syncWave: "45"
+      env:
+        - name: OCP_SERVICES_SERVER
+          value: "https://api.shcservices.lab.signal9.gg:6443"
 
 # ─── Plugin RBAC Operator (services cluster) ────────────────────────────────
 pluginRbac:
@@ -1017,6 +1028,10 @@ pluginAap:
       name: aap-sovereign-services
       secret: aap-admin-credentials
       rbacConfig: keycloak-sovereign-tenants-services
+    samples:
+      # Chart samples disabled: template generates spec.config but CRD requires
+      # spec.aapConfig. AAPOrg CRs are created by the operator-samples job.
+      enabled: false
 
 # ─── Plugin Quay Operator (services cluster) ──────────────────────────────
 pluginQuay:
@@ -1051,6 +1066,10 @@ pluginQuay:
       name: quay-sovereign-services
       secret: quay-admin-credentials
       rbacConfig: keycloak-sovereign-tenants-services
+    samples:
+      # Chart samples disabled: template generates spec.config but CRD requires
+      # spec.quayConfig. QuayOrg CRs are created by the operator-samples job.
+      enabled: false
 
 # ─── Plugin IaaC Operator (services cluster) ────────────────────────────────
 pluginIaac:
@@ -1090,7 +1109,10 @@ entityOperator:
     imagePullSecrets:
       - name: quay-pull-secret
     samples:
-      enabled: true
+      # Chart samples disabled: billingId (lowercase) in template mismatches
+      # CRD schema requiring billingID (uppercase). Entity CRs are created by
+      # the operator-samples Ansible job with the correct field name.
+      enabled: false
 
 # ─── Team Operator (services cluster) ─────────────────────────────────────
 teamOperator:
