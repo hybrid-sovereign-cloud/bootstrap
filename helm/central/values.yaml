@@ -631,7 +631,7 @@ sovereignJobs:
         - name: VAULT_ADDR
           value: "http://vault-active.vault.svc:8200"
         - name: VAULT_SERVICES_ADDR
-          value: "http://vault-services-active.vault.svc:8200"
+          value: "https://vault-services.apps.shcservices.lab.signal9.gg"
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
     keycloakRealms:
