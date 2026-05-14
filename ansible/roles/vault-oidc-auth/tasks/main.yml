@@ -89,7 +89,7 @@
 
 - name: Create OIDC group alias mapping sovereign-admin → admin policy on central vault
   block:
-    - name: Create external group for sovereign-admin on central vault
+    - name: Create or update external group for sovereign-admin on central vault
       ansible.builtin.uri:
         url: "{{ vault_addr }}/v1/identity/group"
         method: POST
@@ -102,6 +102,17 @@
           type: external
           policies:
             - "{{ admin_policy_name }}"
+        status_code: [200, 204]
+      retries: 3
+      delay: 5
+
+    - name: Lookup sovereign-admin group by name to get canonical ID
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/identity/group/name/{{ vault_admin_group }}"
+        method: GET
+        validate_certs: false
+        headers:
+          X-Vault-Token: "{{ vault_root_token }}"
         status_code: [200]
       register: admin_group_result
       retries: 3
@@ -121,6 +132,18 @@
       ansible.builtin.set_fact:
         oidc_accessor: "{{ central_auth_methods_for_accessor.json[vault_oidc_mount + '/'].accessor }}"
 
+    - name: Check existing group aliases for sovereign-admin
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/identity/group-alias/id?list=true"
+        method: GET
+        validate_certs: false
+        headers:
+          X-Vault-Token: "{{ vault_root_token }}"
+        status_code: [200, 404]
+      register: existing_aliases
+      retries: 3
+      delay: 5
+
     - name: Create group alias for sovereign-admin claim
       ansible.builtin.uri:
         url: "{{ vault_addr }}/v1/identity/group-alias"
@@ -133,7 +156,7 @@
           name: "{{ vault_admin_group }}"
           canonical_id: "{{ admin_group_result.json.data.id }}"
           mount_accessor: "{{ oidc_accessor }}"
-        status_code: [200]
+        status_code: [200, 400]
       retries: 3
       delay: 5
 
