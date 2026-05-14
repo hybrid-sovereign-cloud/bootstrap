@@ -235,7 +235,7 @@ vaultServices:
 
 # ─── Vault Services Init (separate App to avoid StatefulSet health deadlock) ─
 vaultServicesInit:
-  enabled: false
+  enabled: true
   chartVersion: "0.2.2"
   syncWave: "20"
   values:
