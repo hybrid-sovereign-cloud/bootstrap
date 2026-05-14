@@ -170,6 +170,53 @@
           spec:
             quayConfig: "quay-sovereign-services"
 
+    # ── Supplemental RBAC: plugin-iaac missing events list/watch (Issue 17) ────
+    # The upstream plugin-iaac chart ClusterRole only grants create/patch for
+    # events.k8s.io. Controller-runtime cache needs list/watch to start its
+    # event informer. This supplemental ClusterRole is NOT managed by the
+    # plugin-iaac ArgoCD Application so it won't be pruned on re-sync.
+    - name: Create supplemental ClusterRole for plugin-iaac events watch
+      kubernetes.core.k8s:
+        host: "{{ services_server }}"
+        api_key: "{{ services_bearer_token }}"
+        validate_certs: false
+        state: present
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRole
+          metadata:
+            name: plugin-iaac-events-watch
+            labels:
+              app.kubernetes.io/part-of: hybrid-sovereign-cloud
+              app.kubernetes.io/managed-by: sovereign-ansible-jobs
+          rules:
+            - apiGroups: ["events.k8s.io"]
+              resources: ["events"]
+              verbs: ["list", "watch"]
+
+    - name: Bind supplemental events ClusterRole to plugin-iaac ServiceAccount
+      kubernetes.core.k8s:
+        host: "{{ services_server }}"
+        api_key: "{{ services_bearer_token }}"
+        validate_certs: false
+        state: present
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRoleBinding
+          metadata:
+            name: plugin-iaac-events-watch
+            labels:
+              app.kubernetes.io/part-of: hybrid-sovereign-cloud
+              app.kubernetes.io/managed-by: sovereign-ansible-jobs
+          roleRef:
+            apiGroup: rbac.authorization.k8s.io
+            kind: ClusterRole
+            name: plugin-iaac-events-watch
+          subjects:
+            - kind: ServiceAccount
+              name: plugin-iaac
+              namespace: sovereign-cloud-plugins
+
     # ── Clear stuck sync operations on affected Applications ───────────────────
     # ArgoCD skips auto-sync on previously failed SHAs; clearing /operation
     # allows selfHeal to re-compare and re-sync.
