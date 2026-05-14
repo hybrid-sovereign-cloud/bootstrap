@@ -36,6 +36,11 @@ spec:
       jsonPointers:
         - /metadata/labels
         - /metadata/annotations
+    - group: external-secrets.io
+      kind: ExternalSecret
+      jsonPointers:
+        - /spec/dataFrom
+        - /metadata/annotations
 
   syncPolicy:
     automated:
