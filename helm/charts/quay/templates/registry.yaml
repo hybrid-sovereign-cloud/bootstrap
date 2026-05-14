@@ -31,6 +31,12 @@ spec:
       managed: {{ .Values.registry.components.monitoring.managed }}
     - kind: quay
       managed: true
+      {{- if .Values.registry.components.quay }}
+      {{- with .Values.registry.components.quay.overrides }}
+      overrides:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
     - kind: horizontalpodautoscaler
       managed: {{ .Values.registry.components.horizontalpodautoscaler.managed | default true }}
     - kind: clairpostgres

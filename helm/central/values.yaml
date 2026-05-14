@@ -390,6 +390,9 @@ quayServices:
           managed: true
         tls:
           managed: true
+        quay:
+          overrides:
+            replicas: 1
 
 # ─── Gitea (services cluster) ──────────────────────────────────────────────
 gitea:
