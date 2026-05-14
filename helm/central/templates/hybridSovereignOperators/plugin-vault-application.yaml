@@ -41,6 +41,7 @@ spec:
       - CreateNamespace=true
       - ServerSideApply=true
       - RespectIgnoreDifferences=true
+      - Validate=false
     retry:
       limit: 5
       backoff:
