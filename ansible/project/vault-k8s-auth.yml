@@ -26,23 +26,48 @@
       ansible.builtin.set_fact:
         vault_root_token: "{{ vault_secret.resources[0].data.root_token | b64decode }}"
 
-    - name: Retrieve services vault root token (if present)
+    # Read the ArgoCD services cluster secret here so services_bearer_token is available
+    # for both the services-cluster vault-services-init-secrets query and the role tasks.
+    - name: Read ArgoCD cluster secret for services bearer token
       kubernetes.core.k8s_info:
+        api_version: v1
         kind: Secret
-        name: vault-services-init-secrets
-        namespace: vault
-      register: vault_services_secret
+        name: argocd-cluster-services
+        namespace: openshift-gitops
+      register: argocd_cluster_secret
+      retries: 5
+      delay: 10
+      until: argocd_cluster_secret.resources | length > 0
       when: vault_services_addr | length > 0
+
+    - name: Extract services cluster bearer token
+      ansible.builtin.set_fact:
+        services_bearer_token: >-
+          {{ (argocd_cluster_secret.resources[0].data.config | b64decode | from_json).bearerToken }}
+      when: vault_services_addr | length > 0 and argocd_cluster_secret.resources | length > 0
+
+    # vault-services-init-secrets lives in the vault namespace on the SERVICES cluster.
+    # Retrieve it via the services-cluster Kubernetes API using the ArgoCD bearer token.
+    - name: Retrieve services vault init secrets via services cluster API
+      ansible.builtin.uri:
+        url: "{{ ocp_services_server }}/api/v1/namespaces/vault/secrets/vault-services-init-secrets"
+        method: GET
+        validate_certs: false
+        headers:
+          Authorization: "Bearer {{ services_bearer_token }}"
+        status_code: [200]
+      register: vault_services_secret_resp
+      when: vault_services_addr | length > 0 and services_bearer_token is defined
       retries: 5
       delay: 5
-      until: vault_services_secret.resources | length > 0
+      until: vault_services_secret_resp.status == 200
       ignore_errors: true
 
     - name: Set services vault root token fact
       ansible.builtin.set_fact:
         vault_services_root_token: >-
-          {{ vault_services_secret.resources[0].data.root_token | b64decode
-             if (vault_services_secret.resources is defined and vault_services_secret.resources | length > 0)
+          {{ vault_services_secret_resp.json.data.root_token | b64decode
+             if (vault_services_secret_resp.status is defined and vault_services_secret_resp.status == 200)
              else '' }}
       when: vault_services_addr | length > 0
 
@@ -50,4 +75,6 @@
     - role: vault-k8s-auth
       vault_services_addr: "{{ vault_services_addr }}"
       vault_services_root_token: "{{ vault_services_root_token | default('') }}"
-      ocp_services_server: "{{ ocp_services_server }}"
+      services_bearer_token: "{{ services_bearer_token | default('') }}"
+      # ocp_services_server intentionally omitted: play var is accessible to the role
+      # and passing it explicitly causes a self-referencing template recursion loop
