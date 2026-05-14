@@ -89,3 +89,12 @@ giteaTokenExternalSecret:
   secretStoreKind: ClusterSecretStore
   vaultPath: gitea-admin
   refreshInterval: "1h"
+
+adminCredentialsExternalSecret:
+  enabled: false
+  namespace: gitea
+  secretName: gitea-admin-credentials
+  secretStoreName: vault-backend
+  secretStoreKind: ClusterSecretStore
+  vaultPath: gitea-admin
+  refreshInterval: "1h"

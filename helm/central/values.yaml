@@ -393,8 +393,8 @@ quayServices:
 
 # ─── Gitea (services cluster) ──────────────────────────────────────────────
 gitea:
-  enabled: false
-  chartVersion: "0.4.0"
+  enabled: true
+  chartVersion: "0.4.1"
   syncWave: "18"
   values:
     gitea:
@@ -474,6 +474,14 @@ gitea:
       enabled: true
       targetNamespace: sovereign-cloud-plugins
       targetSecretName: gitea-admin-token
+      secretStoreName: vault-backend
+      secretStoreKind: ClusterSecretStore
+      vaultPath: gitea-admin
+      refreshInterval: "1h"
+    adminCredentialsExternalSecret:
+      enabled: true
+      namespace: gitea
+      secretName: gitea-admin-credentials
       secretStoreName: vault-backend
       secretStoreKind: ClusterSecretStore
       vaultPath: gitea-admin
@@ -699,7 +707,7 @@ sovereignJobs:
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
     keycloakOauth:
-      enabled: false
+      enabled: true
       playbook: keycloak-oauth.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
@@ -721,10 +729,24 @@ sovereignJobs:
         - name: SERVICES_REALM_NAME
           value: "sovereign-tenants"
     giteaInit:
-      enabled: false
+      enabled: true
       playbook: gitea-init.yml
       activeDeadlineSeconds: 600
-      syncWave: "27"
+      syncWave: "35"
+      externalSecrets:
+        giteaAdminCredentials:
+          enabled: true
+          targetSecretName: gitea-admin-credentials
+          data:
+            - secretKey: admin_user
+              remoteKey: gitea-admin
+              property: admin_user
+            - secretKey: admin_password
+              remoteKey: gitea-admin
+              property: admin_password
+            - secretKey: admin_token
+              remoteKey: gitea-admin
+              property: admin_token
       pushSecrets:
         pushGiteaAdmin:
           enabled: false
@@ -752,10 +774,10 @@ sovereignJobs:
         - name: SECRETS_NAMESPACE
           value: "sovereign-cloud-jobs"
     giteaCreateRepo:
-      enabled: false
+      enabled: true
       playbook: gitea-create-repo.yml
       activeDeadlineSeconds: 300
-      syncWave: "28"
+      syncWave: "36"
       env:
         - name: GITEA_URL
           value: "https://gitea-gitea.apps.shcservices.lab.signal9.gg"
@@ -793,6 +815,40 @@ sovereignJobs:
           value: "sovereign-cloud-jobs"
         - name: REALM_NAME
           value: "sovereign-tenants"
+    keycloakServicesGroups:
+      enabled: true
+      playbook: keycloak-groups.yml
+      activeDeadlineSeconds: 600
+      syncWave: "29"
+      env:
+        - name: KEYCLOAK_URL
+          value: "https://rhbk-services.apps.shcservices.lab.signal9.gg"
+        - name: KEYCLOAK_ADMIN_SECRET
+          value: "rhbk-services-admin"
+        - name: KEYCLOAK_ADMIN_SECRET_NS
+          value: "sovereign-cloud-jobs"
+        - name: REALM_NAME
+          value: "sovereign-tenants"
+        - name: ADMIN_GROUP
+          value: "sovereign-admin"
+    keycloakServicesClients:
+      enabled: true
+      playbook: keycloak-clients.yml
+      activeDeadlineSeconds: 600
+      syncWave: "30"
+      env:
+        - name: KEYCLOAK_URL
+          value: "https://rhbk-services.apps.shcservices.lab.signal9.gg"
+        - name: KEYCLOAK_ADMIN_SECRET
+          value: "rhbk-services-admin"
+        - name: KEYCLOAK_ADMIN_SECRET_NS
+          value: "sovereign-cloud-jobs"
+        - name: REALM_NAME
+          value: "sovereign-tenants"
+        - name: KEYCLOAK_CLIENTS
+          value: '[{"realm":"sovereign-tenants","client_id":"openshift-services","name":"OpenShift Services","redirect_uris":["*"]},{"realm":"sovereign-tenants","client_id":"quay-services","name":"Quay Services","redirect_uris":["*"]},{"realm":"sovereign-tenants","client_id":"aap","name":"Ansible Automation Platform","redirect_uris":["*"]}]'
+        - name: SECRETS_NAMESPACE
+          value: "sovereign-cloud-jobs"
     vaultServicesInit:
       enabled: false
       playbook: vault-services-init.yml
@@ -808,7 +864,7 @@ sovereignJobs:
         - name: VAULT_SECRET_NAMESPACE
           value: "sovereign-cloud-jobs"
     vaultOidcAuth:
-      enabled: false
+      enabled: true
       playbook: vault-oidc-auth.yml
       activeDeadlineSeconds: 600
       syncWave: "29"
@@ -830,7 +886,7 @@ sovereignJobs:
         - name: KEYCLOAK_SERVICES_ADMIN_SECRET_NS
           value: "sovereign-cloud-jobs"
     keycloakTestUsers:
-      enabled: false
+      enabled: true
       playbook: keycloak-test-users.yml
       activeDeadlineSeconds: 300
       syncWave: "32"

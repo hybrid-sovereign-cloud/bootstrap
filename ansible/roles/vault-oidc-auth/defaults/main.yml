@@ -26,7 +26,9 @@ vault_admin_group: "sovereign-admin"
 admin_policy_name: "sovereign-admin-policy"
 oidc_role_name: "sovereign-admin"
 
-# Default redirect URIs for Vault UI
+# Default redirect URIs for Vault UI (central + services routes + CLI)
 vault_redirect_uris:
   - "http://localhost:8250/oidc/callback"
   - "https://ui.vault.hashicorp.com/oidc/callback"
+  - "https://vault-central.apps.shc-central.lab.signal9.gg/ui/vault/auth/oidc/oidc/callback"
+  - "https://vault-services.apps.shcservices.lab.signal9.gg/ui/vault/auth/oidc/oidc/callback"
