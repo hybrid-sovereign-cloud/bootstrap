@@ -795,13 +795,13 @@ sovereignJobs:
         - name: REALM_NAME
           value: "sovereign-tenants"
     vaultServicesInit:
-      enabled: true
+      enabled: false
       playbook: vault-services-init.yml
       activeDeadlineSeconds: 600
       syncWave: "29"
       env:
         - name: VAULT_ADDR
-          value: "https://vault-services-init.apps.shcservices.lab.signal9.gg"
+          value: "https://vault-services.apps.shcservices.lab.signal9.gg"
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
         - name: VAULT_SECRET_NAME
