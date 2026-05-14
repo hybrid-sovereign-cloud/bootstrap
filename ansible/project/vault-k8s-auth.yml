@@ -72,9 +72,9 @@
       when: vault_services_addr | length > 0
 
   roles:
+    # No variables passed explicitly: play-scope vars (vault_root_token, vault_services_addr,
+    # vault_services_root_token, services_bearer_token, ocp_services_server) set via vars/set_fact
+    # are accessible to role tasks without explicit passing.
+    # Passing them explicitly as "{{ var }}" triggers Ansible self-referencing recursion
+    # when a same-named role default exists.
     - role: vault-k8s-auth
-      vault_services_addr: "{{ vault_services_addr }}"
-      vault_services_root_token: "{{ vault_services_root_token | default('') }}"
-      services_bearer_token: "{{ services_bearer_token | default('') }}"
-      # ocp_services_server intentionally omitted: play var is accessible to the role
-      # and passing it explicitly causes a self-referencing template recursion loop
