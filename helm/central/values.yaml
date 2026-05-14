@@ -623,7 +623,7 @@ sovereignJobs:
         - name: TARGET_SECRET_NAME
           value: "vault-central-token"
     vaultK8sAuth:
-      enabled: false
+      enabled: true
       playbook: vault-k8s-auth.yml
       activeDeadlineSeconds: 600
       syncWave: "26"
