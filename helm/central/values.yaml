@@ -1068,8 +1068,7 @@ pluginQuay:
       vaultPath: quay-admin
       refreshInterval: "1h"
     defaultQuayConfig:
-      # Will be enabled once Quay is redeployed and OAuth token is in Vault
-      enabled: false
+      enabled: true
       name: quay-sovereign-services
       secret: quay-admin-credentials
       rbacConfig: keycloak-sovereign-tenants-services
