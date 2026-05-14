@@ -595,7 +595,7 @@ sovereignJobs:
     - name: quay-pull-secret
   jobs:
     vaultInit:
-      enabled: true
+      enabled: false
       playbook: vault-init.yml
       activeDeadlineSeconds: 600
       syncWave: "23"
