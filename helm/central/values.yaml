@@ -500,7 +500,7 @@ crunchyPostgresServices:
 
 # ─── External Secrets Operator (central) ────────────────────────────────────
 externalSecrets:
-  enabled: false
+  enabled: true
   chartVersion: "0.1.2"
   syncWave: "5"
   values:
@@ -513,7 +513,7 @@ externalSecrets:
 
 # ─── External Secrets Operator (services) ───────────────────────────────────
 externalSecretsServices:
-  enabled: false
+  enabled: true
   chartVersion: "0.1.2"
   syncWave: "5"
   values:
