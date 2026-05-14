@@ -98,3 +98,11 @@ adminCredentialsExternalSecret:
   secretStoreKind: ClusterSecretStore
   vaultPath: gitea-admin
   refreshInterval: "1h"
+
+pullSecretExternalSecret:
+  enabled: false
+  namespace: gitea
+  secretStoreName: vault-backend
+  secretStoreKind: ClusterSecretStore
+  vaultPath: oci-credentials
+  refreshInterval: "1h"

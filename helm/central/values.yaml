@@ -394,7 +394,7 @@ quayServices:
 # ─── Gitea (services cluster) ──────────────────────────────────────────────
 gitea:
   enabled: true
-  chartVersion: "0.4.1"
+  chartVersion: "0.4.2"
   syncWave: "18"
   values:
     gitea:
@@ -485,6 +485,13 @@ gitea:
       secretStoreName: vault-backend
       secretStoreKind: ClusterSecretStore
       vaultPath: gitea-admin
+      refreshInterval: "1h"
+    pullSecretExternalSecret:
+      enabled: true
+      namespace: gitea
+      secretStoreName: vault-backend
+      secretStoreKind: ClusterSecretStore
+      vaultPath: oci-credentials
       refreshInterval: "1h"
 
 # ─── Crunchy Postgres (central) ─────────────────────────────────────────────
