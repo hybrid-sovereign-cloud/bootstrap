@@ -11,7 +11,7 @@
   register: keycloak_clients_secret
   retries: 10
   delay: 10
-  until: keycloak_clients_secret.status == 200
+  until: keycloak_clients_secret.status | default(0) == 200
 
 - name: Set vault central client secret fact
   ansible.builtin.set_fact:
@@ -29,7 +29,7 @@
   register: central_vault_auth_methods
   retries: 5
   delay: 5
-  until: central_vault_auth_methods.status == 200
+  until: central_vault_auth_methods.status | default(0) == 200
 
 - name: Enable OIDC auth method on central vault
   ansible.builtin.uri:
@@ -179,7 +179,7 @@
       register: kc_services_token_result
       retries: 5
       delay: 10
-      until: kc_services_token_result.status == 200
+      until: kc_services_token_result.status | default(0) == 200
 
     - name: Set services keycloak admin token
       ansible.builtin.set_fact:
@@ -198,7 +198,7 @@
       register: vault_services_client_check
       retries: 5
       delay: 5
-      until: vault_services_client_check.status == 200
+      until: vault_services_client_check.status | default(0) == 200
 
     - name: Create vault client in sovereign-tenants realm if not present
       ansible.builtin.uri:
@@ -274,7 +274,7 @@
       register: svc_vault_auth_methods_oidc
       retries: 10
       delay: 10
-      until: svc_vault_auth_methods_oidc.status == 200
+      until: svc_vault_auth_methods_oidc.status | default(0) == 200
 
     - name: Enable OIDC auth on services vault
       ansible.builtin.uri:
