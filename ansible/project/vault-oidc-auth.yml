@@ -74,12 +74,8 @@
       when: keycloak_services_url | length > 0
 
   roles:
+    # Do NOT pass play-scope vars explicitly to the role — same-named role defaults
+    # cause infinite Ansible self-referencing recursion. Play-scope vars
+    # (vault_root_token, vault_services_root_token, keycloak_central_url, etc.)
+    # are accessible to role tasks directly without explicit passing.
     - role: vault-oidc-auth
-      keycloak_central_url: "{{ keycloak_central_url }}"
-      keycloak_central_realm: "{{ keycloak_central_realm }}"
-      keycloak_services_url: "{{ keycloak_services_url | default('') }}"
-      keycloak_services_realm: "{{ keycloak_services_realm }}"
-      keycloak_services_admin_user: "admin"
-      keycloak_services_admin_password: "{{ keycloak_services_admin_password | default('') }}"
-      vault_services_addr: "{{ vault_services_addr }}"
-      vault_services_root_token: "{{ vault_services_root_token | default('') }}"

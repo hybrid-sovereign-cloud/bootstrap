@@ -46,10 +46,8 @@
       when: keycloak_services_url | length > 0
 
   roles:
+    # Do NOT pass play-scope vars explicitly to the role — same-named role defaults
+    # cause infinite Ansible self-referencing recursion. Play-scope vars
+    # (keycloak_central_url, keycloak_central_realm, etc.) are accessible to role
+    # tasks directly without explicit passing.
     - role: keycloak-test-users
-      keycloak_central_url: "{{ keycloak_central_url }}"
-      keycloak_services_url: "{{ keycloak_services_url }}"
-      keycloak_central_realm: "{{ keycloak_central_realm }}"
-      keycloak_services_realm: "{{ keycloak_services_realm }}"
-      keycloak_central_admin_password: "{{ keycloak_central_admin_password }}"
-      keycloak_services_admin_password: "{{ keycloak_services_admin_password | default('') }}"
