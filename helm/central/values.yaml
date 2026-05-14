@@ -351,7 +351,7 @@ quay:
 
 # ─── Quay (services) ────────────────────────────────────────────────────────
 quayServices:
-  enabled: false
+  enabled: true
   chartVersion: "0.5.2"
   syncWave: "35"
   destinationNamespace: quay-enterprise
@@ -1025,8 +1025,7 @@ pluginAap:
       vaultPath: aap-admin
       refreshInterval: "1h"
     defaultAAPConfig:
-      # Disabled until AAP is fully deployed and credentials are in vault
-      enabled: false
+      enabled: true
       name: aap-sovereign-services
       secret: aap-admin-credentials
       rbacConfig: keycloak-sovereign-tenants-services
@@ -1063,7 +1062,7 @@ pluginQuay:
       vaultPath: quay-admin
       refreshInterval: "1h"
     defaultQuayConfig:
-      # Disabled until Quay is fully deployed and credentials are in vault
+      # Will be enabled once Quay is redeployed and OAuth token is in Vault
       enabled: false
       name: quay-sovereign-services
       secret: quay-admin-credentials
