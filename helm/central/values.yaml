@@ -834,14 +834,14 @@ sovereignJobs:
 # ─── Plugin RBAC Operator (services cluster) ────────────────────────────────
 pluginRbac:
   enabled: true
-  chartVersion: "0.4.1"
+  chartVersion: "0.4.2"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
     namespace: sovereign-cloud-plugins
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-rbac
-      tag: "0.0.3"
+      tag: "0.0.4"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -868,14 +868,14 @@ pluginRbac:
 # ─── Plugin Vault Operator (services cluster) ──────────────────────────────
 pluginVault:
   enabled: true
-  chartVersion: "0.2.7"
+  chartVersion: "0.2.8"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
     namespace: sovereign-cloud-plugins
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-vault
-      tag: "0.0.11"
+      tag: "0.0.12"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -897,14 +897,14 @@ pluginVault:
 # ─── Plugin AAP Operator (services cluster) ───────────────────────────────
 pluginAap:
   enabled: true
-  chartVersion: "0.2.0"
+  chartVersion: "0.2.1"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
     namespace: sovereign-cloud-plugins
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-aap
-      tag: "0.0.7"
+      tag: "0.0.8"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -932,14 +932,14 @@ pluginAap:
 # ─── Plugin Quay Operator (services cluster) ──────────────────────────────
 pluginQuay:
   enabled: true
-  chartVersion: "0.2.3"
+  chartVersion: "0.2.4"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
     namespace: sovereign-cloud-plugins
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-quay
-      tag: "0.0.6"
+      tag: "0.0.7"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -965,14 +965,14 @@ pluginQuay:
 # ─── Plugin IaaC Operator (services cluster) ────────────────────────────────
 pluginIaac:
   enabled: true
-  chartVersion: "0.1.3"
+  chartVersion: "0.1.4"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-plugins
   values:
     namespace: sovereign-cloud-plugins
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-iaac
-      tag: "0.0.1"
+      tag: "0.0.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -988,14 +988,14 @@ pluginIaac:
 # ─── Entity Operator (services cluster) ─────────────────────────────────────
 entityOperator:
   enabled: true
-  chartVersion: "0.6.0"
+  chartVersion: "0.6.1"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/entity-operator
-      tag: "0.0.3"
+      tag: "0.0.4"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1003,14 +1003,14 @@ entityOperator:
 # ─── Team Operator (services cluster) ─────────────────────────────────────
 teamOperator:
   enabled: true
-  chartVersion: "0.3.3"
+  chartVersion: "0.3.4"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/team-operator
-      tag: "0.0.2"
+      tag: "0.0.3"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1020,14 +1020,14 @@ teamOperator:
 # ─── Assignment Operator (services cluster) ────────────────────────────────
 assignmentOperator:
   enabled: true
-  chartVersion: "0.3.3"
+  chartVersion: "0.3.4"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/assignment-operator
-      tag: "0.0.2"
+      tag: "0.0.3"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1037,14 +1037,14 @@ assignmentOperator:
 # ─── Project Operator (services cluster) ───────────────────────────────────
 projectOperator:
   enabled: true
-  chartVersion: "0.3.3"
+  chartVersion: "0.3.4"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/project-operator
-      tag: "0.0.2"
+      tag: "0.0.3"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1054,14 +1054,14 @@ projectOperator:
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
   enabled: true
-  chartVersion: "0.2.0"
+  chartVersion: "0.2.1"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/platformopenshift-operator
-      tag: "0.0.1"
+      tag: "0.0.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1071,14 +1071,14 @@ platformOpenshiftOperator:
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
   enabled: true
-  chartVersion: "0.1.5"
+  chartVersion: "0.1.6"
   syncWave: "36"
   destinationNamespace: sovereign-cloud-helpers
   values:
     namespace: sovereign-cloud-helpers
     image:
       repository: quay.signal9.gg/hybrid-sovereign/helper-cloudoso
-      tag: "0.0.3"
+      tag: "0.0.4"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1104,14 +1104,14 @@ helperCloudOSO:
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
   enabled: true
-  chartVersion: "0.3.2"
+  chartVersion: "0.3.3"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/cloudoso-operator
-      tag: "0.0.3"
+      tag: "0.0.4"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
