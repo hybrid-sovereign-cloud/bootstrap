@@ -187,13 +187,11 @@
 
     - name: Check if vault client exists in sovereign-tenants realm
       ansible.builtin.uri:
-        url: "{{ keycloak_services_url }}/admin/realms/{{ keycloak_services_realm }}/clients"
+        url: "{{ keycloak_services_url }}/admin/realms/{{ keycloak_services_realm }}/clients?clientId={{ vault_services_client_id }}"
         method: GET
         validate_certs: false
         headers:
           Authorization: "Bearer {{ kc_services_token }}"
-        params:
-          clientId: "{{ vault_services_client_id }}"
         status_code: [200]
       register: vault_services_client_check
       retries: 5
