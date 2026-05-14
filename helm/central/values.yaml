@@ -465,6 +465,9 @@ gitea:
         size: 10Gi
       route:
         enabled: true
+        tls:
+          termination: edge
+          insecureEdgeTerminationPolicy: Redirect
     pullSecret:
       # Disabled: quay-pull-secret is provisioned by the init chart via make init-central-argo.
       # The OCI robot credentials must NEVER be committed to git.
