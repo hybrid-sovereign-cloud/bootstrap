@@ -880,8 +880,10 @@ sovereignJobs:
           value: "http://vault-active.vault.svc:8200"
         - name: VAULT_SERVICES_ADDR
           value: "https://vault-services.apps.shcservices.lab.signal9.gg"
+        # Use internal service URLs so Vault pods can reach Keycloak for OIDC discovery
+        # without TLS certificate validation issues
         - name: KEYCLOAK_CENTRAL_URL
-          value: "https://rhbk-central.apps.shc-central.lab.signal9.gg"
+          value: "http://rhbk-central-service.rhbk.svc:8080"
         - name: KEYCLOAK_SERVICES_URL
           value: "https://rhbk-services.apps.shcservices.lab.signal9.gg"
         - name: KEYCLOAK_CENTRAL_REALM
