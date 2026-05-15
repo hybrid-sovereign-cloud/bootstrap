@@ -1255,7 +1255,7 @@ helperCloudOSO:
 # ApplicationSet detects the files and triggers ACM to provision the cluster.
 helperCloudAWS:
   enabled: true
-  chartVersion: "0.1.2"
+  chartVersion: "0.1.3"
   # OCI chart hosted on services cluster Quay (required for large layers that need S3Storage)
   chartRegistry: "svc-sovereign-registry-quay-quay-enterprise.apps.shcservices.lab.signal9.gg"
   syncWave: "40"
@@ -1264,7 +1264,7 @@ helperCloudAWS:
     namespace: sovereign-cloud-helpers
     image:
       repository: svc-sovereign-registry-quay-quay-enterprise.apps.shcservices.lab.signal9.gg/hybrid-sovereign/helper-cloudaws
-      tag: "0.1.0"
+      tag: "0.1.1"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
