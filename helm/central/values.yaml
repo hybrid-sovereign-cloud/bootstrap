@@ -37,7 +37,7 @@ sovereignNamespacesServices:
 
 # ─── RHBK Central (Keycloak) ─────────────────────────────────────────────────
 rhbk:
-  enabled: false
+  enabled: true
   chartVersion: "0.10.0"
   syncWave: "20"
   destinationNamespace: rhbk
@@ -59,7 +59,7 @@ rhbk:
 
 # ─── RHBK Services (Keycloak) ────────────────────────────────────────────────
 rhbkServices:
-  enabled: false
+  enabled: true
   chartVersion: "0.10.0"
   syncWave: "20"
   destinationNamespace: rhbk
@@ -235,7 +235,7 @@ vaultServices:
 
 # ─── Vault Services Init (separate App to avoid StatefulSet health deadlock) ─
 vaultServicesInit:
-  enabled: false
+  enabled: true
   chartVersion: "0.2.2"
   syncWave: "20"
   values:
@@ -396,7 +396,7 @@ quayServices:
 
 # ─── Gitea (services cluster) ──────────────────────────────────────────────
 gitea:
-  enabled: false
+  enabled: true
   chartVersion: "0.4.3"
   syncWave: "18"
   values:
@@ -504,7 +504,7 @@ gitea:
 # Manages the Gitea instance running on the central cluster itself.
 # This is separate from the services-cluster Gitea (managed by the 'gitea' app above).
 giteaCentral:
-  enabled: false
+  enabled: true
   chartVersion: "0.4.3"
   syncWave: "18"
   values:
