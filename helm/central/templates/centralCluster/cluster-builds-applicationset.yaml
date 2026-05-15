@@ -137,4 +137,7 @@ spec:
           jsonPointers:
             - /spec/installed
             - /spec/manageDNS
+            - /spec/platform
+            - /spec/provisioning
+            - /spec/controlPlaneConfig
 {{- end }}
