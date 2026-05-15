@@ -710,7 +710,7 @@ sovereignJobs:
     - name: quay-pull-secret
   jobs:
     vaultInit:
-      enabled: false
+      enabled: true
       playbook: vault-init.yml
       activeDeadlineSeconds: 600
       syncWave: "23"
@@ -718,7 +718,7 @@ sovereignJobs:
         - name: VAULT_ADDR
           value: "http://vault.vault.svc:8200"
     vaultKv:
-      enabled: false
+      enabled: true
       playbook: vault-kv.yml
       activeDeadlineSeconds: 600
       syncWave: "24"
