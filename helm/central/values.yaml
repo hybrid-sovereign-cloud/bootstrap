@@ -726,7 +726,7 @@ sovereignJobs:
         - name: VAULT_ADDR
           value: "http://vault.vault.svc:8200"
     deliverVaultToken:
-      enabled: false
+      enabled: true
       playbook: deliver-vault-token.yml
       activeDeadlineSeconds: 300
       syncWave: "25"
@@ -738,7 +738,7 @@ sovereignJobs:
         - name: TARGET_SECRET_NAME
           value: "vault-central-token"
     vaultK8sAuth:
-      enabled: false
+      enabled: true
       playbook: vault-k8s-auth.yml
       activeDeadlineSeconds: 600
       syncWave: "26"
