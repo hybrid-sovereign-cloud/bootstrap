@@ -30,9 +30,9 @@ spec:
   data:
     - secretKey: token
       remoteRef:
-        key: central/github-charts-token
+        key: github-charts-token
         property: token
     - secretKey: username
       remoteRef:
-        key: central/github-charts-token
+        key: github-charts-token
         property: username
