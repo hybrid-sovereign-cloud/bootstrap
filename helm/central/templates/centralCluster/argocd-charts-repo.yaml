@@ -1,0 +1,38 @@
+---
+# ExternalSecret to create ArgoCD repository credential for hybrid-sovereign-cloud/charts.git
+# Vault: central/central/github-charts-token → {token, username}
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: argocd-charts-repo
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault-backend
+    kind: ClusterSecretStore
+  target:
+    name: argocd-charts-repo
+    creationPolicy: Owner
+    template:
+      metadata:
+        labels:
+          argocd.argoproj.io/secret-type: repository
+      data:
+        url: "https://github.com/hybrid-sovereign-cloud/charts.git"
+        type: "git"
+        username: "{{ `{{ .username }}` }}"
+        password: "{{ `{{ .token }}` }}"
+  data:
+    - secretKey: token
+      remoteRef:
+        key: central/github-charts-token
+        property: token
+    - secretKey: username
+      remoteRef:
+        key: central/github-charts-token
+        property: username
