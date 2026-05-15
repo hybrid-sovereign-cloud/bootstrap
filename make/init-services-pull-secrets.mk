@@ -8,7 +8,7 @@ init-services-pull-secrets: check-env ## Create OCI pull secrets on services clu
 	  --password="$(OCP_SERVICES_PASSWORD)" \
 	  --insecure-skip-tls-verify=true
 	$(call ok,Logged in to services cluster)
-	@for ns in sovereign-cloud sovereign-cloud-plugins vault rhbk external-secrets; do \
+	@for ns in sovereign-cloud sovereign-cloud-plugins vault rhbk external-secrets gitea sovereign-cloud-jobs sovereign-cloud-helpers; do \
 	  echo "$(BOLD)Creating quay-pull-secret in $$ns...$(RESET)"; \
 	  oc create secret docker-registry quay-pull-secret \
 	    --namespace="$$ns" \

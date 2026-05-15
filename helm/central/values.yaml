@@ -481,7 +481,7 @@ gitea:
       enabled: false
       dockerconfigjson: ""
     giteaTokenExternalSecret:
-      enabled: true
+      enabled: false
       targetNamespace: sovereign-cloud-plugins
       targetSecretName: gitea-admin-token
       secretStoreName: vault-backend
@@ -489,7 +489,7 @@ gitea:
       vaultPath: gitea-admin
       refreshInterval: "1h"
     adminCredentialsExternalSecret:
-      enabled: true
+      enabled: false
       namespace: gitea
       secretName: gitea-admin-credentials
       secretStoreName: vault-backend
@@ -497,7 +497,7 @@ gitea:
       vaultPath: gitea-admin
       refreshInterval: "1h"
     pullSecretExternalSecret:
-      enabled: true
+      enabled: false
       namespace: gitea
       secretStoreName: vault-backend
       secretStoreKind: ClusterSecretStore
@@ -585,7 +585,7 @@ giteaCentral:
     giteaTokenExternalSecret:
       enabled: false
     adminCredentialsExternalSecret:
-      enabled: true
+      enabled: false
       namespace: gitea
       secretName: gitea-admin-credentials
       secretStoreName: vault-backend
