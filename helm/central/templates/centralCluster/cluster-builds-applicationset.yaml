@@ -2,29 +2,17 @@
 ---
 # ApplicationSet: cluster-builds
 #
-# Monitors the cluster_builds Gitea repository for Application definitions
-# placed under aws/<name>.yaml. Each file must conform to the schema below:
-#
+# Monitors cluster_builds repo for simple Application definitions in aws/*.yaml.
+# Schema:
 #   app:
-#     name: <string>           # ArgoCD Application name
+#     name: <string>
 #     source:
-#       repoURL: <string>      # git or OCI source URL
-#       path: <string>         # manifests / chart path in the repo
-#       targetRevision: <string>  # branch, tag, or semver
+#       repoURL: <string>
+#       path: <string>
+#       targetRevision: <string>
 #     destination:
-#       server: <string>       # cluster API URL (central or services)
-#       namespace: <string>    # target namespace
-#
-# Example aws/my-workload.yaml:
-#   app:
-#     name: my-workload
-#     source:
-#       repoURL: https://github.com/my-org/my-workload.git
-#       path: deploy/
-#       targetRevision: main
-#     destination:
-#       server: https://kubernetes.default.svc
-#       namespace: my-workload
+#       server: <string>
+#       namespace: <string>
 #
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
@@ -38,15 +26,13 @@ metadata:
 spec:
   goTemplate: true
   goTemplateOptions:
-    - missingkey=error
-
+    - missingkey=zero
   generators:
     - git:
         repoURL: {{ .Values.clusterBuilds.repoURL | quote }}
         revision: HEAD
         files:
           - path: "aws/*.yaml"
-
   template:
     metadata:
       name: "{{ "{{" }}.app.name{{ "}}" }}"
@@ -77,4 +63,78 @@ spec:
             duration: 30s
             factor: 2
             maxDuration: 10m
+---
+# ApplicationSet: cluster-builds-clusters
+#
+# Multi-source ApplicationSet for Hive/MCE cluster deployments.
+# Chart is sourced from the sovereign charts repo; values from cluster_builds.
+# The operator writes aws/clusters/<slug>.yaml and buildValues/<slug>-build-values.yaml.
+#
+# Schema (aws/clusters/<name>.yaml):
+#   app:
+#     name: <string>                          # ArgoCD Application name, e.g. ocp-qwert
+#     chartsTargetRevision: <string>          # charts repo branch/tag, default: main
+#
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: cluster-builds-clusters
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.clusterBuilds.syncWave | default "50" | quote }}
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=zero
+  generators:
+    - git:
+        repoURL: {{ .Values.clusterBuilds.repoURL | quote }}
+        revision: HEAD
+        files:
+          - path: "aws/clusters/*.yaml"
+  template:
+    metadata:
+      name: "{{ "{{" }}.app.name{{ "}}" }}"
+      namespace: {{ .Values.argocd.namespace }}
+      labels:
+        app.kubernetes.io/part-of: hybrid-sovereign-cloud
+        app.kubernetes.io/managed-by: cluster-builds-clusters-appset
+        cluster-build: "true"
+    spec:
+      project: cluster-builds
+      sources:
+        - repoURL: {{ .Values.clusterBuilds.chartsRepoURL | quote }}
+          path: {{ .Values.clusterBuilds.mceClusterBuildPath | quote }}
+          targetRevision: "{{ "{{" }}.app.chartsTargetRevision{{ "}}" }}"
+          helm:
+            releaseName: "{{ "{{" }}.app.name{{ "}}" }}"
+            valueFiles:
+              - "$values/buildValues/{{ "{{" }}.app.name{{ "}}" }}-build-values.yaml"
+        - repoURL: {{ .Values.clusterBuilds.repoURL | quote }}
+          ref: values
+          targetRevision: HEAD
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: openshift-gitops
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+          - SkipDryRunOnMissingResource=true
+        retry:
+          limit: 10
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 10m
+      ignoreDifferences:
+        - group: hive.openshift.io
+          kind: ClusterDeployment
+          jsonPointers:
+            - /spec/installed
 {{- end }}

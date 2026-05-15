@@ -1,0 +1,42 @@
+{{- if .Values.helperCloudAWS.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: helper-cloudaws
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: helpers
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.helperCloudAWS.syncWave | quote }}
+spec:
+  project: central
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/helper-cloudaws" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: helper-cloudaws
+    targetRevision: {{ .Values.helperCloudAWS.chartVersion | quote }}
+    helm:
+      releaseName: helper-cloudaws
+      values: |
+        {{- toYaml .Values.helperCloudAWS.values | nindent 8 }}
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.helperCloudAWS.destinationNamespace | default "sovereign-cloud-helpers" }}
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+{{- end }}

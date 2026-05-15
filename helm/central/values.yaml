@@ -1249,6 +1249,62 @@ helperCloudOSO:
         secretStoreKind: ClusterSecretStore
         vaultPath: osohelper-creator-sa
 
+# ─── AWS Helper Operator ────────────────────────────────────────────────────
+# Provisions OCP clusters in AWS via AWSHelper CRs → MCE/Hive ClusterDeployments
+# The operator writes to the cluster_builds Gitea repo; the cluster-builds-clusters
+# ApplicationSet detects the files and triggers ACM to provision the cluster.
+helperCloudAWS:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "40"
+  destinationNamespace: sovereign-cloud-helpers
+  values:
+    namespace: sovereign-cloud-helpers
+    image:
+      repository: svc-sovereign-registry-quay-quay-enterprise.apps.shcservices.lab.signal9.gg/hybrid-sovereign/helper-cloudaws
+      tag: "0.1.0"
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: quay-pull-secret
+      - name: quay-services-pull-secret
+    quayServicesPullSecret:
+      enabled: true
+      vaultPath: oci-push-credentials
+      secretStoreName: vault-backend
+      secretStoreKind: ClusterSecretStore
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1024Mi
+      requests:
+        cpu: 10m
+        memory: 512Mi
+    giteaUrl: "https://gitea-gitea.apps.shcservices.lab.signal9.gg"
+    crossClusterSA:
+      enabled: true
+      name: awshelper-creator-sa
+      pushSecret:
+        enabled: true
+        secretStoreName: vault-backend
+        secretStoreKind: ClusterSecretStore
+        vaultPath: awshelper-creator-sa
+    samples:
+      enabled: true
+      name: dev-project
+      awsAccountId: "605465390841"
+      vaultPath: "aws/accounts/testaccount"
+      baseDomain: "sandbox287.opentlc.com"
+      slug: "qwert"
+      clusterType: standalone
+      region: us-east-1
+      ocpImageSet: img4.21.9-x86-64-appsub
+      controlPlaneCount: 3
+      workerCount: 2
+      controllerFlavor: m5.xlarge
+      workerFlavor: m5.large
+      pullSecretVaultPath: "aws/ocp-pull-secret"
+      sshKeyVaultPath: "aws/ocp-ssh-key"
+
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
   enabled: false
@@ -1351,3 +1407,6 @@ clusterBuilds:
   enabled: true
   syncWave: "50"
   repoURL: "https://gitea-gitea.apps.shcservices.lab.signal9.gg/gitea_admin/cluster_builds.git"
+  # cluster-builds-clusters ApplicationSet sources
+  chartsRepoURL: "https://github.com/hybrid-sovereign-cloud/charts.git"
+  mceClusterBuildPath: "charts/mce-cluster-build"
