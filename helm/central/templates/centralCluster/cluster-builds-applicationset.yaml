@@ -136,4 +136,5 @@ spec:
           kind: ClusterDeployment
           jsonPointers:
             - /spec/installed
+            - /spec/manageDNS
 {{- end }}
