@@ -10,7 +10,8 @@ metadata:
   labels:
     {{- include "sovereign-central.labels" . | nindent 4 }}
   annotations:
-    argocd.argoproj.io/sync-wave: "-5"
+    argocd.argoproj.io/sync-wave: "50"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   refreshInterval: 1h
   secretStoreRef:
