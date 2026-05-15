@@ -31,7 +31,6 @@ spec:
       kind: ExternalSecret
       jsonPointers:
         - /spec/dataFrom
-        - /spec/data
         - /spec/target
         - /metadata/annotations
     - group: ""
