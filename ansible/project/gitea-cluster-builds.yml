@@ -145,6 +145,8 @@
             url: "{{ gitea_url }}/{{ gitea_admin_user }}/{{ repo_name }}.git"
             username: "{{ gitea_admin_user }}"
             password: "{{ gitea_admin_token }}"
+            # Gitea uses an OpenShift internal CA not trusted by ArgoCD by default
+            insecure: "true"
 
     - name: Log ArgoCD repo secret status
       ansible.builtin.debug:
