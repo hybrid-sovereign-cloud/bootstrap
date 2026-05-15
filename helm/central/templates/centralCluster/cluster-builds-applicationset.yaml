@@ -1,0 +1,80 @@
+{{- if .Values.clusterBuilds.enabled }}
+---
+# ApplicationSet: cluster-builds
+#
+# Monitors the cluster_builds Gitea repository for Application definitions
+# placed under aws/<name>.yaml. Each file must conform to the schema below:
+#
+#   app:
+#     name: <string>           # ArgoCD Application name
+#     source:
+#       repoURL: <string>      # git or OCI source URL
+#       path: <string>         # manifests / chart path in the repo
+#       targetRevision: <string>  # branch, tag, or semver
+#     destination:
+#       server: <string>       # cluster API URL (central or services)
+#       namespace: <string>    # target namespace
+#
+# Example aws/my-workload.yaml:
+#   app:
+#     name: my-workload
+#     source:
+#       repoURL: https://github.com/my-org/my-workload.git
+#       path: deploy/
+#       targetRevision: main
+#     destination:
+#       server: https://kubernetes.default.svc
+#       namespace: my-workload
+#
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: cluster-builds
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.clusterBuilds.syncWave | default "50" | quote }}
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+
+  generators:
+    - git:
+        repoURL: {{ .Values.clusterBuilds.repoURL | quote }}
+        revision: HEAD
+        files:
+          - path: "aws/*.yaml"
+
+  template:
+    metadata:
+      name: {{ "{{" }}.app.name{{ "}}" }}
+      namespace: {{ .Values.argocd.namespace }}
+      labels:
+        app.kubernetes.io/part-of: hybrid-sovereign-cloud
+        app.kubernetes.io/managed-by: cluster-builds-appset
+    spec:
+      project: cluster-builds
+      source:
+        repoURL: {{ "{{" }}.app.source.repoURL{{ "}}" }}
+        path: {{ "{{" }}.app.source.path{{ "}}" }}
+        targetRevision: {{ "{{" }}.app.source.targetRevision{{ "}}" }}
+      destination:
+        server: {{ "{{" }}.app.destination.server{{ "}}" }}
+        namespace: {{ "{{" }}.app.destination.namespace{{ "}}" }}
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+          - SkipDryRunOnMissingResource=true
+        retry:
+          limit: 10
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 10m
+{{- end }}

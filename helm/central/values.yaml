@@ -924,6 +924,34 @@ sovereignJobs:
           value: "rhbk-services-admin"
         - name: KEYCLOAK_SERVICES_ADMIN_SECRET_NS
           value: "sovereign-cloud-jobs"
+    # Bootstraps the cluster_builds Gitea repo and its ArgoCD repo secret.
+    # Idempotent — safe to re-run; repo creation and secret upsert are guarded.
+    # Runs at wave 37 so the ApplicationSet (wave 50) can connect immediately.
+    giteaClusterBuildsRepo:
+      enabled: true
+      playbook: gitea-cluster-builds.yml
+      activeDeadlineSeconds: 300
+      syncWave: "37"
+      # No externalSecrets declared here — gitea-admin-credentials is already
+      # owned by the giteaInit job (wave 35). Referencing it via secretKeyRef
+      # avoids dual-ownership conflict with ESO creationPolicy: Owner.
+      env:
+        - name: GITEA_URL
+          value: "https://gitea-gitea.apps.shcservices.lab.signal9.gg"
+        - name: GITEA_ADMIN_USER
+          value: "gitea_admin"
+        - name: GITEA_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: gitea-admin-credentials
+              key: admin_password
+        - name: GITEA_CREDENTIALS_SECRET
+          value: "gitea-admin-credentials"
+        - name: GITEA_CREDENTIALS_NAMESPACE
+          value: "sovereign-cloud-jobs"
+        - name: ARGOCD_NAMESPACE
+          value: "openshift-gitops"
+
     # Creates Entity, AAPOrg, QuayOrg sample CRs via Ansible job.
     # Runs after all operators are deployed (wave 45) so their CRDs exist.
     # Disables broken chart-default samples that have incorrect field names.
@@ -1315,3 +1343,11 @@ tenancyDashboard:
       enabled: true
     env:
       NODE_ENV: production
+# ─── Cluster Builds ApplicationSet ───────────────────────────────────────────
+# Monitors cluster_builds Gitea repo for Application definitions in aws/*.yaml.
+# The giteaClusterBuildsRepo sovereign job (wave 37) creates the repo and the
+# ArgoCD repo secret before this ApplicationSet (wave 50) is deployed.
+clusterBuilds:
+  enabled: true
+  syncWave: "50"
+  repoURL: "https://gitea-gitea.apps.shcservices.lab.signal9.gg/gitea_admin/cluster_builds.git"
