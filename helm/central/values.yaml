@@ -13,7 +13,7 @@ oci:
 
 # ─── Sovereign Namespaces (central cluster) ──────────────────────────────────
 sovereignNamespaces:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.1"
   syncWave: "1"
   values:
@@ -25,7 +25,7 @@ sovereignNamespaces:
 
 # ─── Sovereign Namespaces (services cluster) ────────────────────────────────
 sovereignNamespacesServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.1"
   syncWave: "1"
   values:
@@ -37,7 +37,7 @@ sovereignNamespacesServices:
 
 # ─── RHBK Central (Keycloak) ─────────────────────────────────────────────────
 rhbk:
-  enabled: true
+  enabled: false
   chartVersion: "0.10.0"
   syncWave: "20"
   destinationNamespace: rhbk
@@ -59,7 +59,7 @@ rhbk:
 
 # ─── RHBK Services (Keycloak) ────────────────────────────────────────────────
 rhbkServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.10.0"
   syncWave: "20"
   destinationNamespace: rhbk
@@ -119,7 +119,7 @@ acsServices:
 
 # ─── Vault Central ───────────────────────────────────────────────────────────
 vault:
-  enabled: true
+  enabled: false
   chartVersion: "0.5.0"
   syncWave: "15"
   values:
@@ -170,7 +170,7 @@ vault:
 
 # ─── Vault Services ─────────────────────────────────────────────────────────
 vaultServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.6.4"
   syncWave: "15"
   values:
@@ -235,7 +235,7 @@ vaultServices:
 
 # ─── Vault Services Init (separate App to avoid StatefulSet health deadlock) ─
 vaultServicesInit:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.2"
   syncWave: "20"
   values:
@@ -276,7 +276,7 @@ rhacm:
 
 # ─── AAP (services cluster) ─────────────────────────────────────────────────
 aap:
-  enabled: true
+  enabled: false
   chartVersion: "0.5.1"
   syncWave: "30"
   destinationNamespace: aap
@@ -351,7 +351,7 @@ quay:
 
 # ─── Quay (services) ────────────────────────────────────────────────────────
 quayServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.5.2"
   syncWave: "35"
   destinationNamespace: quay-enterprise
@@ -396,7 +396,7 @@ quayServices:
 
 # ─── Gitea (services cluster) ──────────────────────────────────────────────
 gitea:
-  enabled: true
+  enabled: false
   chartVersion: "0.4.3"
   syncWave: "18"
   values:
@@ -504,7 +504,7 @@ gitea:
 # Manages the Gitea instance running on the central cluster itself.
 # This is separate from the services-cluster Gitea (managed by the 'gitea' app above).
 giteaCentral:
-  enabled: true
+  enabled: false
   chartVersion: "0.4.3"
   syncWave: "18"
   values:
@@ -612,7 +612,7 @@ crunchyPostgresServices:
 
 # ─── External Secrets Operator (central) ────────────────────────────────────
 externalSecrets:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.2"
   syncWave: "5"
   values:
@@ -625,7 +625,7 @@ externalSecrets:
 
 # ─── External Secrets Operator (services) ───────────────────────────────────
 externalSecretsServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.2"
   syncWave: "5"
   values:
@@ -638,7 +638,7 @@ externalSecretsServices:
 
 # ─── Vault Central Namespace (backup copies of init secrets) ─────────────────
 vaultCentralNamespace:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.2"
   syncWave: "27"
   values:
@@ -653,7 +653,7 @@ vaultCentralNamespace:
 
 # ─── Vault ClusterSecretStore (central) — uses k8s auth ─────────────────────
 vaultSecretStore:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.1"
   syncWave: "22"
   values:
@@ -670,7 +670,7 @@ vaultSecretStore:
 # ─── Vault ClusterSecretStore (services → vault-central via external route) ─
 # Uses kubernetes-services auth mount on central vault (k8s auth, no root token)
 vaultSecretStoreServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.1"
   syncWave: "22"
   values:
@@ -686,7 +686,7 @@ vaultSecretStoreServices:
 
 # ─── Sovereign Jobs RBAC ────────────────────────────────────────────────────
 sovereignJobsRbac:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.2"
   syncWave: "3"
   values:
@@ -706,7 +706,7 @@ sovereignJobs:
     - name: quay-pull-secret
   jobs:
     vaultInit:
-      enabled: true
+      enabled: false
       playbook: vault-init.yml
       activeDeadlineSeconds: 600
       syncWave: "23"
@@ -714,7 +714,7 @@ sovereignJobs:
         - name: VAULT_ADDR
           value: "http://vault.vault.svc:8200"
     vaultKv:
-      enabled: true
+      enabled: false
       playbook: vault-kv.yml
       activeDeadlineSeconds: 600
       syncWave: "24"
@@ -722,7 +722,7 @@ sovereignJobs:
         - name: VAULT_ADDR
           value: "http://vault.vault.svc:8200"
     deliverVaultToken:
-      enabled: true
+      enabled: false
       playbook: deliver-vault-token.yml
       activeDeadlineSeconds: 300
       syncWave: "25"
@@ -734,7 +734,7 @@ sovereignJobs:
         - name: TARGET_SECRET_NAME
           value: "vault-central-token"
     vaultK8sAuth:
-      enabled: true
+      enabled: false
       playbook: vault-k8s-auth.yml
       activeDeadlineSeconds: 600
       syncWave: "26"
@@ -746,7 +746,7 @@ sovereignJobs:
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
     keycloakRealms:
-      enabled: true
+      enabled: false
       playbook: keycloak-realms.yml
       activeDeadlineSeconds: 600
       syncWave: "26"
@@ -758,7 +758,7 @@ sovereignJobs:
         - name: KEYCLOAK_ADMIN_SECRET_NS
           value: "rhbk"
     keycloakGroups:
-      enabled: true
+      enabled: false
       playbook: keycloak-groups.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
@@ -770,7 +770,7 @@ sovereignJobs:
         - name: KEYCLOAK_ADMIN_SECRET_NS
           value: "rhbk"
     keycloakClients:
-      enabled: true
+      enabled: false
       playbook: keycloak-clients.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
@@ -811,7 +811,7 @@ sovereignJobs:
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
     keycloakOauth:
-      enabled: true
+      enabled: false
       playbook: keycloak-oauth.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
@@ -833,7 +833,7 @@ sovereignJobs:
         - name: SERVICES_REALM_NAME
           value: "sovereign-tenants"
     giteaInit:
-      enabled: true
+      enabled: false
       playbook: gitea-init.yml
       activeDeadlineSeconds: 600
       syncWave: "35"
@@ -878,7 +878,7 @@ sovereignJobs:
         - name: SECRETS_NAMESPACE
           value: "sovereign-cloud-jobs"
     giteaCreateRepo:
-      enabled: true
+      enabled: false
       playbook: gitea-create-repo.yml
       activeDeadlineSeconds: 300
       syncWave: "36"
@@ -895,7 +895,7 @@ sovereignJobs:
         - name: REPO_NAME
           value: "tenancy_repo"
     keycloakServicesRealms:
-      enabled: true
+      enabled: false
       playbook: keycloak-realms.yml
       activeDeadlineSeconds: 600
       syncWave: "28"
@@ -920,7 +920,7 @@ sovereignJobs:
         - name: REALM_NAME
           value: "sovereign-tenants"
     keycloakServicesGroups:
-      enabled: true
+      enabled: false
       playbook: keycloak-groups.yml
       activeDeadlineSeconds: 600
       syncWave: "29"
@@ -936,7 +936,7 @@ sovereignJobs:
         - name: ADMIN_GROUP
           value: "sovereign-admin"
     keycloakServicesClients:
-      enabled: true
+      enabled: false
       playbook: keycloak-clients.yml
       activeDeadlineSeconds: 600
       syncWave: "30"
@@ -968,7 +968,7 @@ sovereignJobs:
         - name: VAULT_SECRET_NAMESPACE
           value: "sovereign-cloud-jobs"
     vaultOidcAuth:
-      enabled: true
+      enabled: false
       playbook: vault-oidc-auth.yml
       activeDeadlineSeconds: 600
       syncWave: "29"
@@ -994,7 +994,7 @@ sovereignJobs:
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
     keycloakTestUsers:
-      enabled: true
+      enabled: false
       playbook: keycloak-test-users.yml
       activeDeadlineSeconds: 300
       syncWave: "32"
@@ -1019,7 +1019,7 @@ sovereignJobs:
     # Idempotent — safe to re-run; repo creation and secret upsert are guarded.
     # Runs at wave 37 so the ApplicationSet (wave 50) can connect immediately.
     giteaClusterBuildsRepo:
-      enabled: true
+      enabled: false
       playbook: gitea-cluster-builds.yml
       activeDeadlineSeconds: 300
       syncWave: "37"
@@ -1047,7 +1047,7 @@ sovereignJobs:
     # Runs after all operators are deployed (wave 45) so their CRDs exist.
     # Disables broken chart-default samples that have incorrect field names.
     operatorSamples:
-      enabled: true
+      enabled: false
       playbook: operator-samples.yml
       activeDeadlineSeconds: 900
       syncWave: "45"
@@ -1057,7 +1057,7 @@ sovereignJobs:
 
 # ─── Plugin RBAC Operator (services cluster) ────────────────────────────────
 pluginRbac:
-  enabled: true
+  enabled: false
   chartVersion: "0.4.3"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -1093,7 +1093,7 @@ pluginRbac:
 
 # ─── Plugin Vault Operator (services cluster) ──────────────────────────────
 pluginVault:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.9"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -1122,7 +1122,7 @@ pluginVault:
 
 # ─── Plugin AAP Operator (services cluster) ───────────────────────────────
 pluginAap:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.2"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -1161,7 +1161,7 @@ pluginAap:
 
 # ─── Plugin Quay Operator (services cluster) ──────────────────────────────
 pluginQuay:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.5"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -1198,7 +1198,7 @@ pluginQuay:
 
 # ─── Plugin IaaC Operator (services cluster) ────────────────────────────────
 pluginIaac:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.3"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-plugins
@@ -1221,7 +1221,7 @@ pluginIaac:
 
 # ─── Entity Operator (services cluster) ─────────────────────────────────────
 entityOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.6.2"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1241,7 +1241,7 @@ entityOperator:
 
 # ─── Team Operator (services cluster) ─────────────────────────────────────
 teamOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.3.3"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1258,7 +1258,7 @@ teamOperator:
 
 # ─── Assignment Operator (services cluster) ────────────────────────────────
 assignmentOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.3.3"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
@@ -1275,7 +1275,7 @@ assignmentOperator:
 
 # ─── Project Operator (services cluster) ───────────────────────────────────
 projectOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.3.3"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1292,7 +1292,7 @@ projectOperator:
 
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.0"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1345,7 +1345,7 @@ helperCloudOSO:
 # The operator writes to the cluster_builds Gitea repo; the cluster-builds-clusters
 # ApplicationSet detects the files and triggers ACM to provision the cluster.
 helperCloudAWS:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.6"
   # OCI chart hosted on services cluster Quay (required for large layers that need S3Storage)
   chartRegistry: "svc-sovereign-registry-quay-quay-enterprise.apps.shcservices.lab.signal9.gg"
@@ -1430,7 +1430,7 @@ cloudOSOOperator:
 
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
-  enabled: true
+  enabled: false
   chartVersion: "0.8.0"
   syncWave: "40"
   destinationNamespace: sovereign-cloud
@@ -1463,7 +1463,7 @@ sovereignDashboard:
 
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
-  enabled: true
+  enabled: false
   chartVersion: "0.9.3"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
@@ -1497,7 +1497,7 @@ tenancyDashboard:
 # The giteaClusterBuildsRepo sovereign job (wave 37) creates the repo and the
 # ArgoCD repo secret before this ApplicationSet (wave 50) is deployed.
 clusterBuilds:
-  enabled: true
+  enabled: false
   syncWave: "50"
   repoURL: "https://gitea-gitea.apps.shcservices.lab.signal9.gg/gitea_admin/cluster_builds.git"
   # cluster-builds-clusters ApplicationSet sources

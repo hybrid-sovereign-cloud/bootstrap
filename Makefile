@@ -66,6 +66,7 @@ include make/upload-cloudoso-operator-chart.mk
 include make/ansible-runner.mk
 include make/init-central-argo.mk
 include make/init-services-pull-secrets.mk
+include make/init-services-argocd-sa.mk
 include make/help.mk
 
 ##@ Convenience
