@@ -1,4 +1,4 @@
-{{- if .Values.vaultSecretStore.enabled }}
+{{- if and .Values.vaultSecretStore.enabled .Values.vaultCentralNamespace.argocdChartsRepo }}
 ---
 # ExternalSecret to create ArgoCD repository credential for hybrid-sovereign-cloud/charts.git
 # Vault: central/central/github-charts-token → {token, username}
