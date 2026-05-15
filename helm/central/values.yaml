@@ -548,7 +548,7 @@ externalSecretsServices:
 # ─── Vault Central Namespace (backup copies of init secrets) ─────────────────
 vaultCentralNamespace:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.1.1"
   syncWave: "27"
   values:
     namespace: vault-central
@@ -596,7 +596,7 @@ vaultSecretStoreServices:
 # ─── Sovereign Jobs RBAC ────────────────────────────────────────────────────
 sovereignJobsRbac:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.1.1"
   syncWave: "3"
   values:
     namespace: sovereign-cloud-jobs
@@ -606,7 +606,7 @@ sovereignJobsRbac:
 
 # ─── Sovereign Jobs (individual Ansible job Applications) ────────────────────
 sovereignJobs:
-  chartVersion: "0.1.0"
+  chartVersion: "0.1.1"
   namespace: sovereign-cloud-jobs
   serviceAccount: sovereign-ansible-runner
   image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
@@ -1255,7 +1255,7 @@ helperCloudOSO:
 # ApplicationSet detects the files and triggers ACM to provision the cluster.
 helperCloudAWS:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.1.1"
   # OCI chart hosted on services cluster Quay (required for large layers that need S3Storage)
   chartRegistry: "svc-sovereign-registry-quay-quay-enterprise.apps.shcservices.lab.signal9.gg"
   syncWave: "40"
