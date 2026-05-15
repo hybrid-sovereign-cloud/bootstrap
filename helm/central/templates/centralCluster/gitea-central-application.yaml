@@ -1,0 +1,73 @@
+{{- if .Values.giteaCentral.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitea-central
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: git
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.giteaCentral.syncWave | quote }}
+spec:
+  project: central
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/gitea" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: gitea
+    targetRevision: {{ .Values.giteaCentral.chartVersion | quote }}
+    helm:
+      releaseName: gitea
+      values: |
+        {{- toYaml .Values.giteaCentral.values | nindent 8 }}
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gitea
+
+  ignoreDifferences:
+    - group: external-secrets.io
+      kind: ExternalSecret
+      jsonPointers:
+        - /spec/dataFrom
+        - /spec/target
+        - /metadata/annotations
+    - group: ""
+      kind: Namespace
+      jsonPointers:
+        - /metadata/labels
+        - /metadata/annotations
+    - group: ""
+      kind: Secret
+      jsonPointers:
+        - /data
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /spec/volumeClaimTemplates/0/spec
+        - /spec/volumeClaimTemplates/1/spec
+        - /spec/template/spec/containers/0/securityContext
+        - /spec/template/spec/containers/1/securityContext
+        - /spec/template/spec/initContainers
+        - /spec/template/spec/containers/0/resources
+        - /spec/template/spec/containers/1/resources
+        - /spec/template/spec/securityContext
+        - /spec/template/metadata/annotations
+        - /spec/volumeClaimTemplates
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+{{- end }}
