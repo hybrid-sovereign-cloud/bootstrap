@@ -642,7 +642,7 @@ externalSecretsServices:
 
 # ─── Vault Central Namespace (backup copies of init secrets) ─────────────────
 vaultCentralNamespace:
-  enabled: false
+  enabled: true
   chartVersion: "0.1.0"
   syncWave: "27"
   values:
@@ -657,7 +657,7 @@ vaultCentralNamespace:
 
 # ─── Vault ClusterSecretStore (central) — uses k8s auth ─────────────────────
 vaultSecretStore:
-  enabled: false
+  enabled: true
   chartVersion: "0.3.0"
   syncWave: "22"
   values:
@@ -674,7 +674,7 @@ vaultSecretStore:
 # ─── Vault ClusterSecretStore (services → vault-central via external route) ─
 # Uses kubernetes-services auth mount on central vault (k8s auth, no root token)
 vaultSecretStoreServices:
-  enabled: false
+  enabled: true
   chartVersion: "0.3.0"
   syncWave: "22"
   values:
@@ -750,7 +750,7 @@ sovereignJobs:
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
     keycloakRealms:
-      enabled: false
+      enabled: true
       playbook: keycloak-realms.yml
       activeDeadlineSeconds: 600
       syncWave: "26"
