@@ -643,7 +643,7 @@ externalSecretsServices:
 # ─── Vault Central Namespace (backup copies of init secrets) ─────────────────
 vaultCentralNamespace:
   enabled: false
-  chartVersion: "0.1.2"
+  chartVersion: "0.1.0"
   syncWave: "27"
   values:
     namespace: vault-central
@@ -658,7 +658,7 @@ vaultCentralNamespace:
 # ─── Vault ClusterSecretStore (central) — uses k8s auth ─────────────────────
 vaultSecretStore:
   enabled: false
-  chartVersion: "0.2.1"
+  chartVersion: "0.3.0"
   syncWave: "22"
   values:
     vault:
@@ -675,7 +675,7 @@ vaultSecretStore:
 # Uses kubernetes-services auth mount on central vault (k8s auth, no root token)
 vaultSecretStoreServices:
   enabled: false
-  chartVersion: "0.2.1"
+  chartVersion: "0.3.0"
   syncWave: "22"
   values:
     vault:
@@ -691,7 +691,7 @@ vaultSecretStoreServices:
 # ─── Sovereign Jobs RBAC ────────────────────────────────────────────────────
 sovereignJobsRbac:
   enabled: true
-  chartVersion: "0.1.2"
+  chartVersion: "0.1.0"
   syncWave: "3"
   values:
     namespace: sovereign-cloud-jobs
@@ -701,7 +701,7 @@ sovereignJobsRbac:
 
 # ─── Sovereign Jobs (individual Ansible job Applications) ────────────────────
 sovereignJobs:
-  chartVersion: "0.1.2"
+  chartVersion: "0.1.0"
   namespace: sovereign-cloud-jobs
   serviceAccount: sovereign-ansible-runner
   image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
