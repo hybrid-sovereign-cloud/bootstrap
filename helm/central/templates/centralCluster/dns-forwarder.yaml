@@ -1,0 +1,21 @@
+---
+# DNS forwarder: forward opentlc.com queries to public DNS (8.8.8.8/8.8.4.4)
+# Required for: OCP cluster builds in OPENTLC sandbox accounts where the lab
+# internal DNS (10.0.1.12) does not resolve *.opentlc.com / *.sandbox*.opentlc.com.
+# Without this, Hive provision pods cannot reach the new cluster's API endpoint.
+apiVersion: operator.openshift.io/v1
+kind: DNS
+metadata:
+  name: default
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  servers:
+    - name: opentlc-forwarder
+      zones:
+        - opentlc.com
+      forwardPlugin:
+        policy: Sequential
+        upstreams:
+          - 8.8.8.8
+          - 8.8.4.4
