@@ -49,7 +49,7 @@ spec:
 
   template:
     metadata:
-      name: {{ "{{" }}.app.name{{ "}}" }}
+      name: "{{ "{{" }}.app.name{{ "}}" }}"
       namespace: {{ .Values.argocd.namespace }}
       labels:
         app.kubernetes.io/part-of: hybrid-sovereign-cloud
@@ -57,12 +57,12 @@ spec:
     spec:
       project: cluster-builds
       source:
-        repoURL: {{ "{{" }}.app.source.repoURL{{ "}}" }}
-        path: {{ "{{" }}.app.source.path{{ "}}" }}
-        targetRevision: {{ "{{" }}.app.source.targetRevision{{ "}}" }}
+        repoURL: "{{ "{{" }}.app.source.repoURL{{ "}}" }}"
+        path: "{{ "{{" }}.app.source.path{{ "}}" }}"
+        targetRevision: "{{ "{{" }}.app.source.targetRevision{{ "}}" }}"
       destination:
-        server: {{ "{{" }}.app.destination.server{{ "}}" }}
-        namespace: {{ "{{" }}.app.destination.namespace{{ "}}" }}
+        server: "{{ "{{" }}.app.destination.server{{ "}}" }}"
+        namespace: "{{ "{{" }}.app.destination.namespace{{ "}}" }}"
       syncPolicy:
         automated:
           prune: true
