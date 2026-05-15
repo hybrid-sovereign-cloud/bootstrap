@@ -14,7 +14,7 @@ spec:
   project: central
 
   source:
-    repoURL: {{ printf "oci://%s/%s/helper-cloudaws" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    repoURL: {{ printf "oci://%s/%s/helper-cloudaws" .Values.helperCloudAWS.chartRegistry .Values.oci.repositoryBase | quote }}
     chart: helper-cloudaws
     targetRevision: {{ .Values.helperCloudAWS.chartVersion | quote }}
     helm:

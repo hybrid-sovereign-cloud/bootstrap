@@ -1256,6 +1256,8 @@ helperCloudOSO:
 helperCloudAWS:
   enabled: true
   chartVersion: "0.1.0"
+  # OCI chart hosted on services cluster Quay (required for large layers that need S3Storage)
+  chartRegistry: "svc-sovereign-registry-quay-quay-enterprise.apps.shcservices.lab.signal9.gg"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-helpers
   values:
