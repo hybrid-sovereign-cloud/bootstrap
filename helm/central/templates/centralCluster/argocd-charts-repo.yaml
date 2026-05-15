@@ -1,3 +1,4 @@
+{{- if .Values.vaultSecretStore.enabled }}
 ---
 # ExternalSecret to create ArgoCD repository credential for hybrid-sovereign-cloud/charts.git
 # Vault: central/central/github-charts-token → {token, username}
@@ -36,3 +37,5 @@ spec:
       remoteRef:
         key: github-charts-token
         property: username
+
+{{- end }}
