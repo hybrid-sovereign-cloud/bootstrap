@@ -1041,7 +1041,7 @@ sovereignJobs:
               name: gitea-admin-credentials
               key: admin_password
         - name: GITEA_CREDENTIALS_SECRET
-          value: "gitea-admin-credentials"
+          value: "gitea-credentials"
         - name: GITEA_CREDENTIALS_NAMESPACE
           value: "sovereign-cloud-jobs"
         - name: ARGOCD_NAMESPACE
@@ -1499,7 +1499,7 @@ tenancyDashboard:
 clusterBuilds:
   enabled: true
   syncWave: "50"
-  repoURL: "https://gitea-gitea.apps.shcservices.lab.signal9.gg/gitea_admin/cluster_builds.git"
+  repoURL: "https://gitea-gitea.apps.shc-central.lab.signal9.gg/gitea_admin/cluster_builds.git"
   # cluster-builds-clusters ApplicationSet sources
   chartsRepoURL: "https://github.com/hybrid-sovereign-cloud/charts.git"
   mceClusterBuildPath: "charts/mce-cluster-build"
