@@ -784,16 +784,16 @@ sovereignJobs:
           secretName: keycloak-client-secrets
           data:
             - secretKey: quay-central
-              remoteKey: central/data/keycloak-clients
+              remoteKey: keycloak-clients
               property: quay-central
             - secretKey: vault
-              remoteKey: central/data/keycloak-clients
+              remoteKey: keycloak-clients
               property: vault
             - secretKey: gitea
-              remoteKey: central/data/keycloak-clients
+              remoteKey: keycloak-clients
               property: gitea
             - secretKey: openshift-central
-              remoteKey: central/data/keycloak-clients
+              remoteKey: keycloak-clients
               property: openshift-central
       env:
         - name: KEYCLOAK_URL
@@ -861,13 +861,13 @@ sovereignJobs:
           secretName: gitea-credentials
           data:
             - secretKey: admin_user
-              remoteKey: central/data/gitea-admin
+              remoteKey: gitea-admin
               property: admin_user
             - secretKey: admin_password
-              remoteKey: central/data/gitea-admin
+              remoteKey: gitea-admin
               property: admin_password
             - secretKey: admin_token
-              remoteKey: central/data/gitea-admin
+              remoteKey: gitea-admin
               property: admin_token
       env:
         - name: GITEA_URL
