@@ -1435,7 +1435,7 @@ cloudOSOOperator:
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
   enabled: true
-  chartVersion: "0.8.0"
+  chartVersion: "0.8.1"
   syncWave: "40"
   destinationNamespace: sovereign-cloud
   values:
