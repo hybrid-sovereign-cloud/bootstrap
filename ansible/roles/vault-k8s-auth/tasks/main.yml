@@ -108,10 +108,10 @@
     body:
       policy: |
         path "central/data/*" {
-          capabilities = ["read", "list"]
+          capabilities = ["create", "read", "update", "delete", "list"]
         }
         path "central/metadata/*" {
-          capabilities = ["read", "list"]
+          capabilities = ["create", "read", "update", "delete", "list"]
         }
     status_code: [200, 204]
   retries: 3
