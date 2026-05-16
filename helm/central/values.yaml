@@ -1450,14 +1450,12 @@ sovereignDashboard:
     oauthProxy:
       image: registry.redhat.io/openshift4/ose-oauth-proxy:v4.14
       # cookieSecret and clientSecret are NOT stored here.
-      # They are stored in Vault at central/data/dashboard-oauth and
-      # delivered via ExternalSecret into the sovereign-cloud namespace.
-      # Pre-populate Vault path before deploying dashboards.
+      # Vault key pulled via ExternalSecret into the sovereign-cloud namespace.
       externalSecret:
         enabled: true
         secretStoreName: vault-backend
         secretStoreKind: ClusterSecretStore
-        vaultPath: "central/data/dashboard-oauth"
+        vaultPath: "dashboard-oauth"
         refreshInterval: "1h"
     route:
       enabled: true
@@ -1483,14 +1481,12 @@ tenancyDashboard:
     oauthProxy:
       image: registry.redhat.io/openshift4/ose-oauth-proxy:v4.14
       # cookieSecret and clientSecret are NOT stored here.
-      # They are stored in Vault at central/data/tenancy-dashboard-oauth and
-      # delivered via ExternalSecret into the sovereign-cloud namespace.
-      # Pre-populate Vault path before deploying dashboards.
+      # Vault key pulled via ExternalSecret into the sovereign-cloud namespace.
       externalSecret:
         enabled: true
         secretStoreName: vault-backend
         secretStoreKind: ClusterSecretStore
-        vaultPath: "central/data/tenancy-dashboard-oauth"
+        vaultPath: "tenancy-dashboard-oauth"
         refreshInterval: "1h"
     route:
       enabled: true
