@@ -762,7 +762,7 @@ sovereignJobs:
         - name: KEYCLOAK_ADMIN_SECRET_NS
           value: "rhbk"
     keycloakGroups:
-      enabled: false
+      enabled: true
       playbook: keycloak-groups.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
@@ -774,7 +774,7 @@ sovereignJobs:
         - name: KEYCLOAK_ADMIN_SECRET_NS
           value: "rhbk"
     keycloakClients:
-      enabled: false
+      enabled: true
       playbook: keycloak-clients.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
@@ -807,7 +807,7 @@ sovereignJobs:
         - name: SECRETS_NAMESPACE
           value: "sovereign-cloud-jobs"
     keycloakRbac:
-      enabled: false
+      enabled: true
       playbook: keycloak-rbac.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
@@ -815,7 +815,7 @@ sovereignJobs:
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
     keycloakOauth:
-      enabled: false
+      enabled: true
       playbook: keycloak-oauth.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
@@ -899,7 +899,7 @@ sovereignJobs:
         - name: REPO_NAME
           value: "tenancy_repo"
     keycloakServicesRealms:
-      enabled: false
+      enabled: true
       playbook: keycloak-realms.yml
       activeDeadlineSeconds: 600
       syncWave: "28"
@@ -924,7 +924,7 @@ sovereignJobs:
         - name: REALM_NAME
           value: "sovereign-tenants"
     keycloakServicesGroups:
-      enabled: false
+      enabled: true
       playbook: keycloak-groups.yml
       activeDeadlineSeconds: 600
       syncWave: "29"
@@ -940,7 +940,7 @@ sovereignJobs:
         - name: ADMIN_GROUP
           value: "sovereign-admin"
     keycloakServicesClients:
-      enabled: false
+      enabled: true
       playbook: keycloak-clients.yml
       activeDeadlineSeconds: 600
       syncWave: "30"
@@ -972,7 +972,7 @@ sovereignJobs:
         - name: VAULT_SECRET_NAMESPACE
           value: "sovereign-cloud-jobs"
     vaultOidcAuth:
-      enabled: false
+      enabled: true
       playbook: vault-oidc-auth.yml
       activeDeadlineSeconds: 600
       syncWave: "29"
