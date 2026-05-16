@@ -124,7 +124,7 @@ acsServices:
 # ─── Vault Central ───────────────────────────────────────────────────────────
 vault:
   enabled: true
-  chartVersion: "0.5.0"
+  chartVersion: "0.6.4"
   syncWave: "15"
   values:
     pushSecretToVault: true
