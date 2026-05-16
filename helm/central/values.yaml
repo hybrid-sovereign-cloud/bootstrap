@@ -426,7 +426,7 @@ gitea:
         config:
           server:
             DOMAIN: "gitea-gitea.apps.shcservices.lab.signal9.gg"
-            ROOT_URL: "https://gitea-gitea.apps.shcservices.lab.signal9.gg"
+            ROOT_URL: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
           database:
             DB_TYPE: postgres
           session:
@@ -871,7 +871,7 @@ sovereignJobs:
               property: admin_token
       env:
         - name: GITEA_URL
-          value: "http://gitea-gitea.apps.shcservices.lab.signal9.gg"
+          value: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
         - name: GITEA_ADMIN_USER
           value: "gitea_admin"
         - name: GITEA_ADMIN_PASSWORD
@@ -888,7 +888,7 @@ sovereignJobs:
       syncWave: "36"
       env:
         - name: GITEA_URL
-          value: "http://gitea-gitea.apps.shcservices.lab.signal9.gg"
+          value: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
         - name: GITEA_ADMIN_USER
           value: "gitea_admin"
         - name: GITEA_ADMIN_PASSWORD
@@ -1032,7 +1032,7 @@ sovereignJobs:
       # avoids dual-ownership conflict with ESO creationPolicy: Owner.
       env:
         - name: GITEA_URL
-          value: "https://gitea-gitea.apps.shcservices.lab.signal9.gg"
+          value: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
         - name: GITEA_ADMIN_USER
           value: "gitea_admin"
         - name: GITEA_ADMIN_PASSWORD
@@ -1215,7 +1215,7 @@ pluginIaac:
     imagePullSecrets:
       - name: quay-pull-secret
     gitea:
-      url: "https://gitea-gitea.apps.shcservices.lab.signal9.gg"
+      url: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
       repoOwner: "gitea_admin"
       repoName: "tenancy_repo"
       secretName: "gitea-admin-token"
@@ -1376,7 +1376,7 @@ helperCloudAWS:
       requests:
         cpu: 10m
         memory: 512Mi
-    giteaUrl: "https://gitea-gitea.apps.shcservices.lab.signal9.gg"
+    giteaUrl: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
     crossClusterSA:
       enabled: true
       name: awshelper-creator-sa
