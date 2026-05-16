@@ -843,7 +843,7 @@ sovereignJobs:
       syncWave: "35"
       externalSecrets:
         giteaAdminCredentials:
-          enabled: true
+          enabled: false
           targetSecretName: gitea-admin-credentials
           data:
             - secretKey: admin_user
