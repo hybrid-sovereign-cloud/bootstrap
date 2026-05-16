@@ -280,7 +280,7 @@ rhacm:
 
 # ─── AAP (services cluster) ─────────────────────────────────────────────────
 aap:
-  enabled: false
+  enabled: true
   chartVersion: "0.5.1"
   syncWave: "30"
   destinationNamespace: aap
@@ -355,7 +355,7 @@ quay:
 
 # ─── Quay (services) ────────────────────────────────────────────────────────
 quayServices:
-  enabled: false
+  enabled: true
   chartVersion: "0.5.2"
   syncWave: "35"
   destinationNamespace: quay-enterprise
@@ -837,7 +837,7 @@ sovereignJobs:
         - name: SERVICES_REALM_NAME
           value: "sovereign-tenants"
     giteaInit:
-      enabled: false
+      enabled: true
       playbook: gitea-init.yml
       activeDeadlineSeconds: 600
       syncWave: "35"
@@ -857,7 +857,7 @@ sovereignJobs:
               property: admin_token
       pushSecrets:
         pushGiteaAdmin:
-          enabled: false
+          enabled: true
           secretName: gitea-credentials
           data:
             - secretKey: admin_user
@@ -882,7 +882,7 @@ sovereignJobs:
         - name: SECRETS_NAMESPACE
           value: "sovereign-cloud-jobs"
     giteaCreateRepo:
-      enabled: false
+      enabled: true
       playbook: gitea-create-repo.yml
       activeDeadlineSeconds: 300
       syncWave: "36"
@@ -998,7 +998,7 @@ sovereignJobs:
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
     keycloakTestUsers:
-      enabled: false
+      enabled: true
       playbook: keycloak-test-users.yml
       activeDeadlineSeconds: 300
       syncWave: "32"
@@ -1023,7 +1023,7 @@ sovereignJobs:
     # Idempotent — safe to re-run; repo creation and secret upsert are guarded.
     # Runs at wave 37 so the ApplicationSet (wave 50) can connect immediately.
     giteaClusterBuildsRepo:
-      enabled: false
+      enabled: true
       playbook: gitea-cluster-builds.yml
       activeDeadlineSeconds: 300
       syncWave: "37"
@@ -1051,7 +1051,7 @@ sovereignJobs:
     # Runs after all operators are deployed (wave 45) so their CRDs exist.
     # Disables broken chart-default samples that have incorrect field names.
     operatorSamples:
-      enabled: false
+      enabled: true
       playbook: operator-samples.yml
       activeDeadlineSeconds: 900
       syncWave: "45"
@@ -1061,7 +1061,7 @@ sovereignJobs:
 
 # ─── Plugin RBAC Operator (services cluster) ────────────────────────────────
 pluginRbac:
-  enabled: false
+  enabled: true
   chartVersion: "0.4.3"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -1097,7 +1097,7 @@ pluginRbac:
 
 # ─── Plugin Vault Operator (services cluster) ──────────────────────────────
 pluginVault:
-  enabled: false
+  enabled: true
   chartVersion: "0.2.9"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -1126,7 +1126,7 @@ pluginVault:
 
 # ─── Plugin AAP Operator (services cluster) ───────────────────────────────
 pluginAap:
-  enabled: false
+  enabled: true
   chartVersion: "0.2.2"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -1165,7 +1165,7 @@ pluginAap:
 
 # ─── Plugin Quay Operator (services cluster) ──────────────────────────────
 pluginQuay:
-  enabled: false
+  enabled: true
   chartVersion: "0.2.5"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -1202,8 +1202,8 @@ pluginQuay:
 
 # ─── Plugin IaaC Operator (services cluster) ────────────────────────────────
 pluginIaac:
-  enabled: false
-  chartVersion: "0.1.3"
+  enabled: true
+  chartVersion: "0.1.4"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -1225,7 +1225,7 @@ pluginIaac:
 
 # ─── Entity Operator (services cluster) ─────────────────────────────────────
 entityOperator:
-  enabled: false
+  enabled: true
   chartVersion: "0.6.2"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1245,8 +1245,8 @@ entityOperator:
 
 # ─── Team Operator (services cluster) ─────────────────────────────────────
 teamOperator:
-  enabled: false
-  chartVersion: "0.3.3"
+  enabled: true
+  chartVersion: "0.3.4"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1262,8 +1262,8 @@ teamOperator:
 
 # ─── Assignment Operator (services cluster) ────────────────────────────────
 assignmentOperator:
-  enabled: false
-  chartVersion: "0.3.3"
+  enabled: true
+  chartVersion: "0.3.4"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
@@ -1279,8 +1279,8 @@ assignmentOperator:
 
 # ─── Project Operator (services cluster) ───────────────────────────────────
 projectOperator:
-  enabled: false
-  chartVersion: "0.3.3"
+  enabled: true
+  chartVersion: "0.3.4"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1296,8 +1296,8 @@ projectOperator:
 
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
-  enabled: false
-  chartVersion: "0.2.0"
+  enabled: true
+  chartVersion: "0.2.1"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1313,7 +1313,7 @@ platformOpenshiftOperator:
 
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
-  enabled: false
+  enabled: true
   chartVersion: "0.1.6"
   syncWave: "36"
   destinationNamespace: sovereign-cloud-helpers
@@ -1404,7 +1404,7 @@ helperCloudAWS:
 
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
-  enabled: false
+  enabled: true
   chartVersion: "0.3.3"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1434,7 +1434,7 @@ cloudOSOOperator:
 
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
-  enabled: false
+  enabled: true
   chartVersion: "0.8.0"
   syncWave: "40"
   destinationNamespace: sovereign-cloud
@@ -1467,7 +1467,7 @@ sovereignDashboard:
 
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
-  enabled: false
+  enabled: true
   chartVersion: "0.9.3"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
@@ -1501,7 +1501,7 @@ tenancyDashboard:
 # The giteaClusterBuildsRepo sovereign job (wave 37) creates the repo and the
 # ArgoCD repo secret before this ApplicationSet (wave 50) is deployed.
 clusterBuilds:
-  enabled: false
+  enabled: true
   syncWave: "50"
   repoURL: "https://gitea-gitea.apps.shcservices.lab.signal9.gg/gitea_admin/cluster_builds.git"
   # cluster-builds-clusters ApplicationSet sources
