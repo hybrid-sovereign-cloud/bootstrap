@@ -1297,19 +1297,40 @@ projectOperator:
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
   enabled: true
-  chartVersion: "0.2.1"
+  chartVersion: "0.3.0"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/platformopenshift-operator
-      tag: "0.0.1"
+      tag: "0.2.0"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
+    centralSA:
+      secretName: awshelper-creator-sa
+      externalSecret:
+        enabled: true
+        secretStoreName: vault-backend
+        secretStoreKind: ClusterSecretStore
+        vaultPath: awshelper-creator-sa
+        refreshInterval: "1h"
     samples:
       enabled: true
+      items:
+        - name: production-cluster
+          namespace: entity-acme-corp
+        - name: staging-cluster
+          namespace: entity-globex-industries
+      awsItems:
+        - name: aws-ocp-cluster
+          namespace: entity-acme-corp
+          awsEnvironment: dev-aws-env
+          region: us-east-1
+          clusterType: standalone
+          controlPlaneCount: 3
+          workerCount: 2
 
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:

@@ -4,9 +4,9 @@
 #
 # Multi-source ApplicationSet for Hive/MCE cluster deployments.
 # Chart is sourced from the sovereign charts repo; values from cluster_builds.
-# The operator writes aws/clusters/<slug>.yaml and buildValues/<slug>-build-values.yaml.
+# The operator writes build/aws/<slug>.yaml and buildValues/<slug>-build-values.yaml.
 #
-# Schema (aws/clusters/<name>.yaml):
+# Schema (build/aws/<name>.yaml):
 #   app:
 #     name: <string>                          # ArgoCD Application name, e.g. ocp-qwert
 #     chartsTargetRevision: <string>          # charts repo branch/tag, default: main
@@ -29,7 +29,7 @@ spec:
         repoURL: {{ .Values.clusterBuilds.repoURL | quote }}
         revision: HEAD
         files:
-          - path: "aws/clusters/*.yaml"
+          - path: "build/aws/*.yaml"
   template:
     metadata:
       name: "{{ "{{" }}.app.name{{ "}}" }}"
