@@ -44,12 +44,13 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
       - RespectIgnoreDifferences=true
-      - Validate=false
     retry:
-      limit: 5
+      limit: 10
       backoff:
         duration: 30s
         factor: 2
-        maxDuration: 5m
+        maxDuration: 10m
 {{- end }}

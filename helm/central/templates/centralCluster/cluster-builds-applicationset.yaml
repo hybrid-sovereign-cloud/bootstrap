@@ -55,25 +55,17 @@ spec:
         server: https://kubernetes.default.svc
         namespace: openshift-gitops
       syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
-        syncOptions:
-          - CreateNamespace=true
-          - SkipDryRunOnMissingResource=true
-        retry:
-          limit: 10
-          backoff:
-            duration: 30s
-            factor: 2
-            maxDuration: 10m
-      ignoreDifferences:
-        - group: hive.openshift.io
-          kind: ClusterDeployment
-          jsonPointers:
-            - /spec/installed
-            - /spec/manageDNS
-            - /spec/platform
-            - /spec/provisioning
-            - /spec/controlPlaneConfig
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
 {{- end }}

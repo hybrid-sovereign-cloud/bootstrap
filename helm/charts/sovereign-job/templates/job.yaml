@@ -7,9 +7,12 @@ metadata:
     {{- include "sovereign-job.labels" . | nindent 4 }}
   annotations:
     argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-options: Replace=true
 spec:
-  backoffLimit: {{ .Values.backoffLimit }}
-  activeDeadlineSeconds: {{ .Values.job.activeDeadlineSeconds }}
+  backoffLimit: {{ .Values.backoffLimit | default 4 }}
+  activeDeadlineSeconds: {{ .Values.job.activeDeadlineSeconds | default 600 }}
+  ttlSecondsAfterFinished: 3600
   template:
     spec:
       serviceAccountName: {{ .Values.serviceAccount }}
