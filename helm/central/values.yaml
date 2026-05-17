@@ -619,6 +619,7 @@ externalSecrets:
   enabled: true
   chartVersion: "0.1.2"
   syncWave: "5"
+
   values:
     operator:
       channel: stable
@@ -676,7 +677,7 @@ vaultSecretStore:
       mountPath: "kubernetes-central"
       role: "external-secrets"
       serviceAccountName: "external-secrets-vault-sa"
-      serviceAccountNamespace: "external-secrets"
+      serviceAccountNamespace: "external-secrets-operator"
 
 # ─── Vault ClusterSecretStore (services → vault-central via external route) ─
 # Uses kubernetes-services auth mount on central vault (k8s auth, no root token)
