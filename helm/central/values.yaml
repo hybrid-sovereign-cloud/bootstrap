@@ -258,7 +258,7 @@ vaultServicesInit:
 
 # ─── RHACM ───────────────────────────────────────────────────────────────────
 rhacm:
-  enabled: false
+  enabled: true
   chartVersion: "0.5.0"
   enableMultiClusterHub: true
   destinationNamespace: open-cluster-management
