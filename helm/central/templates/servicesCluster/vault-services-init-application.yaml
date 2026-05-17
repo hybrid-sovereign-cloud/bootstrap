@@ -28,10 +28,7 @@ spec:
     namespace: vault
 
   ignoreDifferences:
-    - group: external-secrets.io
-      kind: PushSecret
-      jsonPointers:
-        - /status
+    {{- include "sovereign-central.esoIgnoreDifferences" . | nindent 4 }}
 
   syncPolicy:
     automated:

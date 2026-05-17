@@ -32,10 +32,7 @@ spec:
       kind: Route
       jsonPointers:
         - /spec/host
-    - group: external-secrets.io
-      kind: PushSecret
-      jsonPointers:
-        - /spec
+    {{- include "sovereign-central.esoIgnoreDifferences" . | nindent 4 }}
 
   syncPolicy:
     automated:

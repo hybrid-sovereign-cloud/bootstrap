@@ -27,13 +27,7 @@ spec:
     namespace: vault-central
 
   ignoreDifferences:
-    - group: external-secrets.io
-      kind: ExternalSecret
-      jsonPointers:
-        - /spec/dataFrom
-        - /spec/data
-        - /spec/target
-        - /metadata/annotations
+    {{- include "sovereign-central.esoIgnoreDifferences" . | nindent 4 }}
 
   syncPolicy:
     automated:

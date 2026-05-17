@@ -37,6 +37,7 @@ spec:
       jsonPointers:
         - /imagePullSecrets
         - /secrets
+    {{- include "sovereign-central.esoIgnoreDifferences" . | nindent 4 }}
 
   syncPolicy:
     automated:

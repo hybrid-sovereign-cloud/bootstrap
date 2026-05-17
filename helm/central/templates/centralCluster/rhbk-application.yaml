@@ -27,10 +27,7 @@ spec:
     namespace: {{ .Values.rhbk.destinationNamespace }}
 
   ignoreDifferences:
-    - group: external-secrets.io
-      kind: PushSecret
-      jsonPointers:
-        - /spec
+    {{- include "sovereign-central.esoIgnoreDifferences" . | nindent 4 }}
     - group: k8s.keycloak.org
       kind: Keycloak
       jsonPointers:

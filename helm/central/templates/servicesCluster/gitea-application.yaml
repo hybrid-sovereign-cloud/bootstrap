@@ -27,12 +27,7 @@ spec:
     namespace: gitea
 
   ignoreDifferences:
-    - group: external-secrets.io
-      kind: ExternalSecret
-      jsonPointers:
-        - /spec/dataFrom
-        - /spec/target
-        - /metadata/annotations
+    {{- include "sovereign-central.esoIgnoreDifferences" . | nindent 4 }}
     - group: ""
       kind: Namespace
       jsonPointers:
