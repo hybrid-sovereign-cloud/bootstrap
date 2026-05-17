@@ -1,0 +1,49 @@
+{{- if .Values.acmPolicies.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: acm-policies
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: acm-policies
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.acmPolicies.syncWave | quote }}
+spec:
+  project: central
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/acm-policies" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: acm-policies
+    targetRevision: {{ .Values.acmPolicies.chartVersion | quote }}
+    helm:
+      releaseName: acm-policies
+      values: |
+        {{- toYaml .Values.acmPolicies.values | nindent 8 }}
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: open-cluster-management
+
+  ignoreDifferences:
+    - group: ""
+      kind: Namespace
+      jsonPointers:
+        - /metadata/labels
+        - /metadata/annotations
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+{{- end }}

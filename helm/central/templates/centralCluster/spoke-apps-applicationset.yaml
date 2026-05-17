@@ -1,20 +1,19 @@
 {{- if .Values.clusterBuilds.enabled }}
 ---
-# ApplicationSet: cluster-builds-clusters
+# ApplicationSet: spoke-cluster-apps
 #
-# Multi-source ApplicationSet for Hive/MCE cluster deployments.
-# Chart is sourced from the sovereign charts repo; values from cluster_builds.
-# The operator writes build/aws/<slug>.yaml and buildValues/<slug>-build-values.yaml.
-#
-# Schema (build/aws/<name>.yaml):
+# Discovers spoke cluster Application definitions from builds/aws/<name>/apps/*.yaml
+# and deploys them to the spoke cluster's ArgoCD (via the hub cluster).
+# Each spoke app file follows the schema:
 #   app:
-#     name: <string>                          # ArgoCD Application name, e.g. ocp-qwert
-#     chartsTargetRevision: <string>          # charts repo branch/tag, default: main
+#     name: <string>         # ArgoCD Application name
+#     chart: <string>        # chart path in charts repo
+#     chartsTargetRevision: <string>  # charts repo branch/tag
 #
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: cluster-builds-clusters
+  name: spoke-cluster-apps
   namespace: {{ .Values.argocd.namespace }}
   labels:
     {{- include "sovereign-central.labels" . | nindent 4 }}
@@ -29,25 +28,23 @@ spec:
         repoURL: {{ .Values.clusterBuilds.repoURL | quote }}
         revision: HEAD
         files:
-          - path: "builds/aws/*/build.yaml"
+          - path: "builds/aws/*/apps/*.yaml"
   template:
     metadata:
       name: "{{ "{{" }}.app.name{{ "}}" }}"
       namespace: {{ .Values.argocd.namespace }}
       labels:
         app.kubernetes.io/part-of: hybrid-sovereign-cloud
-        app.kubernetes.io/managed-by: cluster-builds-clusters-appset
-        cluster-build: "true"
+        app.kubernetes.io/managed-by: spoke-cluster-apps-appset
+        spoke-app: "true"
     spec:
       project: cluster-builds
       sources:
         - repoURL: {{ .Values.clusterBuilds.chartsRepoURL | quote }}
-          path: {{ .Values.clusterBuilds.mceClusterBuildPath | quote }}
+          path: "{{ "{{" }}.app.chart{{ "}}" }}"
           targetRevision: "{{ "{{" }}.app.chartsTargetRevision{{ "}}" }}"
           helm:
             releaseName: "{{ "{{" }}.app.name{{ "}}" }}"
-            valueFiles:
-              - "$values/builds/aws/{{ "{{" }}.app.name{{ "}}" }}/helm_values/build-values.yaml"
         - repoURL: {{ .Values.clusterBuilds.repoURL | quote }}
           ref: values
           targetRevision: HEAD
@@ -67,13 +64,4 @@ spec:
             duration: 30s
             factor: 2
             maxDuration: 10m
-      ignoreDifferences:
-        - group: hive.openshift.io
-          kind: ClusterDeployment
-          jsonPointers:
-            - /spec/installed
-            - /spec/manageDNS
-            - /spec/platform
-            - /spec/provisioning
-            - /spec/controlPlaneConfig
 {{- end }}
