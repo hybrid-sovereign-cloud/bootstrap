@@ -1304,7 +1304,7 @@ projectOperator:
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
   enabled: true
-  chartVersion: "0.3.4"
+  chartVersion: "0.3.5"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1325,11 +1325,7 @@ platformOpenshiftOperator:
         refreshInterval: "1h"
     samples:
       enabled: true
-      items:
-        - name: production-cluster
-          namespace: entity-acme-corp
-        - name: staging-cluster
-          namespace: entity-globex-industries
+      items: []
       awsItems:
         - name: aws-ocp-cluster
           namespace: entity-acme-corp
