@@ -52,7 +52,7 @@ sovereignNamespacesServices:
 # ─── RHBK Central (Keycloak) ─────────────────────────────────────────────────
 rhbk:
   enabled: true
-  chartVersion: "0.10.0"
+  chartVersion: "0.10.1"
   syncWave: "20"
   destinationNamespace: rhbk
   values:
@@ -74,7 +74,7 @@ rhbk:
 # ─── RHBK Services (Keycloak) ────────────────────────────────────────────────
 rhbkServices:
   enabled: true
-  chartVersion: "0.10.0"
+  chartVersion: "0.10.1"
   syncWave: "20"
   destinationNamespace: rhbk
   values:
@@ -134,7 +134,7 @@ acsServices:
 # ─── Vault Central ───────────────────────────────────────────────────────────
 vault:
   enabled: true
-  chartVersion: "0.6.4"
+  chartVersion: "0.6.5"
   syncWave: "15"
   values:
     pushSecretToVault: true
@@ -185,7 +185,7 @@ vault:
 # ─── Vault Services ─────────────────────────────────────────────────────────
 vaultServices:
   enabled: true
-  chartVersion: "0.6.4"
+  chartVersion: "0.6.5"
   syncWave: "15"
   values:
     pushSecretToVault: false
@@ -250,7 +250,7 @@ vaultServices:
 # ─── Vault Services Init (separate App to avoid StatefulSet health deadlock) ─
 vaultServicesInit:
   enabled: true
-  chartVersion: "0.2.2"
+  chartVersion: "0.2.3"
   syncWave: "20"
   values:
     namespace: vault
@@ -719,7 +719,7 @@ sovereignJobsRbac:
 
 # ─── Sovereign Jobs (individual Ansible job Applications) ────────────────────
 sovereignJobs:
-  chartVersion: "0.1.3"
+  chartVersion: "0.1.4"
   namespace: sovereign-cloud-jobs
   serviceAccount: sovereign-ansible-runner
   image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
