@@ -1557,5 +1557,5 @@ clusterBuilds:
   syncWave: "50"
   repoURL: "https://gitea-gitea.apps.shc-central.lab.signal9.gg/gitea_admin/cluster_builds.git"
   # cluster-builds-clusters ApplicationSet sources
-  chartsRepoURL: "https://github.com/hybrid-sovereign-cloud/charts.git"
+  chartsRepoURL: "https://gitea-gitea.apps.shc-central.lab.signal9.gg/gitea_admin/charts.git"
   mceClusterBuildPath: "charts/mce-cluster-build"
