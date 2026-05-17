@@ -1350,7 +1350,7 @@ helperCloudOSO:
 # ApplicationSet detects the files and triggers ACM to provision the cluster.
 helperCloudAWS:
   enabled: true
-  chartVersion: "0.2.2"
+  chartVersion: "0.2.3"
   chartRegistry: "quay.signal9.gg"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-helpers
@@ -1435,6 +1435,37 @@ cloudOSOOperator:
           namespace: entity-acme-corp
         - name: private-cloud
           namespace: entity-globex-industries
+
+# ─── CloudAWS Operator (services cluster) ──────────────────────────────────
+cloudAWSOperator:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "39"
+  destinationNamespace: sovereign-cloud
+  values:
+    namespace: sovereign-cloud
+    image:
+      repository: quay.signal9.gg/hybrid-sovereign/cloudaws-operator
+      tag: "0.1.0"
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: quay-pull-secret
+    centralSA:
+      secretName: awshelper-creator-sa
+      externalSecret:
+        enabled: true
+        secretStoreName: vault-backend
+        secretStoreKind: ClusterSecretStore
+        vaultPath: awshelper-creator-sa
+        refreshInterval: "1h"
+    samples:
+      enabled: true
+      items:
+        - name: dev-aws-env
+          namespace: entity-acme-corp
+          account: "390403869973"
+          vaultPath: "aws/accounts/shc_admin"
+          baseDomain: "sandbox5530.opentlc.com"
 
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
