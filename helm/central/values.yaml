@@ -1350,7 +1350,7 @@ helperCloudOSO:
 # ApplicationSet detects the files and triggers ACM to provision the cluster.
 helperCloudAWS:
   enabled: true
-  chartVersion: "0.2.1"
+  chartVersion: "0.2.2"
   chartRegistry: "quay.signal9.gg"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-helpers
@@ -1385,14 +1385,14 @@ helperCloudAWS:
       environmentprep:
         enabled: true
         name: dev-project
-        awsAccountId: "605465390841"
+        awsAccountId: "390403869973"
         vaultPath: "aws/accounts/shc_admin"
         baseDomain: "sandbox5530.opentlc.com"
         entity_name: "acme-corp"
       clusterbuild:
         enabled: false
         name: dev-project-cluster
-        awsAccountId: "605465390841"
+        awsAccountId: "390403869973"
         vaultPath: "aws/accounts/shc_admin"
         baseDomain: "sandbox5530.opentlc.com"
         slug: ""
