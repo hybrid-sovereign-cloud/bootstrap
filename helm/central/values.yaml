@@ -47,7 +47,10 @@ sovereignNamespacesServices:
         enabled: true
       - name: sovereign-cloud-helpers
         enabled: true
-      # sovereign-cloud and sovereign-cloud-plugins are created by operator/plugin charts
+      - name: sovereign-cloud
+        enabled: true
+      - name: sovereign-cloud-plugins
+        enabled: true
 
 # ─── RHBK Central (Keycloak) ─────────────────────────────────────────────────
 rhbk:
@@ -1080,11 +1083,12 @@ sovereignJobs:
 # ─── Plugin RBAC Operator (services cluster) ────────────────────────────────
 pluginRbac:
   enabled: true
-  chartVersion: "0.4.3"
+  chartVersion: "0.4.4"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
     namespace: sovereign-cloud-plugins
+    createNamespace: false
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-rbac
       tag: "0.0.3"
@@ -1116,11 +1120,12 @@ pluginRbac:
 # ─── Plugin Vault Operator (services cluster) ──────────────────────────────
 pluginVault:
   enabled: true
-  chartVersion: "0.2.9"
+  chartVersion: "0.2.10"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
     namespace: sovereign-cloud-plugins
+    createNamespace: false
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-vault
       tag: "0.0.11"
@@ -1145,11 +1150,12 @@ pluginVault:
 # ─── Plugin AAP Operator (services cluster) ───────────────────────────────
 pluginAap:
   enabled: true
-  chartVersion: "0.2.2"
+  chartVersion: "0.2.3"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
     namespace: sovereign-cloud-plugins
+    createNamespace: false
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-aap
       tag: "0.0.9"
@@ -1184,11 +1190,12 @@ pluginAap:
 # ─── Plugin Quay Operator (services cluster) ──────────────────────────────
 pluginQuay:
   enabled: true
-  chartVersion: "0.2.5"
+  chartVersion: "0.2.6"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
     namespace: sovereign-cloud-plugins
+    createNamespace: false
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-quay
       tag: "0.0.6"
@@ -1221,11 +1228,12 @@ pluginQuay:
 # ─── Plugin IaaC Operator (services cluster) ────────────────────────────────
 pluginIaac:
   enabled: true
-  chartVersion: "0.1.4"
+  chartVersion: "0.1.5"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-plugins
   values:
     namespace: sovereign-cloud-plugins
+    createNamespace: false
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-iaac
       tag: "0.0.1"
