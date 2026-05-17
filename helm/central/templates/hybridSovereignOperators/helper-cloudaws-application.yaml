@@ -32,6 +32,7 @@ spec:
       name: awshelpers.helper.hybridsovereign.redhat
       managedFieldsManagers:
         - argocd-controller
+    {{- include "sovereign-central.esoIgnoreDifferences" . | nindent 4 }}
 
   syncPolicy:
     automated:
@@ -41,6 +42,7 @@ spec:
       - CreateNamespace=false
       - ServerSideApply=true
       - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
     retry:
       limit: 10
       backoff:
