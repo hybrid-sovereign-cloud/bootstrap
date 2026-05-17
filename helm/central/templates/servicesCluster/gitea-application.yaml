@@ -14,7 +14,7 @@ spec:
   project: services
 
   source:
-    repoURL: {{ printf "oci://%s/%s/gitea-services" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    repoURL: {{ printf "oci://%s/%s/gitea" .Values.oci.registry .Values.oci.repositoryBase | quote }}
     chart: gitea
     targetRevision: {{ .Values.gitea.chartVersion | quote }}
     helm:
