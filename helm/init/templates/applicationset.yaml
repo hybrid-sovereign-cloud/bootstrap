@@ -1,3 +1,4 @@
+{{- if ne .Values.bootstrapPhase "operator" }}
 ---
 # ApplicationSet generates the central app-of-apps only.
 # All Applications (including those targeting the services cluster) live in helm/central.
@@ -41,3 +42,10 @@ spec:
           {{- range .Values.applicationSet.syncPolicy.syncOptions }}
           - {{ . }}
           {{- end }}
+        retry:
+          limit: {{ .Values.argocdSyncPolicy.retry.limit }}
+          backoff:
+            duration: {{ .Values.argocdSyncPolicy.retry.backoff.duration }}
+            factor: {{ .Values.argocdSyncPolicy.retry.backoff.factor }}
+            maxDuration: {{ .Values.argocdSyncPolicy.retry.backoff.maxDuration }}
+{{- end }}

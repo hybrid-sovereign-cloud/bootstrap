@@ -1,0 +1,16 @@
+{{- if .Values.gitopsOperator.enabled }}
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: openshift-gitops-operator
+  namespace: {{ .Values.gitopsOperator.operatorNamespace }}
+  labels:
+    {{- include "sovereign-init.labels" . | nindent 4 }}
+spec:
+  channel: {{ .Values.gitopsOperator.channel | quote }}
+  installPlanApproval: {{ .Values.gitopsOperator.installPlanApproval }}
+  name: openshift-gitops-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+{{- end }}

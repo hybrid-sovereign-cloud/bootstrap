@@ -1,11 +1,10 @@
 apiVersion: v2
 name: sovereign-init
 description: >
-  Bootstrap entry-point chart. Creates the ArgoCD ApplicationSet that drives
-  app-of-apps on the central cluster, registers the services cluster with
-  ArgoCD, and creates the required Git repository secret.
+  Bootstrap entry-point chart. Installs the OpenShift GitOps operator and Argo CD
+  instance, then creates the ApplicationSet, cluster registration, and secrets.
 type: application
-version: 0.1.1
+version: 0.2.2
 appVersion: "1.0.0"
 keywords:
   - argocd

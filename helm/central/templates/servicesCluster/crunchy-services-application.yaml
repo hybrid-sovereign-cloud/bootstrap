@@ -1,4 +1,4 @@
-{{- if .Values.crunchyPostgresServices.enabled }}
+{{- if and (include "sovereign-central.applicationsEnabled" .) .Values.crunchyPostgresServices.enabled }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application

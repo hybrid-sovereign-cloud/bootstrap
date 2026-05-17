@@ -29,3 +29,22 @@ Generic OCI base URL helper: oci://<registry>/<repositoryBase>
 {{- define "sovereign-central.ociBase" -}}
 {{- printf "oci://%s/%s" .Values.oci.registry .Values.oci.repositoryBase }}
 {{- end }}
+
+{{/*
+True when .Values.applicationsEnabled allows rendering Application resources.
+*/}}
+{{- define "sovereign-central.applicationsEnabled" -}}
+{{- if .Values.applicationsEnabled }}true{{- end }}
+{{- end }}
+
+{{/*
+Automated sync retry — used by child Applications after a failed/timed-out sync.
+*/}}
+{{- define "sovereign-central.syncRetry" -}}
+retry:
+  limit: {{ .Values.argocd.syncPolicy.retry.limit }}
+  backoff:
+    duration: {{ .Values.argocd.syncPolicy.retry.backoff.duration }}
+    factor: {{ .Values.argocd.syncPolicy.retry.backoff.factor }}
+    maxDuration: {{ .Values.argocd.syncPolicy.retry.backoff.maxDuration }}
+{{- end }}

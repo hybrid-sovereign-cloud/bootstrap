@@ -7,6 +7,31 @@ gitops:
   # Personal / service-account token with read access to the repo
   token: ""
 
+# bootstrapPhase: operator — install GitOps operator only (make init-central-argo phase 1)
+# bootstrapPhase: full    — operator plus secrets, ApplicationSet, and app-of-apps (phase 2)
+# The openshift-gitops Argo CD instance is created by the GitopsService CR, not this chart.
+bootstrapPhase: full
+
+# ─── Red Hat OpenShift GitOps operator + default Argo CD instance ─────────────
+gitopsOperator:
+  enabled: true
+  operatorNamespace: openshift-gitops-operator
+  channel: latest
+  installPlanApproval: Automatic
+  argocdInstanceName: openshift-gitops
+  # Application-controller sync operation timeout (seconds). Syncs exceeding this are terminated.
+  cmdParams:
+    controller.sync.timeout.seconds: "600"
+
+# Default retry for ApplicationSet-generated apps (per-app retry in helm/central may override).
+argocdSyncPolicy:
+  retry:
+    limit: 10
+    backoff:
+      duration: 30s
+      factor: 2
+      maxDuration: 10m
+
 # ─── ArgoCD namespace ─────────────────────────────────────────────────────────
 argocd:
   namespace: openshift-gitops
@@ -18,9 +43,8 @@ clusters:
     name: services
     # Kubernetes API server URL for the services cluster
     server: "https://api.services.example.com:6443"
-    # Credentials used by ArgoCD to reach the services cluster
-    username: ""
-    password: ""
+    # Bearer token for ArgoCD cluster registration (set by make init-central-argo)
+    bearerToken: ""
     # Set to true only when the services cluster uses a self-signed cert
     tlsSkipVerify: false
 
@@ -64,6 +88,8 @@ pullSecretNamespaces:
   - vault
   - gitea
   - rhbk
+  - sovereign-cloud
+  - sovereign-cloud-plugins
   - sovereign-cloud-helpers
   - sovereign-cloud-jobs
   - external-secrets

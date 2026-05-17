@@ -1,4 +1,4 @@
-{{- if .Values.quay.enabled }}
+{{- if and (include "sovereign-central.applicationsEnabled" .) .Values.quay.enabled }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application

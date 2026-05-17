@@ -1,4 +1,4 @@
-{{- if .Values.rhacm.enabled }}
+{{- if and (include "sovereign-central.applicationsEnabled" .) .Values.rhacm.enabled }}
 ---
 # ArgoCD Application that installs RHACM from the OCI Helm chart pushed by
 # `make upload-acm-chart`.  Source type is "helm" with repoURL pointing to the

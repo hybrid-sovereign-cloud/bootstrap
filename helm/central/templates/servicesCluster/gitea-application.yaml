@@ -1,4 +1,4 @@
-{{- if .Values.gitea.enabled }}
+{{- if and (include "sovereign-central.applicationsEnabled" .) .Values.gitea.enabled }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application

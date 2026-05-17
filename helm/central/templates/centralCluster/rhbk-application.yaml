@@ -1,4 +1,4 @@
-{{- if .Values.rhbk.enabled }}
+{{- if and (include "sovereign-central.applicationsEnabled" .) .Values.rhbk.enabled }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application

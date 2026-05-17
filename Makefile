@@ -22,11 +22,17 @@ GREEN := $(shell tput setaf 2 2>/dev/null || echo "")
 RED   := $(shell tput setaf 1 2>/dev/null || echo "")
 RESET := $(shell tput sgr0 2>/dev/null || echo "")
 
+define ok_print
+printf "  $(GREEN)✓$(RESET)  %s\n" "$(1)"
+endef
 define ok
-  @printf "  $(GREEN)✓$(RESET)  %s\n" "$(1)"
+	@$(call ok_print,$(1))
+endef
+define fail_print
+printf "  $(RED)✗$(RESET)  %s\n" "$(1)"
 endef
 define fail
-  @printf "  $(RED)✗$(RESET)  %s\n" "$(1)"
+	@$(call fail_print,$(1))
 endef
 
 # ─── Import targets from make/ ───────────────────────────────────────────────

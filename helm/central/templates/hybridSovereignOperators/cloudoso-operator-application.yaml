@@ -1,4 +1,4 @@
-{{- if .Values.cloudOSOOperator.enabled }}
+{{- if and (include "sovereign-central.applicationsEnabled" .) .Values.cloudOSOOperator.enabled }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -43,7 +43,7 @@ spec:
       prune: true
       selfHeal: true
     syncOptions:
-      - CreateNamespace=true
+      - CreateNamespace=false
       - ServerSideApply=true
       - SkipDryRunOnMissingResource=true
       - RespectIgnoreDifferences=true

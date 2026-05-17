@@ -63,9 +63,9 @@ Each OpenShift cluster must have the following installed **before** running the 
 | Requirement | Notes |
 |---|---|
 | **OpenShift 4.x** | Both `central` and `services` clusters |
-| **ArgoCD (OpenShift GitOps)** | Installed and accessible |
+| **ArgoCD (OpenShift GitOps)** | Installed by `make init-central-argo` (init chart phase 1) |
 
-> These are one-time manual installs per cluster. Everything after `make init-central-argo` is ArgoCD-driven.
+> OpenShift GitOps / Argo CD on central is installed by the init chart. Everything after `make init-central-argo` is ArgoCD-driven.
 
 ### 3. Quay Robot Account
 

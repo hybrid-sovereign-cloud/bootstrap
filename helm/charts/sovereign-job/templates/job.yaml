@@ -12,6 +12,10 @@ spec:
   activeDeadlineSeconds: {{ .Values.job.activeDeadlineSeconds | default 600 }}
   ttlSecondsAfterFinished: 3600
   template:
+    metadata:
+      labels:
+        {{- include "sovereign-job.labels" . | nindent 8 }}
+        app.kubernetes.io/name: {{ .Values.job.name }}
     spec:
       serviceAccountName: {{ .Values.serviceAccount }}
       restartPolicy: OnFailure

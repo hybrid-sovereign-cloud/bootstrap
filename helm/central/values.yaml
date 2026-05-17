@@ -1,6 +1,19 @@
 # ─── ArgoCD namespace ─────────────────────────────────────────────────────────
 argocd:
   namespace: openshift-gitops
+  # Per-Application automated sync retry (after controller terminates sync at 10m).
+  syncPolicy:
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
+
+# Master switch: when false, the central chart renders no ArgoCD Application (or
+# ApplicationSet) resources — only supporting AppProjects / repo secrets remain.
+# Use false for make init-central-argo until charts are uploaded and enabled individually.
+applicationsEnabled: false
 
 # ─── Services cluster (managed by central ArgoCD) ────────────────────────────
 servicesCluster:
@@ -34,10 +47,7 @@ sovereignNamespacesServices:
         enabled: true
       - name: sovereign-cloud-helpers
         enabled: true
-      - name: sovereign-cloud
-        enabled: true
-      - name: sovereign-cloud-plugins
-        enabled: true
+      # sovereign-cloud and sovereign-cloud-plugins are created by operator/plugin charts
 
 # ─── RHBK Central (Keycloak) ─────────────────────────────────────────────────
 rhbk:
@@ -666,7 +676,7 @@ argocdClusterBuildsRepo:
 # ─── Vault ClusterSecretStore (central) — uses k8s auth ─────────────────────
 vaultSecretStore:
   enabled: true
-  chartVersion: "0.3.1"
+  chartVersion: "0.3.3"
   syncWave: "22"
   values:
     vault:
@@ -683,13 +693,13 @@ vaultSecretStore:
 # Uses kubernetes-services auth mount on central vault (k8s auth, no root token)
 vaultSecretStoreServices:
   enabled: true
-  chartVersion: "0.3.1"
+  chartVersion: "0.3.3"
   syncWave: "22"
   values:
     vault:
       server: "https://vault-central.apps.shc-central.lab.signal9.gg"
       path: "central"
-      caBundle: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURlVENDQW1HZ0F3SUJBZ0lJQ0UzWUlvaENrbWd3RFFZSktvWklodmNOQVFFTEJRQXdKakVrTUNJR0ExVUUKQXd3YmFXNW5jbVZ6Y3kxdmNHVnlZWFJ2Y2tBeE56YzRPRGd3T1RRNE1CNFhEVEkyTURVeE5USXhNelUwT1ZvWApEVEk0TURVeE5ESXhNelUxTUZvd0xERXFNQ2dHQTFVRUF3d2hLaTVoY0hCekxuTm9ZeTFqWlc1MGNtRnNMbXhoCllpNXphV2R1WVd3NUxtZG5NSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQXRuTmEKam5KS1MzdVRibDJhNy82VndXeTJmN2s0TkN3QVExNUp3V3JTbWVkNG1LL0xlVzdiektubFFLOTZMd0FWbloyWgpoOU50UnNYYVV4MlpkWG42am5aSENJN0x6S0Y3c0ozY1RZQnkraVlzclUwdXB0WFI5NG9ubHJCdXA3Um9RRndrClBVbHk3TVB2MlJYNVJGSTlzTnJwekNLRGFVbTV3UVk1aTMrL2JMQ1BRM2Q3aCtiSG00Ty95NnFtOXVucHdSY0gKa01NQ0lGQW1CUVRTNDZtTExnYjZFQnErdEJjT2xlc2FYNHROZnV0Und0bk9xbXdqYkhPb3lmVDJWV2t4NWovRQpSTFJzbXVvYnAxVmUzMEVucEFhYVRzcGxGV2lKdkV2T2ZZWUM3TzBLeHNPYmtmWkV2QjFxM0tYYUpQVUEzQ0pmCjIwMHMveDF5aTVnc3dDYjkwUUlEQVFBQm80R2tNSUdoTUE0R0ExVWREd0VCL3dRRUF3SUZvREFUQmdOVkhTVUUKRERBS0JnZ3JCZ0VGQlFjREFUQU1CZ05WSFJNQkFmOEVBakFBTUIwR0ExVWREZ1FXQkJRZ2ZVMUhYQ1F5cWlNZAo1RmtNNDc5MjRuTThkVEFmQmdOVkhTTUVHREFXZ0JUWVVLTDA2M3l4OFlxdnF5YzNoZjcwdmszZ2VqQXNCZ05WCkhSRUVKVEFqZ2lFcUxtRndjSE11YzJoakxXTmxiblJ5WVd3dWJHRmlMbk5wWjI1aGJEa3VaMmN3RFFZSktvWkkKaHZjTkFRRUxCUUFEZ2dFQkFHenU2UStUNnY1RHJZQnZUUEYwbWd2Q1dIRllsMGpDZ0VaMmk1MVRHQW54Z3h5Sgp6ZjBkcll6V3FVclZQSnl4MDduaWtqL3VXaU5ONGdMaTNxeDBscEVyTWtCYXpiVUQrZTJKN2IvaitmUmdueXNpCmdLeEJzTExiMEVHbmYwNm9oLzBzVVA0ZWxvOVVNclBTMGs5UGwxYmpHYzdvVkxZL3hvcDQrV0hQenRvUjlmVmQKK2p5ZmV1bVUzdXpMMTBDK1NhNzRHWjNlSUp6Tk9QMGdoNVhMKzlJL05VcTdjVXpaUEFCbjdFZFNwa09iR1V6bQpvRTNrczJHek1BWHBqM0V0OXMxZkxLR0ZNaHA5NkdUNjM2OCtoczYwRFpXd3JVVGptUFlXWVBzTDVBQ2d6U3pWCjlJRW1ZN1JCNzBIUkgxRTRHQXlMV2FNZ1FQRmxMQ25QTE9nSzZhQT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQotLS0tLUJFR0lOIENFUlRJRklDQVRFLS0tLS0KTUlJREREQ0NBZlNnQXdJQkFnSUJBVEFOQmdrcWhraUc5dzBCQVFzRkFEQW1NU1F3SWdZRFZRUUREQnRwYm1keQpaWE56TFc5d1pYSmhkRzl5UURFM056ZzRPREE1TkRnd0hoY05Nall3TlRFMU1qRXpOVFEzV2hjTk1qZ3dOVEUwCk1qRXpOVFE0V2pBbU1TUXdJZ1lEVlFRRERCdHBibWR5WlhOekxXOXdaWEpoZEc5eVFERTNOemc0T0RBNU5EZ3cKZ2dFaU1BMEdDU3FHU0liM0RRRUJBUVVBQTRJQkR3QXdnZ0VMQW9JQkFRQzNlQ25FdmpFdmd1WmNWVkFrVkNVUwo5ZVJ2TUcxbGFIa3l1cVk4aVU3ZTlhYmswZjBjSURPUS92aWdiS3gyV1ZZbkJYcWRiWmFaUnM4S1Ntd2FJb1hVClFUYjJQTVZRZFAvWk1HbUFkT3dZSXpSazg4OEs0Sm5IV3Jod0RtZVVNNEFyNk5UcG4vRDVMeFJEYStzanJiSHYKVWNQQWRQQnBFbmlCTUFFdmhDMnhrWVdDVTJmdVpSTGlWVlpkTll3bUJJdi9QYllXYi93cURqQzJuOUVCMk43RgpWRjFac3NNMWc5YWtxN2drQjY2VUcvTFl1OGNhVzZVTWcrTFNmUTNPQTcyRk56ckZDdW11QjhvdDVPaUVVbnpSCmtBTE9ITmw5aDBWYVhpcVZoVmNQQi9OdUFDZ1FWcWxUSlZvWkhrd200UUFHeDY1ZkVFUTBzVXNzTzdXQVRGRkwKQWdNQkFBR2pSVEJETUE0R0ExVWREd0VCL3dRRUF3SUNwREFTQmdOVkhSTUJBZjhFQ0RBR0FRSC9BZ0VBTUIwRwpBMVVkRGdRV0JCVFlVS0wwNjN5eDhZcXZxeWMzaGY3MHZrM2dlakFOQmdrcWhraUc5dzBCQVFzRkFBT0NBUUVBCmZKK2hQa2pNbGJaaUVnNVcyVWs2NWVYaldSckYxYXFsZldZeFBIT0JVVVhtclFBU3lLbktpeDJ6Q055MHQzYVAKMTRIUnFOVWVWaFc1SHI4cG5mS2UyK2ZwKzFDcWVTMExsV2JGbllBZm1YcndPOE9xdVpnQ3BOemQ3bHhpRVpnbAo1dzV5L3h3ZTdFemFGQlV2S1BydnlXR3UxSTF2aUEwNkx6VWxSaHA1YzUrNm5zVFZXOWdPdnNxU3U5ako3dFBFCmdoYXJBZnVvYzgzUm43K1ZGb1NVNkxtY3VDL0NzT3hldG93RjM4a05WcVFUT3Jmd3JRbVUzdk5kWWlrT2tReWEKZDdQQW5abkU2Y1lzNzVpdVhzNDREM09HajZ4ZGdNSml4cGlVRndYYm9XUGV4dGV3ZnM2b0d2bEU3aGJLV0Fibwp5QVFodHpIK2tsTXB3dE1VdElUd0R3PT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo="
+      caBundle: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURERENDQWZTZ0F3SUJBZ0lCQVRBTkJna3Foa2lHOXcwQkFRc0ZBREFtTVNRd0lnWURWUVFEREJ0cGJtZHkKWlhOekxXOXdaWEpoZEc5eVFERTNOemc0T0RBNU5EZ3dIaGNOTWpZd05URTFNakV6TlRRM1doY05Namd3TlRFMApNakV6TlRRNFdqQW1NU1F3SWdZRFZRUUREQnRwYm1keVpYTnpMVzl3WlhKaGRHOXlRREUzTnpnNE9EQTVORGd3CmdnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFTEFvSUJBUUMzZUNuRXZqRXZndVpjVlZBa1ZDVVMKOWVSdk1HMWxhSGt5dXFZOGlVN2U5YWJrMGYwY0lET1EvdmlnYkt4MldWWW5CWHFkYlphWlJzOEtTbXdhSW9YVQpRVGIyUE1WUWRQL1pNR21BZE93WUl6Ums0ODhLNEpuSFdyaHdEbWVVTTRBcjZOVHBuL0Q1THhSRGErc2pyYkh2ClVjUEFkUEJwRW5pQk1BRXZoQzJ4a1lXQ1UyZnVaUkxpVlZaZE5Zd21CSXYvUGJZV2Ivd3FEakMybjlFQjJON0YKVkYxWnNzTTFnOWFrcTdna0I2NlVHL0xZdThjYVc2VU1nK0xTZlEzT0E3MkZOenJGQ3VtdUI4b3Q1T2lFVW56UgprQUxPSE5sOWgwVmFYaXFWaFZjUEIvTnVBQ2dRVnFsVEpWb1pIa3dtNFFBR3g2NWZFRVEwc1Vzc083V0FURkZMCkFnTUJBQUdqUlRCRE1BNEdBMVVkRHdFQi93UUVBd0lDcERBU0JnTlZIUk1CQWY4RUNEQUdBUUgvQWdFQU1CMEcKQTFVZERnUVdCQlRZVUtMMDYzeXg4WXF2cXljM2hmNzB2azNnZWpBTkJna3Foa2lHOXcwQkFRc0ZBQU9DQVFFQQpmSitoUGtqTWxiWmlFZzVXMlVrNjVlWGpXUnJGMWFxbGZXWXhQSE9CVVVYbXJRQVN5S25LaXgyekNOeTB0M2FQCjE0SFJxTlVlVmhXNUhyOHBuZktlMitmcCsxQ3FlUzBMbFdiRm5ZQWZtWHJ3TzhPcXVaZ0NwTnpkN2x4aUVaZ2wKNXc1eS94d2U3RXphRkJVdktQcnZ5V0d1MUkxdmlBMDZMelVsUmhwNWM1KzZuc1RWVzlnT3ZzcVN1OWpKN3RQRQpnaGFyQWZ1b2M4M1JuNytWRm9TVTZMbWN1Qy9Dc094ZXRvd0YzOGtOVnFRVE9yZndyUW1VM3ZOZFlpa09rUXlhCmQ3UEFuWm5FNmNZczc1aXVYczQ0RDNPR2o2eGRnTUppeHBpVUZ3WGJvV1BleHRld2ZzNm9HdmxFN2hiS1dBYm8KeUFRaHR6SCtrbE1wd3RNVXRJVHdEdz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K"
     auth:
       type: token
       tokenSecretName: "vault-central-token"
@@ -709,7 +719,7 @@ sovereignJobsRbac:
 
 # ─── Sovereign Jobs (individual Ansible job Applications) ────────────────────
 sovereignJobs:
-  chartVersion: "0.1.2"
+  chartVersion: "0.1.3"
   namespace: sovereign-cloud-jobs
   serviceAccount: sovereign-ansible-runner
   image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"

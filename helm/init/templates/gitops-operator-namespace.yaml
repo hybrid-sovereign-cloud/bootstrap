@@ -1,0 +1,10 @@
+{{- if .Values.gitopsOperator.enabled }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.gitopsOperator.operatorNamespace }}
+  labels:
+    {{- include "sovereign-init.labels" . | nindent 4 }}
+    openshift.io/cluster-monitoring: "true"
+{{- end }}

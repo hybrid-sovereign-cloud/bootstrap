@@ -1,4 +1,4 @@
-{{- if .Values.aap.enabled }}
+{{- if and (include "sovereign-central.applicationsEnabled" .) .Values.aap.enabled }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application

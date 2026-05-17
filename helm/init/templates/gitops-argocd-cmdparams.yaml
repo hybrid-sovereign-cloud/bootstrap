@@ -1,0 +1,15 @@
+{{- if and .Values.gitopsOperator.enabled (ne .Values.bootstrapPhase "operator") .Values.gitopsOperator.cmdParams }}
+# Merge cmdParams into the GitopsService-managed Argo CD instance (sync timeout, etc.).
+apiVersion: argoproj.io/v1beta1
+kind: ArgoCD
+metadata:
+  name: {{ .Values.gitopsOperator.argocdInstanceName }}
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-init.labels" . | nindent 4 }}
+spec:
+  cmdParams:
+    {{- range $key, $value := .Values.gitopsOperator.cmdParams }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+{{- end }}

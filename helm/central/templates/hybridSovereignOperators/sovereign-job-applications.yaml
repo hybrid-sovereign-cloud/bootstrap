@@ -1,5 +1,5 @@
 {{- range $name, $job := .Values.sovereignJobs.jobs }}
-{{- if $job.enabled }}
+{{- if and (include "sovereign-central.applicationsEnabled" $) $job.enabled }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -51,6 +51,10 @@ spec:
     namespace: {{ $.Values.sovereignJobs.namespace }}
 
   ignoreDifferences:
+    - group: batch
+      kind: Job
+      jsonPointers:
+        - /spec/selector
     - group: external-secrets.io
       kind: ExternalSecret
       jsonPointers:
@@ -71,7 +75,6 @@ spec:
       - ServerSideApply=true
       - SkipDryRunOnMissingResource=true
       - RespectIgnoreDifferences=true
-      - Replace=true
     retry:
       limit: 10
       backoff:
