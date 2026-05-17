@@ -1567,18 +1567,5 @@ clusterBuilds:
   chartsRepoURL: "https://github.com/hybrid-sovereign-cloud/charts.git"
   mceClusterBuildPath: "charts/mce-cluster-build"
 
-# ─── ACM Policies (central cluster → all spoke-gitops=true clusters) ────────
-acmPolicies:
-  enabled: true
-  chartVersion: "0.1.0"
-  syncWave: "48"
-  values:
-    clusterSelector:
-      matchLabels:
-        spoke-gitops: "true"
-    gitopsOperator:
-      channel: gitops-1.15
-      installPlanApproval: Automatic
-      source: redhat-operators
-      sourceNamespace: openshift-marketplace
-    remediationAction: enforce
+# ─── ACM Policies — DISABLED (architectural rollback) ────────────────────────
+# acmPolicies and spoke-base removed; will be re-architected in a future phase.
