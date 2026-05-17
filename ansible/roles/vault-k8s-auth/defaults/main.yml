@@ -8,7 +8,7 @@ vault_k8s_services_mount: "kubernetes-services"
 
 # ESO ServiceAccount that authenticates to Vault
 eso_service_account: "external-secrets-vault-sa"
-eso_namespace: "external-secrets"
+eso_namespace: "external-secrets-operator"
 
 # Vault policy name granted to ESO for reading platform secrets
 eso_policy_name: "external-secrets-policy"
