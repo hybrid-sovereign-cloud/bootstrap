@@ -645,6 +645,7 @@ vaultCentralNamespace:
   enabled: true
   chartVersion: "0.1.0"
   syncWave: "27"
+  argocdChartsRepo: true
   values:
     namespace: vault-central
     secretStore:
@@ -1564,5 +1565,5 @@ clusterBuilds:
   syncWave: "50"
   repoURL: "https://gitea-gitea.apps.shc-central.lab.signal9.gg/gitea_admin/cluster_builds.git"
   # cluster-builds-clusters ApplicationSet sources
-  chartsRepoURL: "https://gitea-gitea.apps.shc-central.lab.signal9.gg/gitea_admin/charts.git"
+  chartsRepoURL: "https://github.com/hybrid-sovereign-cloud/charts.git"
   mceClusterBuildPath: "charts/mce-cluster-build"
