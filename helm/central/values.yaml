@@ -1518,6 +1518,7 @@ sovereignDashboard:
     env:
       ENTITY_NAMESPACE: sovereign-cloud
       NODE_ENV: production
+      OAUTH_SYNC_VERSION: "1"
 
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
