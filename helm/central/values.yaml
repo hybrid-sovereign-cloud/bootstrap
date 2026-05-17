@@ -13,7 +13,7 @@ argocd:
 # Master switch: when false, the central chart renders no ArgoCD Application (or
 # ApplicationSet) resources — only supporting AppProjects / repo secrets remain.
 # Use false for make init-central-argo until charts are uploaded and enabled individually.
-applicationsEnabled: false
+applicationsEnabled: true
 
 # ─── Services cluster (managed by central ArgoCD) ────────────────────────────
 servicesCluster:
@@ -656,7 +656,7 @@ vaultCentralNamespace:
   enabled: true
   chartVersion: "0.1.0"
   syncWave: "27"
-  argocdChartsRepo: true
+  argocdChartsRepo: false
   values:
     namespace: vault-central
     secretStore:
@@ -669,7 +669,7 @@ vaultCentralNamespace:
 
 # ─── ArgoCD Repo Secret: cluster_builds (Gitea → Vault → ESO) ────────────────
 argocdClusterBuildsRepo:
-  enabled: true
+  enabled: false
   giteaUrl: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
   giteaUser: "gitea_admin"
 
