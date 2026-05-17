@@ -15,7 +15,7 @@ spec:
   project: services
 
   source:
-    repoURL: {{ printf "oci://%s/%s/vault" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    repoURL: {{ printf "oci://%s/%s/vault-services" .Values.oci.registry .Values.oci.repositoryBase | quote }}
     chart: vault
     targetRevision: {{ .Values.vaultServices.chartVersion | quote }}
     helm:

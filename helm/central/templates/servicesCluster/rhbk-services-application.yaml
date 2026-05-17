@@ -15,7 +15,7 @@ spec:
   project: services
 
   source:
-    repoURL: {{ printf "oci://%s/%s/rhbk" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    repoURL: {{ printf "oci://%s/%s/rhbk-services" .Values.oci.registry .Values.oci.repositoryBase | quote }}
     chart: rhbk
     targetRevision: {{ .Values.rhbkServices.chartVersion | quote }}
     helm:

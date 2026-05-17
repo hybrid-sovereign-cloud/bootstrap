@@ -15,7 +15,7 @@ spec:
   project: services
 
   source:
-    repoURL: {{ printf "oci://%s/%s/sovereign-namespaces" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    repoURL: {{ printf "oci://%s/%s/sovereign-namespaces-services" .Values.oci.registry .Values.oci.repositoryBase | quote }}
     chart: sovereign-namespaces
     targetRevision: {{ .Values.sovereignNamespacesServices.chartVersion | quote }}
     helm:
