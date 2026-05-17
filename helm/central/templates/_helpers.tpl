@@ -48,3 +48,33 @@ retry:
     factor: {{ .Values.argocd.syncPolicy.retry.backoff.factor }}
     maxDuration: {{ .Values.argocd.syncPolicy.retry.backoff.maxDuration }}
 {{- end }}
+
+{{/*
+Ignore ESO controller defaults on ExternalSecret/PushSecret (conversionStrategy, etc.).
+*/}}
+{{- define "sovereign-central.esoIgnoreDifferences" -}}
+- group: external-secrets.io
+  kind: ExternalSecret
+  jqPathExpressions:
+    - .spec.data[].remoteRef.conversionStrategy
+    - .spec.data[].remoteRef.decodingStrategy
+    - .spec.data[].remoteRef.metadataPolicy
+    - .spec.target.deletionPolicy
+    - .spec.refreshInterval
+  jsonPointers:
+    - /spec/dataFrom
+    - /metadata/annotations
+- group: external-secrets.io
+  kind: PushSecret
+  jqPathExpressions:
+    - .spec.data[].conversionStrategy
+    - .spec.data[].decodingStrategy
+    - .spec.data[].metadataPolicy
+    - .spec.deletionPolicy
+    - .spec.updatePolicy
+    - .spec.refreshInterval
+  jsonPointers:
+    - /metadata/annotations
+    - /spec/selector
+    - /status
+{{- end }}

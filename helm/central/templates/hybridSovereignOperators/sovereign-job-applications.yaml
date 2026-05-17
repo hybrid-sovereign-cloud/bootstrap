@@ -55,16 +55,7 @@ spec:
       kind: Job
       jsonPointers:
         - /spec/selector
-    - group: external-secrets.io
-      kind: ExternalSecret
-      jsonPointers:
-        - /spec/dataFrom
-        - /metadata/annotations
-    - group: external-secrets.io
-      kind: PushSecret
-      jsonPointers:
-        - /metadata/annotations
-        - /spec/selector
+    {{- include "sovereign-central.esoIgnoreDifferences" . | nindent 4 }}
 
   syncPolicy:
     automated:
