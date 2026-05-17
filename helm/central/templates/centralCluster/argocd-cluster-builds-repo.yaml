@@ -1,0 +1,42 @@
+{{- if and .Values.vaultSecretStore.enabled .Values.argocdClusterBuildsRepo.enabled }}
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: cluster-builds-gitea-repo
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "38"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault-backend
+    kind: ClusterSecretStore
+  target:
+    name: cluster-builds-gitea-repo
+    creationPolicy: Owner
+    template:
+      metadata:
+        labels:
+          argocd.argoproj.io/secret-type: repository
+          app.kubernetes.io/part-of: hybrid-sovereign-cloud
+          app.kubernetes.io/managed-by: external-secrets
+      data:
+        type: "git"
+        url: {{ printf "%s/%s/cluster_builds.git" .Values.argocdClusterBuildsRepo.giteaUrl .Values.argocdClusterBuildsRepo.giteaUser | quote }}
+        username: "{{ `{{ .admin_user }}` }}"
+        password: "{{ `{{ .admin_token }}` }}"
+        insecure: "true"
+  data:
+    - secretKey: admin_user
+      remoteRef:
+        key: gitea-admin
+        property: admin_user
+    - secretKey: admin_token
+      remoteRef:
+        key: gitea-admin
+        property: admin_token
+{{- end }}

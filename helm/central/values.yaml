@@ -655,6 +655,12 @@ vaultCentralNamespace:
     vaultServicesInitSecretsCopy:
       enabled: true
 
+# ─── ArgoCD Repo Secret: cluster_builds (Gitea → Vault → ESO) ────────────────
+argocdClusterBuildsRepo:
+  enabled: true
+  giteaUrl: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
+  giteaUser: "gitea_admin"
+
 # ─── Vault ClusterSecretStore (central) — uses k8s auth ─────────────────────
 vaultSecretStore:
   enabled: true
