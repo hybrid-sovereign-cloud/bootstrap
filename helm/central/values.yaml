@@ -1509,7 +1509,7 @@ cloudAWSOperator:
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
   enabled: true
-  chartVersion: "0.8.2"
+  chartVersion: "0.8.3"
   syncWave: "40"
   destinationNamespace: sovereign-cloud
   values:
@@ -1572,7 +1572,7 @@ tenancyDashboard:
 # The giteaClusterBuildsRepo sovereign job (wave 37) creates the repo and the
 # ArgoCD repo secret before this ApplicationSet (wave 50) is deployed.
 clusterBuilds:
-  enabled: true
+  enabled: false
   syncWave: "50"
   repoURL: "https://gitea-gitea.apps.shc-central.lab.signal9.gg/gitea_admin/cluster_builds.git"
   # cluster-builds-clusters ApplicationSet sources

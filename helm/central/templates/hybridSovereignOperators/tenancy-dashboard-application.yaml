@@ -36,6 +36,7 @@ spec:
       jsonPointers:
         - /metadata/labels
         - /metadata/annotations
+    {{- include "sovereign-central.esoIgnoreDifferences" . | nindent 4 }}
     - group: oauth.openshift.io
       kind: OAuthClient
       jsonPointers:
