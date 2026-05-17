@@ -1324,14 +1324,7 @@ platformOpenshiftOperator:
       enabled: true
       items: []
       awsItems:
-        - name: aws-ocp3-cluster
-          namespace: entity-acme-corp
-          awsEnvironment: dev-aws-env
-          region: us-east-1
-          clusterType: standalone
-          controlPlaneCount: 3
-          workerCount: 2
-        - name: aws-ocp4-cluster
+        - name: aws-ocp5-cluster
           namespace: entity-acme-corp
           awsEnvironment: dev-aws-env
           region: us-east-1
@@ -1378,7 +1371,7 @@ helperCloudOSO:
 # ApplicationSet detects the files and triggers ACM to provision the cluster.
 helperCloudAWS:
   enabled: true
-  chartVersion: "0.3.0"
+  chartVersion: "0.3.1"
   chartRegistry: "quay.signal9.gg"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-helpers
@@ -1386,7 +1379,7 @@ helperCloudAWS:
     namespace: sovereign-cloud-helpers
     image:
       repository: quay.signal9.gg/hybrid-sovereign/helper-cloudaws-operator
-      tag: "0.3.0"
+      tag: "0.3.1"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
