@@ -1318,11 +1318,7 @@ platformOpenshiftOperator:
     centralSA:
       secretName: awshelper-creator-sa
       externalSecret:
-        enabled: true
-        secretStoreName: vault-backend
-        secretStoreKind: ClusterSecretStore
-        vaultPath: awshelper-creator-sa
-        refreshInterval: "1h"
+        enabled: false
     samples:
       enabled: true
       items: []
