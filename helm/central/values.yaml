@@ -1297,14 +1297,14 @@ projectOperator:
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
   enabled: true
-  chartVersion: "0.3.3"
+  chartVersion: "0.3.4"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/platformopenshift-operator
-      tag: "0.2.3"
+      tag: "0.2.4"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1371,7 +1371,7 @@ helperCloudOSO:
 # ApplicationSet detects the files and triggers ACM to provision the cluster.
 helperCloudAWS:
   enabled: true
-  chartVersion: "0.2.7"
+  chartVersion: "0.2.8"
   chartRegistry: "quay.signal9.gg"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-helpers
@@ -1379,7 +1379,7 @@ helperCloudAWS:
     namespace: sovereign-cloud-helpers
     image:
       repository: quay.signal9.gg/hybrid-sovereign/helper-cloudaws-operator
-      tag: "0.2.4"
+      tag: "0.2.5"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1523,7 +1523,7 @@ sovereignDashboard:
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
   enabled: true
-  chartVersion: "0.9.5"
+  chartVersion: "0.9.6"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
   values:
@@ -1531,7 +1531,7 @@ tenancyDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/tenancy-dashboard
-      tag: "3.1.0"
+      tag: "3.2.0"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
