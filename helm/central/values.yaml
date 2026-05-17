@@ -677,7 +677,7 @@ vaultSecretStore:
       mountPath: "kubernetes-central"
       role: "external-secrets"
       serviceAccountName: "external-secrets-vault-sa"
-      serviceAccountNamespace: "external-secrets-operator"
+      serviceAccountNamespace: "external-secrets"
 
 # ─── Vault ClusterSecretStore (services → vault-central via external route) ─
 # Uses kubernetes-services auth mount on central vault (k8s auth, no root token)
