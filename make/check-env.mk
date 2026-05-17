@@ -1,7 +1,7 @@
 ##@ Check Bastion Configs
 
 .PHONY: check-env
-check-env: ## Verify all 12 required environment variables are set and test logins (OCP + OCI)
+check-env: ## Verify all required environment variables are set and test logins (OCP + OCI)
 	@echo "$(BOLD)Checking required environment variables...$(RESET)"
 	@missing=0; \
 	for var in $(REQUIRED_VARS); do \
