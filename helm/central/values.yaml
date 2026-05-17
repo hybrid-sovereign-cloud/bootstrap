@@ -666,7 +666,7 @@ argocdClusterBuildsRepo:
 # ─── Vault ClusterSecretStore (central) — uses k8s auth ─────────────────────
 vaultSecretStore:
   enabled: true
-  chartVersion: "0.3.0"
+  chartVersion: "0.3.1"
   syncWave: "22"
   values:
     vault:
@@ -683,7 +683,7 @@ vaultSecretStore:
 # Uses kubernetes-services auth mount on central vault (k8s auth, no root token)
 vaultSecretStoreServices:
   enabled: true
-  chartVersion: "0.3.0"
+  chartVersion: "0.3.1"
   syncWave: "22"
   values:
     vault:
