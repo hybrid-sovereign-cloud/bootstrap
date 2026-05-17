@@ -151,3 +151,55 @@
     - name: Log ArgoCD repo secret status
       ansible.builtin.debug:
         msg: "ArgoCD repo secret cluster-builds-gitea-repo created/updated in {{ argocd_namespace }}"
+
+    # ── 5. Create charts Gitea repository ───────────────────────────────────
+    - name: Check if charts repository already exists
+      ansible.builtin.uri:
+        url: "{{ gitea_url }}/api/v1/repos/{{ gitea_admin_user }}/charts"
+        method: GET
+        user: "{{ gitea_admin_user }}"
+        password: "{{ gitea_admin_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        status_code: [200, 404]
+      register: charts_repo_check
+
+    - name: Create charts repository
+      ansible.builtin.uri:
+        url: "{{ gitea_url }}/api/v1/user/repos"
+        method: POST
+        user: "{{ gitea_admin_user }}"
+        password: "{{ gitea_admin_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        body_format: json
+        body:
+          name: charts
+          description: "Helm charts for sovereign cloud (mce-cluster-build, etc.)"
+          private: false
+          auto_init: true
+          default_branch: main
+        status_code: [201]
+      when: charts_repo_check.status == 404
+
+    # ── 6. Create ArgoCD repo secret for charts ────────────────────────────
+    - name: Create ArgoCD repo secret for charts
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: charts-gitea-repo
+            namespace: "{{ argocd_namespace }}"
+            labels:
+              argocd.argoproj.io/secret-type: repository
+              app.kubernetes.io/part-of: hybrid-sovereign-cloud
+              app.kubernetes.io/managed-by: sovereign-ansible-jobs
+          type: Opaque
+          stringData:
+            type: git
+            url: "{{ gitea_url }}/{{ gitea_admin_user }}/charts.git"
+            username: "{{ gitea_admin_user }}"
+            password: "{{ gitea_admin_token }}"
+            insecure: "true"
