@@ -1491,7 +1491,7 @@ cloudAWSOperator:
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
   enabled: true
-  chartVersion: "0.8.1"
+  chartVersion: "0.8.2"
   syncWave: "40"
   destinationNamespace: sovereign-cloud
   values:
@@ -1522,7 +1522,7 @@ sovereignDashboard:
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
   enabled: true
-  chartVersion: "0.9.4"
+  chartVersion: "0.9.5"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
   values:

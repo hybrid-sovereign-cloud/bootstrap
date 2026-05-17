@@ -43,6 +43,10 @@ spec:
         - /spec/data
         - /spec/target
         - /metadata/annotations
+    - group: oauth.openshift.io
+      kind: OAuthClient
+      jsonPointers:
+        - /secret
 
   syncPolicy:
     automated:
