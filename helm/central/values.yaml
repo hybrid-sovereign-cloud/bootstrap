@@ -1346,7 +1346,15 @@ platformOpenshiftOperator:
       enabled: true
       items: []
       awsItems: []
-      openstackItems: []
+      openstackItems:
+        - name: ocp-ses4
+          namespace: entity-acme-corp
+          osoEnvironment: oso-env-lab
+          controlPlaneCount: 3
+          workerCount: 3
+          controlPlaneFlavor: m1.xlarge
+          workerFlavor: m1.large
+          externalNetwork: ext-net
 
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
