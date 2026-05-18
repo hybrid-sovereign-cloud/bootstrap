@@ -1359,14 +1359,14 @@ platformOpenshiftOperator:
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
   enabled: true
-  chartVersion: "0.4.2"
+  chartVersion: "0.4.3"
   syncWave: "36"
   destinationNamespace: sovereign-cloud-helpers
   values:
     namespace: sovereign-cloud-helpers
     image:
       repository: quay.signal9.gg/hybrid-sovereign/helper-cloudoso
-      tag: "0.4.0"
+      tag: "0.4.1"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
