@@ -1323,7 +1323,7 @@ projectOperator:
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
   enabled: true
-  chartVersion: "0.4.2"
+  chartVersion: "0.5.0"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1338,10 +1338,15 @@ platformOpenshiftOperator:
       secretName: awshelper-creator-sa
       externalSecret:
         enabled: false
+    osoCentralSA:
+      secretName: osohelper-creator-sa
+      externalSecret:
+        enabled: false
     samples:
       enabled: true
       items: []
       awsItems: []
+      openstackItems: []
 
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
