@@ -1485,7 +1485,7 @@ cloudOSOOperator:
           project: lab-project
           vaultPath: oso/accounts/shc_admin
           baseDomain: lab.signal9.gg
-          projectDomain: Default
+          projectDomain: shc_domain
           externalNetwork: ext-net
           route53VaultPath: oso/accounts/route53-openstack
 
