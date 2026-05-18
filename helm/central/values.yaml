@@ -1396,7 +1396,7 @@ helperCloudOSO:
 # ApplicationSet detects the files and triggers ACM to provision the cluster.
 helperCloudAWS:
   enabled: true
-  chartVersion: "0.3.1"
+  chartVersion: "0.3.2"
   chartRegistry: "quay.signal9.gg"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-helpers
@@ -1404,7 +1404,7 @@ helperCloudAWS:
     namespace: sovereign-cloud-helpers
     image:
       repository: quay.signal9.gg/hybrid-sovereign/helper-cloudaws-operator
-      tag: "0.3.1"
+      tag: "0.3.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
