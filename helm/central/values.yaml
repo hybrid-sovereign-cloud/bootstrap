@@ -1478,8 +1478,16 @@ cloudOSOOperator:
         vaultPath: osohelper-creator-sa
         refreshInterval: "1h"
     samples:
-      enabled: false
-      items: []
+      enabled: true
+      items:
+        - name: oso-env-lab
+          namespace: entity-acme-corp
+          project: lab-project
+          vaultPath: oso/accounts/shc_admin
+          baseDomain: lab.signal9.gg
+          projectDomain: Default
+          externalNetwork: ext-net
+          route53VaultPath: oso/accounts/route53-openstack
 
 # ─── CloudAWS Operator (services cluster) ──────────────────────────────────
 cloudAWSOperator:
