@@ -1323,7 +1323,7 @@ projectOperator:
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
   enabled: true
-  chartVersion: "0.4.1"
+  chartVersion: "0.4.2"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1346,17 +1346,18 @@ platformOpenshiftOperator:
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
   enabled: true
-  chartVersion: "0.1.6"
+  chartVersion: "0.2.0"
   syncWave: "36"
   destinationNamespace: sovereign-cloud-helpers
   values:
     namespace: sovereign-cloud-helpers
     image:
       repository: quay.signal9.gg/hybrid-sovereign/helper-cloudoso
-      tag: "0.0.4"
+      tag: "0.2.0"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
+    giteaUrl: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
     resources:
       limits:
         cpu: 500m
@@ -1375,6 +1376,11 @@ helperCloudOSO:
         secretStoreName: vault-backend
         secretStoreKind: ClusterSecretStore
         vaultPath: osohelper-creator-sa
+    samples:
+      environmentprep:
+        enabled: false
+      clusterbuild:
+        enabled: false
 
 # ─── AWS Helper Operator ────────────────────────────────────────────────────
 # Provisions OCP clusters in AWS via AWSHelper CRs → MCE/Hive ClusterDeployments
@@ -1441,14 +1447,14 @@ helperCloudAWS:
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
   enabled: true
-  chartVersion: "0.3.3"
+  chartVersion: "0.4.0"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/cloudoso-operator
-      tag: "0.0.4"
+      tag: "0.2.0"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1534,7 +1540,7 @@ sovereignDashboard:
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
   enabled: true
-  chartVersion: "0.9.6"
+  chartVersion: "0.9.7"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
   values:

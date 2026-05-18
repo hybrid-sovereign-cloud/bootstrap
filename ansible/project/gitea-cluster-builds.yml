@@ -2,7 +2,7 @@
 # Playbook: gitea-cluster-builds.yml
 # Purpose:
 #   1. Create the cluster_builds Gitea repository (idempotent).
-#   2. Initialize the aws/ directory with a .gitkeep placeholder.
+#   2. Initialize builds/aws/ and builds/oso/ directories with .gitkeep placeholders.
 #   3. Create the ArgoCD repository secret in openshift-gitops so the
 #      ApplicationSet can pull from cluster_builds without manual config.
 #
@@ -61,7 +61,7 @@
         body_format: json
         body:
           name: "{{ repo_name }}"
-          description: "GitOps cluster build definitions — ApplicationSet source for aws/ workloads"
+          description: "GitOps cluster build definitions — ApplicationSet source for builds/aws/ and builds/oso/ workloads"
           private: false
           auto_init: true
           default_branch: main
@@ -77,22 +77,22 @@
              if repo_check.status == 404
              else 'Already exists: ' ~ repo_check.json.html_url }}
 
-    # ── 2. Initialise aws/ directory with .gitkeep ───────────────────────────
+    # ── 2. Initialise builds/aws/ and builds/oso/ directories ────────────────
 
-    - name: Check if aws/.gitkeep already exists
+    - name: Check if builds/aws/.gitkeep already exists
       ansible.builtin.uri:
-        url: "{{ gitea_url }}/api/v1/repos/{{ gitea_admin_user }}/{{ repo_name }}/contents/aws/.gitkeep"
+        url: "{{ gitea_url }}/api/v1/repos/{{ gitea_admin_user }}/{{ repo_name }}/contents/builds/aws/.gitkeep"
         method: GET
         user: "{{ gitea_admin_user }}"
         password: "{{ gitea_admin_password }}"
         force_basic_auth: true
         validate_certs: false
         status_code: [200, 404]
-      register: gitkeep_check
+      register: aws_gitkeep_check
 
-    - name: Create aws/.gitkeep placeholder
+    - name: Create builds/aws/.gitkeep placeholder
       ansible.builtin.uri:
-        url: "{{ gitea_url }}/api/v1/repos/{{ gitea_admin_user }}/{{ repo_name }}/contents/aws/.gitkeep"
+        url: "{{ gitea_url }}/api/v1/repos/{{ gitea_admin_user }}/{{ repo_name }}/contents/builds/aws/.gitkeep"
         method: POST
         user: "{{ gitea_admin_user }}"
         password: "{{ gitea_admin_password }}"
@@ -100,11 +100,38 @@
         validate_certs: false
         body_format: json
         body:
-          message: "chore: initialise aws/ directory for ApplicationSet discovery"
+          message: "chore: initialise builds/aws/ directory for ApplicationSet discovery"
           content: ""
           branch: main
         status_code: [201]
-      when: gitkeep_check.status == 404
+      when: aws_gitkeep_check.status == 404
+
+    - name: Check if builds/oso/.gitkeep already exists
+      ansible.builtin.uri:
+        url: "{{ gitea_url }}/api/v1/repos/{{ gitea_admin_user }}/{{ repo_name }}/contents/builds/oso/.gitkeep"
+        method: GET
+        user: "{{ gitea_admin_user }}"
+        password: "{{ gitea_admin_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        status_code: [200, 404]
+      register: oso_gitkeep_check
+
+    - name: Create builds/oso/.gitkeep placeholder
+      ansible.builtin.uri:
+        url: "{{ gitea_url }}/api/v1/repos/{{ gitea_admin_user }}/{{ repo_name }}/contents/builds/oso/.gitkeep"
+        method: POST
+        user: "{{ gitea_admin_user }}"
+        password: "{{ gitea_admin_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        body_format: json
+        body:
+          message: "chore: initialise builds/oso/ directory for ApplicationSet discovery"
+          content: ""
+          branch: main
+        status_code: [201]
+      when: oso_gitkeep_check.status == 404
 
     # ── 3. Read Gitea admin token from ESO-managed Kubernetes Secret ──────────
     #      The gitea-admin-credentials secret is owned by ExternalSecret in
