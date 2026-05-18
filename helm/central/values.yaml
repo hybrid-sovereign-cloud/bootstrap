@@ -1582,7 +1582,7 @@ clusterBuilds:
   enabled: true
   syncWave: "50"
   repoURL: "https://gitea-gitea.apps.shc-central.lab.signal9.gg/gitea_admin/cluster_builds.git"
-  chartsRepoURL: "quay.signal9.gg/hybrid-sovereign"
+  chartsRepoURL: "oci://quay.signal9.gg/hybrid-sovereign/mce-cluster-build"
   mceChartName: "mce-cluster-build"
   mceChartVersion: "0.1.3"
 
