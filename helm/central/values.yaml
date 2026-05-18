@@ -1349,13 +1349,6 @@ platformOpenshiftOperator:
           clusterType: standalone
           controlPlaneCount: 3
           workerCount: 2
-        - name: ocp-ses2
-          namespace: entity-acme-corp
-          awsEnvironment: dev-aws-env
-          region: us-east-1
-          clusterType: standalone
-          controlPlaneCount: 3
-          workerCount: 2
 
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
