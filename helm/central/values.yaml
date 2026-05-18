@@ -1352,21 +1352,21 @@ platformOpenshiftOperator:
           osoEnvironment: oso-env-lab
           controlPlaneCount: 3
           workerCount: 3
-          controlPlaneFlavor: m1.xlarge
-          workerFlavor: m1.large
+          controlPlaneFlavor: b1.xlarge
+          workerFlavor: b1.large
           externalNetwork: ext-net
 
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
   enabled: true
-  chartVersion: "0.4.0"
+  chartVersion: "0.4.1"
   syncWave: "36"
   destinationNamespace: sovereign-cloud-helpers
   values:
     namespace: sovereign-cloud-helpers
     image:
       repository: quay.signal9.gg/hybrid-sovereign/helper-cloudoso
-      tag: "0.3.8"
+      tag: "0.3.9"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
