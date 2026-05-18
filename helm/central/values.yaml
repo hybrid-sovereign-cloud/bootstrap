@@ -1341,14 +1341,7 @@ platformOpenshiftOperator:
     samples:
       enabled: true
       items: []
-      awsItems:
-        - name: ocp-ses1
-          namespace: entity-acme-corp
-          awsEnvironment: dev-aws-env
-          region: us-east-1
-          clusterType: standalone
-          controlPlaneCount: 3
-          workerCount: 2
+      awsItems: []
 
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
