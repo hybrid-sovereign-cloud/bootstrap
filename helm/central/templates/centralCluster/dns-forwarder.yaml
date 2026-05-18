@@ -19,3 +19,11 @@ spec:
         upstreams:
           - 8.8.8.8
           - 8.8.4.4
+    - name: signal9-forwarder
+      zones:
+        - signal9.gg
+      forwardPlugin:
+        policy: Sequential
+        upstreams:
+          - 8.8.8.8
+          - 8.8.4.4
