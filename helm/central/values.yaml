@@ -1351,14 +1351,14 @@ platformOpenshiftOperator:
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
   enabled: true
-  chartVersion: "0.2.2"
+  chartVersion: "0.2.3"
   syncWave: "36"
   destinationNamespace: sovereign-cloud-helpers
   values:
     namespace: sovereign-cloud-helpers
     image:
       repository: quay.signal9.gg/hybrid-sovereign/helper-cloudoso
-      tag: "0.2.0"
+      tag: "0.2.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1478,12 +1478,8 @@ cloudOSOOperator:
         vaultPath: osohelper-creator-sa
         refreshInterval: "1h"
     samples:
-      enabled: true
-      items:
-        - name: managed-openstack
-          namespace: entity-acme-corp
-        - name: private-cloud
-          namespace: entity-globex-industries
+      enabled: false
+      items: []
 
 # ─── CloudAWS Operator (services cluster) ──────────────────────────────────
 cloudAWSOperator:
