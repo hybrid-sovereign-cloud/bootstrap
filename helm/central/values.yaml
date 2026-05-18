@@ -1406,10 +1406,10 @@ helperCloudAWS:
     resources:
       limits:
         cpu: 500m
-        memory: 1024Mi
+        memory: 768Mi
       requests:
         cpu: 10m
-        memory: 512Mi
+        memory: 256Mi
     giteaUrl: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
     crossClusterSA:
       enabled: true
