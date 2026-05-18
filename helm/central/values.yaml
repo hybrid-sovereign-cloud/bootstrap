@@ -1228,7 +1228,7 @@ pluginQuay:
 # ─── Plugin IaaC Operator (services cluster) ────────────────────────────────
 pluginIaac:
   enabled: true
-  chartVersion: "0.1.5"
+  chartVersion: "0.1.6"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -1236,7 +1236,7 @@ pluginIaac:
     createNamespace: false
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-iaac
-      tag: "0.0.1"
+      tag: "0.0.3"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
