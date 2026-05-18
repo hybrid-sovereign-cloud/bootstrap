@@ -42,8 +42,8 @@ spec:
       project: cluster-builds
       sources:
         - repoURL: {{ .Values.clusterBuilds.chartsRepoURL | quote }}
-          path: {{ .Values.clusterBuilds.mceClusterBuildPath | quote }}
-          targetRevision: "{{ "{{" }}.app.chartsTargetRevision{{ "}}" }}"
+          chart: {{ .Values.clusterBuilds.mceChartName | quote }}
+          targetRevision: {{ .Values.clusterBuilds.mceChartVersion | quote }}
           helm:
             releaseName: "{{ "{{" }}.app.name{{ "}}" }}"
             valueFiles:

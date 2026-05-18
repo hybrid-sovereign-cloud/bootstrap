@@ -672,7 +672,7 @@ vaultCentralNamespace:
 
 # ─── ArgoCD Repo Secret: cluster_builds (Gitea → Vault → ESO) ────────────────
 argocdClusterBuildsRepo:
-  enabled: false
+  enabled: true
   giteaUrl: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
   giteaUser: "gitea_admin"
 
@@ -1342,7 +1342,14 @@ platformOpenshiftOperator:
       enabled: true
       items: []
       awsItems:
-        - name: aws-ocp5-cluster
+        - name: ocp-ses1
+          namespace: entity-acme-corp
+          awsEnvironment: dev-aws-env
+          region: us-east-1
+          clusterType: standalone
+          controlPlaneCount: 3
+          workerCount: 2
+        - name: ocp-ses2
           namespace: entity-acme-corp
           awsEnvironment: dev-aws-env
           region: us-east-1
@@ -1572,12 +1579,30 @@ tenancyDashboard:
 # The giteaClusterBuildsRepo sovereign job (wave 37) creates the repo and the
 # ArgoCD repo secret before this ApplicationSet (wave 50) is deployed.
 clusterBuilds:
-  enabled: false
+  enabled: true
   syncWave: "50"
   repoURL: "https://gitea-gitea.apps.shc-central.lab.signal9.gg/gitea_admin/cluster_builds.git"
-  # cluster-builds-clusters ApplicationSet sources
-  chartsRepoURL: "https://github.com/hybrid-sovereign-cloud/charts.git"
-  mceClusterBuildPath: "charts/mce-cluster-build"
+  chartsRepoURL: "quay.signal9.gg/hybrid-sovereign"
+  mceChartName: "mce-cluster-build"
+  mceChartVersion: "0.1.3"
 
-# ─── ACM Policies — DISABLED (architectural rollback) ────────────────────────
-# acmPolicies and spoke-base removed; will be re-architected in a future phase.
+# ─── ACM Policy: install ExternalSecrets on provisioned clusters ──────────────
+acmPolicies:
+  enabled: true
+  syncWave: "55"
+  namespace: openshift-gitops
+  externalSecrets:
+    enabled: true
+    channel: stable
+    source: community-operators
+    sourceNamespace: openshift-marketplace
+  clusterSelector:
+    matchExpressions:
+      - key: vendor
+        operator: In
+        values:
+          - OpenShift
+      - key: local-cluster
+        operator: NotIn
+        values:
+          - "true"
