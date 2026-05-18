@@ -1576,7 +1576,7 @@ clusterBuilds:
   repoURL: "https://gitea-gitea.apps.shc-central.lab.signal9.gg/gitea_admin/cluster_builds.git"
   chartsRepoURL: "oci://quay.signal9.gg/hybrid-sovereign/mce-cluster-build"
   mceChartName: "mce-cluster-build"
-  mceChartVersion: "0.1.3"
+  mceChartVersion: "0.1.4"
 
 # ─── ACM Policy: install ExternalSecrets on provisioned clusters ──────────────
 acmPolicies:
