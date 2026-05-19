@@ -672,7 +672,7 @@ vaultCentralNamespace:
 
 # ─── ArgoCD Repo Secret: cluster_builds (Gitea → Vault → ESO) ────────────────
 argocdClusterBuildsRepo:
-  enabled: true
+  enabled: false  # Phase 5: direct Helm by operators replaces Gitea→ArgoCD cluster-build flow
   giteaUrl: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
   giteaUser: "gitea_admin"
 
