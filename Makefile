@@ -68,6 +68,7 @@ include make/upload-assignment-operator-chart.mk
 include make/upload-project-operator-chart.mk
 include make/upload-platformopenshift-operator-chart.mk
 include make/upload-cloudoso-operator-chart.mk
+include make/upload-ocp-base-chart.mk
 include make/ansible-runner.mk
 include make/init-central-argo.mk
 include make/init-services-pull-secrets.mk
@@ -108,6 +109,7 @@ UPLOAD_TARGETS := \
   upload-project-operator-chart \
   upload-platformopenshift-operator-chart \
   upload-cloudoso-operator-chart \
+  upload-ocp-base-chart \
   upload-vault-central-namespace-chart
 
 .PHONY: upload-all-charts

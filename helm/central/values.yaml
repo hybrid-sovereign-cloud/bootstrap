@@ -1592,3 +1592,21 @@ acmPolicies:
         operator: NotIn
         values:
           - "true"
+
+# ─── ACM Policy: basechart — install ESO + GitOps on basechart:true clusters ─
+# Targets clusters labeled basechart:true by helper_CloudOSO / helper_CloudAWS.
+# Installs External Secrets Operator and OpenShift GitOps Operator via OLM.
+acmBasechart:
+  enabled: true
+  syncWave: "56"
+  namespace: openshift-gitops
+  externalSecrets:
+    enabled: true
+    channel: stable
+    source: community-operators
+    sourceNamespace: openshift-marketplace
+  gitopsOperator:
+    enabled: true
+    channel: latest
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace

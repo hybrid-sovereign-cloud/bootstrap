@@ -1,0 +1,145 @@
+{{- if and (include "sovereign-central.applicationsEnabled" .) .Values.acmBasechart.enabled }}
+---
+# ACM Policy: install ESO + OpenShift GitOps on clusters labeled basechart:true
+# Applied to clusters provisioned by helper_CloudOSO and helper_CloudAWS.
+# Placement intentionally narrow (basechart:true) to avoid installing GitOps
+# on unmanaged or manually imported clusters.
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  name: policy-basechart-operators
+  namespace: {{ .Values.acmBasechart.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.acmBasechart.syncWave | quote }}
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+    policy.open-cluster-management.io/standards: NIST SP 800-53
+    policy.open-cluster-management.io/categories: CM Configuration Management
+    policy.open-cluster-management.io/controls: CM-2 Baseline Configuration
+spec:
+  remediationAction: enforce
+  disabled: false
+  policy-templates:
+
+    # ── External Secrets Operator ─────────────────────────────────────────────
+    {{- if .Values.acmBasechart.externalSecrets.enabled }}
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: ConfigurationPolicy
+        metadata:
+          name: policy-basechart-eso-namespace
+        spec:
+          remediationAction: enforce
+          severity: low
+          object-templates:
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: v1
+                kind: Namespace
+                metadata:
+                  name: external-secrets
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: ConfigurationPolicy
+        metadata:
+          name: policy-basechart-eso-operatorgroup
+        spec:
+          remediationAction: enforce
+          severity: low
+          object-templates:
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: operators.coreos.com/v1
+                kind: OperatorGroup
+                metadata:
+                  name: external-secrets-operator
+                  namespace: external-secrets
+                spec:
+                  targetNamespaces:
+                    - external-secrets
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: ConfigurationPolicy
+        metadata:
+          name: policy-basechart-eso-subscription
+        spec:
+          remediationAction: enforce
+          severity: low
+          object-templates:
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: operators.coreos.com/v1alpha1
+                kind: Subscription
+                metadata:
+                  name: external-secrets-operator
+                  namespace: external-secrets
+                spec:
+                  channel: {{ .Values.acmBasechart.externalSecrets.channel | quote }}
+                  installPlanApproval: Automatic
+                  name: external-secrets-operator
+                  source: {{ .Values.acmBasechart.externalSecrets.source | quote }}
+                  sourceNamespace: {{ .Values.acmBasechart.externalSecrets.sourceNamespace | quote }}
+    {{- end }}
+
+    # ── OpenShift GitOps Operator ─────────────────────────────────────────────
+    {{- if .Values.acmBasechart.gitopsOperator.enabled }}
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: ConfigurationPolicy
+        metadata:
+          name: policy-basechart-gitops-subscription
+        spec:
+          remediationAction: enforce
+          severity: low
+          object-templates:
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: operators.coreos.com/v1alpha1
+                kind: Subscription
+                metadata:
+                  name: openshift-gitops-operator
+                  namespace: openshift-operators
+                spec:
+                  channel: {{ .Values.acmBasechart.gitopsOperator.channel | quote }}
+                  installPlanApproval: Automatic
+                  name: openshift-gitops-operator
+                  source: {{ .Values.acmBasechart.gitopsOperator.source | quote }}
+                  sourceNamespace: {{ .Values.acmBasechart.gitopsOperator.sourceNamespace | quote }}
+    {{- end }}
+
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: binding-policy-basechart-operators
+  namespace: {{ .Values.acmBasechart.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.acmBasechart.syncWave | quote }}
+placementRef:
+  name: placement-policy-basechart-operators
+  kind: Placement
+  apiGroup: cluster.open-cluster-management.io
+subjects:
+  - name: policy-basechart-operators
+    kind: Policy
+    apiGroup: policy.open-cluster-management.io
+---
+apiVersion: cluster.open-cluster-management.io/v1beta1
+kind: Placement
+metadata:
+  name: placement-policy-basechart-operators
+  namespace: {{ .Values.acmBasechart.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.acmBasechart.syncWave | quote }}
+spec:
+  predicates:
+    - requiredClusterSelector:
+        labelSelector:
+          matchLabels:
+            basechart: "true"
+{{- end }}
