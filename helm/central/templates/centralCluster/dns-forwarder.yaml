@@ -1,14 +1,21 @@
 ---
-# DNS forwarder: forward sandbox and signal9 queries to authoritative Route53 DNS.
-# Required for: OCP cluster builds in OPENTLC sandbox accounts where the lab
-# internal DNS (10.0.1.12) does not resolve *.opentlc.com / *.sandbox*.opentlc.com.
-# Without this, Hive provision pods cannot reach the new cluster's API endpoint.
+# DNS forwarder: forward OCP cluster subdomain queries to their authoritative Route53 NS.
 #
-# sandbox5530.opentlc.com is forwarded directly to the Route53 NS servers for
-# that zone to bypass Google DNS (8.8.8.8) negative-cache propagation delays
-# that caused provision pods to fail with "no such host" for newly-created
-# Route53 A records (api.ocp-ses7.73d59.sandbox5530.opentlc.com pattern).
-# NS servers: ns-1374.awsdns-43.org=205.251.197.94 ns-946.awsdns-54.net=205.251.195.178
+# Problem: OCP provision pods resolve `api.<cluster>.<slug>.<base>` via CoreDNS.
+# The default upstreams (8.8.8.8) cache negative responses for 1-5 minutes which
+# causes provision pods to fail with "no such host" for newly-created Route53 A records.
+#
+# Fix: Forward directly to the authoritative Route53 NS for each zone so records
+# are visible immediately upon creation, bypassing public DNS caching.
+#
+# Zone hierarchy for sandbox5530.opentlc.com:
+#   sandbox5530.opentlc.com        NS: 205.251.197.94, 205.251.195.178  (public OPENTLC)
+#   73d59.sandbox5530.opentlc.com  NS: 205.251.195.52, 205.251.199.130  (ses7-env slug)
+#   ocp-ses7.73d59...              NS: 205.251.194.203, 205.251.197.233  (ocp-ses7 cluster)
+#
+# CoreDNS forwardPlugin is non-recursive: it returns whatever the upstream responds.
+# Querying the sandbox5530 NS for a record in ocp-ses7.73d59.* returns a referral
+# (NXDOMAIN from CoreDNS perspective). Must target the LEAF zone NS directly.
 apiVersion: operator.openshift.io/v1
 kind: DNS
 metadata:
@@ -17,14 +24,24 @@ metadata:
     argocd.argoproj.io/sync-wave: "2"
 spec:
   servers:
-    - name: sandbox5530-forwarder
+    # Direct to ocp-ses7.73d59.sandbox5530.opentlc.com cluster zone NS
+    - name: ocp-ses7-forwarder
       zones:
-        - sandbox5530.opentlc.com
+        - ocp-ses7.73d59.sandbox5530.opentlc.com
       forwardPlugin:
         policy: Sequential
         upstreams:
-          - 205.251.197.94
-          - 205.251.195.178
+          - 205.251.194.203
+          - 205.251.197.233
+    # Direct to 73d59.sandbox5530.opentlc.com slug zone NS (handles cluster NS delegations)
+    - name: sandbox5530-ses7-forwarder
+      zones:
+        - 73d59.sandbox5530.opentlc.com
+      forwardPlugin:
+        policy: Sequential
+        upstreams:
+          - 205.251.195.52
+          - 205.251.199.130
     - name: opentlc-forwarder
       zones:
         - opentlc.com
