@@ -1,8 +1,14 @@
 ---
-# DNS forwarder: forward opentlc.com queries to public DNS (8.8.8.8/8.8.4.4)
+# DNS forwarder: forward sandbox and signal9 queries to authoritative Route53 DNS.
 # Required for: OCP cluster builds in OPENTLC sandbox accounts where the lab
 # internal DNS (10.0.1.12) does not resolve *.opentlc.com / *.sandbox*.opentlc.com.
 # Without this, Hive provision pods cannot reach the new cluster's API endpoint.
+#
+# sandbox5530.opentlc.com is forwarded directly to the Route53 NS servers for
+# that zone to bypass Google DNS (8.8.8.8) negative-cache propagation delays
+# that caused provision pods to fail with "no such host" for newly-created
+# Route53 A records (api.ocp-ses7.73d59.sandbox5530.opentlc.com pattern).
+# NS servers: ns-1374.awsdns-43.org=205.251.197.94 ns-946.awsdns-54.net=205.251.195.178
 apiVersion: operator.openshift.io/v1
 kind: DNS
 metadata:
@@ -11,6 +17,14 @@ metadata:
     argocd.argoproj.io/sync-wave: "2"
 spec:
   servers:
+    - name: sandbox5530-forwarder
+      zones:
+        - sandbox5530.opentlc.com
+      forwardPlugin:
+        policy: Sequential
+        upstreams:
+          - 205.251.197.94
+          - 205.251.195.178
     - name: opentlc-forwarder
       zones:
         - opentlc.com
