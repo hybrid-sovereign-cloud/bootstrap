@@ -1348,7 +1348,7 @@ platformOpenshiftOperator:
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
   enabled: true
-  chartVersion: "0.5.6"
+  chartVersion: "0.5.7"
   syncWave: "36"
   destinationNamespace: sovereign-cloud-helpers
   values:
@@ -1394,7 +1394,7 @@ helperCloudOSO:
 # Deploys mce-cluster-build Helm chart directly to the hub cluster.
 helperCloudAWS:
   enabled: true
-  chartVersion: "0.4.6"
+  chartVersion: "0.4.7"
   chartRegistry: "quay.signal9.gg"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-helpers
