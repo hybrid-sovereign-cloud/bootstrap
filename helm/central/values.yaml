@@ -1348,14 +1348,14 @@ platformOpenshiftOperator:
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
   enabled: true
-  chartVersion: "0.5.8"
+  chartVersion: "0.5.9"
   syncWave: "36"
   destinationNamespace: sovereign-cloud-helpers
   values:
     namespace: sovereign-cloud-helpers
     image:
       repository: quay.signal9.gg/hybrid-sovereign/helper-cloudoso
-      tag: "0.5.6"
+      tag: "0.5.7"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1570,7 +1570,7 @@ clusterBuilds:
   repoURL: "https://gitea-gitea.apps.shc-central.lab.signal9.gg/gitea_admin/cluster_builds.git"
   chartsRepoURL: "oci://quay.signal9.gg/hybrid-sovereign/mce-cluster-build"
   mceChartName: "mce-cluster-build"
-  mceChartVersion: "0.1.9"
+  mceChartVersion: "0.2.0"
 
 # ─── ACM Policy: install ExternalSecrets on provisioned clusters ──────────────
 acmPolicies:
