@@ -8,14 +8,20 @@
 # Fix: Forward directly to the authoritative Route53 NS for each zone so records
 # are visible immediately upon creation, bypassing public DNS caching.
 #
+# Key observation: The OCP installer creates `api.<cluster>.<slug>.<base>` A records
+# in the SLUG zone (<slug>.<base>), NOT in the cluster-specific child zone.
+# The cluster child zone (<cluster>.<slug>.<base>) only has NS + SOA records.
+# Therefore, we must forward to the SLUG zone NS, not the cluster zone NS.
+#
 # Zone hierarchy for sandbox5530.opentlc.com:
 #   sandbox5530.opentlc.com        NS: 205.251.197.94, 205.251.195.178  (public OPENTLC)
 #   73d59.sandbox5530.opentlc.com  NS: 205.251.195.52, 205.251.199.130  (ses7-env slug)
-#   ocp-ses7.73d59...              NS: 205.251.194.203, 205.251.197.233  (ocp-ses7 cluster)
+#     api.ocp-ses7.73d59...  A record lives HERE (slug zone, not cluster zone)
+#   ocp-ses7.73d59...              NS: 205.251.194.203 (cluster zone, NS+SOA only)
 #
-# CoreDNS forwardPlugin is non-recursive: it returns whatever the upstream responds.
-# Querying the sandbox5530 NS for a record in ocp-ses7.73d59.* returns a referral
-# (NXDOMAIN from CoreDNS perspective). Must target the LEAF zone NS directly.
+# CoreDNS forwardPlugin is non-recursive. Forwarding to the cluster zone NS
+# returns NOERROR with 0 answers (AUTHORITY delegation) — not the A record.
+# Must target the SLUG zone NS which has the installer-created A records.
 apiVersion: operator.openshift.io/v1
 kind: DNS
 metadata:
@@ -24,17 +30,10 @@ metadata:
     argocd.argoproj.io/sync-wave: "2"
 spec:
   servers:
-    # Direct to ocp-ses7.73d59.sandbox5530.opentlc.com cluster zone NS
-    - name: ocp-ses7-forwarder
-      zones:
-        - ocp-ses7.73d59.sandbox5530.opentlc.com
-      forwardPlugin:
-        policy: Sequential
-        upstreams:
-          - 205.251.194.203
-          - 205.251.197.233
-    # Direct to 73d59.sandbox5530.opentlc.com slug zone NS (handles cluster NS delegations)
-    - name: sandbox5530-ses7-forwarder
+    # Forward 73d59.sandbox5530.opentlc.com subdomain queries directly to slug zone NS.
+    # The OCP installer places api.ocp-ses7.73d59.* A records here.
+    # Verified: dig @205.251.195.52 api.ocp-ses7.73d59... returns ANSWER (5 A records).
+    - name: sandbox5530-73d59-forwarder
       zones:
         - 73d59.sandbox5530.opentlc.com
       forwardPlugin:
