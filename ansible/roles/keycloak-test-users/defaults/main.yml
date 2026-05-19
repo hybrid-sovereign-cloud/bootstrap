@@ -9,6 +9,7 @@ keycloak_services_admin_user: "admin"
 keycloak_services_admin_password: ""
 
 # Test users to create; deleted after smoke test, groups left intact
+# Groups correspond to sovereign-assignment RBAC: <entity>-<team>-admins/editors/viewers
 keycloak_test_users:
   - realm: "sovereign-central"
     keycloak_url_key: central
@@ -26,3 +27,27 @@ keycloak_test_users:
     lastName: "User"
     groups:
       - "sovereign-admin"
+  - realm: "sovereign-tenants"
+    keycloak_url_key: services
+    username: "acme-platform-eng-admin"
+    email: "acme-platform-eng-admin@example.com"
+    firstName: "Platform"
+    lastName: "EngAdmin"
+    groups:
+      - "acme-corp-platform-engineering-admins"
+  - realm: "sovereign-tenants"
+    keycloak_url_key: services
+    username: "acme-platform-eng-editor"
+    email: "acme-platform-eng-editor@example.com"
+    firstName: "Platform"
+    lastName: "EngEditor"
+    groups:
+      - "acme-corp-platform-engineering-editors"
+  - realm: "sovereign-tenants"
+    keycloak_url_key: services
+    username: "acme-platform-ops-admin"
+    email: "acme-platform-ops-admin@example.com"
+    firstName: "Platform"
+    lastName: "OpsAdmin"
+    groups:
+      - "acme-corp-platform-ops-admins"

@@ -45,6 +45,9 @@
   roles:
     - role: keycloak-groups
       vars:
-        keycloak_groups:
-          - realm: "{{ realm_name }}"
-            name: "{{ admin_group }}"
+        keycloak_groups: >-
+          {{ [{'realm': realm_name, 'name': admin_group}]
+             + (lookup('env', 'EXTRA_GROUPS') | default('', true) | from_json
+                | map('combine', {'realm': realm_name}) | list
+                if lookup('env', 'EXTRA_GROUPS') | default('', true) | length > 0
+                else []) }}

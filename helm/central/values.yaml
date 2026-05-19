@@ -369,7 +369,7 @@ quay:
 # ─── Quay (services) ────────────────────────────────────────────────────────
 quayServices:
   enabled: true
-  chartVersion: "0.5.2"
+  chartVersion: "0.5.3"
   syncWave: "35"
   destinationNamespace: quay-enterprise
   values:
@@ -960,6 +960,8 @@ sovereignJobs:
           value: "sovereign-tenants"
         - name: ADMIN_GROUP
           value: "sovereign-admin"
+        - name: EXTRA_GROUPS
+          value: '[{"name":"acme-corp-platform-engineering-admins"},{"name":"acme-corp-platform-engineering-editors"},{"name":"acme-corp-platform-engineering-viewers"},{"name":"acme-corp-platform-ops-admins"},{"name":"acme-corp-platform-ops-editors"},{"name":"acme-corp-platform-ops-viewers"}]'
     keycloakServicesClients:
       enabled: true
       playbook: keycloak-clients.yml
@@ -1272,7 +1274,7 @@ entityOperator:
 # ─── Team Operator (services cluster) ─────────────────────────────────────
 teamOperator:
   enabled: true
-  chartVersion: "0.3.4"
+  chartVersion: "0.4.0"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1289,7 +1291,7 @@ teamOperator:
 # ─── Assignment Operator (services cluster) ────────────────────────────────
 assignmentOperator:
   enabled: true
-  chartVersion: "0.3.4"
+  chartVersion: "0.4.0"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
@@ -1306,7 +1308,7 @@ assignmentOperator:
 # ─── Project Operator (services cluster) ───────────────────────────────────
 projectOperator:
   enabled: true
-  chartVersion: "0.3.4"
+  chartVersion: "0.4.0"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1323,14 +1325,14 @@ projectOperator:
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
   enabled: true
-  chartVersion: "0.5.2"
+  chartVersion: "0.5.3"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/platformopenshift-operator
-      tag: "0.3.1"
+      tag: "0.3.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1348,14 +1350,14 @@ platformOpenshiftOperator:
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
   enabled: true
-  chartVersion: "0.6.0"
+  chartVersion: "0.6.1"
   syncWave: "36"
   destinationNamespace: sovereign-cloud-helpers
   values:
     namespace: sovereign-cloud-helpers
     image:
       repository: quay.signal9.gg/hybrid-sovereign/helper-cloudoso
-      tag: "0.5.8"
+      tag: "0.5.9"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1394,7 +1396,7 @@ helperCloudOSO:
 # Deploys mce-cluster-build Helm chart directly to the hub cluster.
 helperCloudAWS:
   enabled: true
-  chartVersion: "0.5.0"
+  chartVersion: "0.5.1"
   chartRegistry: "quay.signal9.gg"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-helpers
@@ -1402,7 +1404,7 @@ helperCloudAWS:
     namespace: sovereign-cloud-helpers
     image:
       repository: quay.signal9.gg/hybrid-sovereign/helper-cloudaws-operator
-      tag: "0.3.8"
+      tag: "0.3.9"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1534,7 +1536,7 @@ sovereignDashboard:
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
   enabled: true
-  chartVersion: "0.9.8"
+  chartVersion: "0.9.9"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
   values:
@@ -1542,7 +1544,7 @@ tenancyDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/tenancy-dashboard
-      tag: "3.3.0"
+      tag: "3.4.0"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
