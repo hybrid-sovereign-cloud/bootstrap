@@ -1343,33 +1343,7 @@ platformOpenshiftOperator:
       externalSecret:
         enabled: false
     samples:
-      enabled: true
-      items: []
-      awsItems:
-        - name: ocp-ses7
-          namespace: entity-acme-corp
-          awsEnvironment: dev-aws-env
-          region: us-east-1
-          clusterType: standalone
-          controlPlaneCount: 3
-          workerCount: 2
-      openstackItems:
-        - name: ocp-ses4
-          namespace: entity-acme-corp
-          osoEnvironment: dev-project
-          controlPlaneCount: 3
-          workerCount: 3
-          controlPlaneFlavor: b1.xlarge
-          workerFlavor: b1.large
-          externalNetwork: ext-net
-        - name: ocp-ses5
-          namespace: entity-acme-corp
-          osoEnvironment: dev-project
-          controlPlaneCount: 3
-          workerCount: 3
-          controlPlaneFlavor: b1.xlarge
-          workerFlavor: b1.large
-          externalNetwork: ext-net
+      enabled: false  # CRs created manually on services cluster
 
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
@@ -1381,7 +1355,7 @@ helperCloudOSO:
     namespace: sovereign-cloud-helpers
     image:
       repository: quay.signal9.gg/hybrid-sovereign/helper-cloudoso
-      tag: "0.5.4"
+      tag: "0.5.5"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1428,7 +1402,7 @@ helperCloudAWS:
     namespace: sovereign-cloud-helpers
     image:
       repository: quay.signal9.gg/hybrid-sovereign/helper-cloudaws-operator
-      tag: "0.3.4"
+      tag: "0.3.5"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1498,16 +1472,7 @@ cloudOSOOperator:
         vaultPath: osohelper-creator-sa
         refreshInterval: "1h"
     samples:
-      enabled: true
-      items:
-        - name: dev-project
-          namespace: entity-acme-corp
-          project: dev-project
-          vaultPath: "oso/accounts/shc_admin"
-          baseDomain: "lab.signal9.gg"
-          projectDomain: "shc_domain"
-          externalNetwork: "ext-net"
-          route53VaultPath: "oso/accounts/route53-openstack"
+      enabled: false  # CRs created manually on services cluster
 
 # ─── CloudAWS Operator (services cluster) ──────────────────────────────────
 cloudAWSOperator:
@@ -1532,13 +1497,7 @@ cloudAWSOperator:
         vaultPath: awshelper-creator-sa
         refreshInterval: "1h"
     samples:
-      enabled: true
-      items:
-        - name: dev-aws-env
-          namespace: entity-acme-corp
-          account: "390403869973"
-          vaultPath: "aws/accounts/shc_admin"
-          baseDomain: "sandbox5530.opentlc.com"
+      enabled: false  # CRs created manually on services cluster
 
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
@@ -1606,12 +1565,12 @@ tenancyDashboard:
 # The giteaClusterBuildsRepo sovereign job (wave 37) creates the repo and the
 # ArgoCD repo secret before this ApplicationSet (wave 50) is deployed.
 clusterBuilds:
-  enabled: true
+  enabled: false  # direct Helm by operators replaces Gitea→ArgoCD cluster-build flow
   syncWave: "50"
   repoURL: "https://gitea-gitea.apps.shc-central.lab.signal9.gg/gitea_admin/cluster_builds.git"
   chartsRepoURL: "oci://quay.signal9.gg/hybrid-sovereign/mce-cluster-build"
   mceChartName: "mce-cluster-build"
-  mceChartVersion: "0.1.7"
+  mceChartVersion: "0.1.9"
 
 # ─── ACM Policy: install ExternalSecrets on provisioned clusters ──────────────
 acmPolicies:
