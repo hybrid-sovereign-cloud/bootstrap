@@ -1298,7 +1298,7 @@ assignmentOperator:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/assignment-operator
-      tag: "0.0.2"
+      tag: "0.1.0"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
