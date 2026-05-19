@@ -1343,10 +1343,33 @@ platformOpenshiftOperator:
       externalSecret:
         enabled: false
     samples:
-      enabled: false
+      enabled: true
       items: []
-      awsItems: []
-      openstackItems: []
+      awsItems:
+        - name: ocp-ses7
+          namespace: entity-acme-corp
+          awsEnvironment: dev-aws-env
+          region: us-east-1
+          clusterType: standalone
+          controlPlaneCount: 3
+          workerCount: 2
+      openstackItems:
+        - name: ocp-ses4
+          namespace: entity-acme-corp
+          osoEnvironment: dev-project
+          controlPlaneCount: 3
+          workerCount: 3
+          controlPlaneFlavor: b1.xlarge
+          workerFlavor: b1.large
+          externalNetwork: ext-net
+        - name: ocp-ses5
+          namespace: entity-acme-corp
+          osoEnvironment: dev-project
+          controlPlaneCount: 3
+          workerCount: 3
+          controlPlaneFlavor: b1.xlarge
+          workerFlavor: b1.large
+          externalNetwork: ext-net
 
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
@@ -1475,8 +1498,16 @@ cloudOSOOperator:
         vaultPath: osohelper-creator-sa
         refreshInterval: "1h"
     samples:
-      enabled: false
-      items: []
+      enabled: true
+      items:
+        - name: dev-project
+          namespace: entity-acme-corp
+          project: dev-project
+          vaultPath: "oso/accounts/shc_admin"
+          baseDomain: "lab.signal9.gg"
+          projectDomain: "shc_domain"
+          externalNetwork: "ext-net"
+          route53VaultPath: "oso/accounts/route53-openstack"
 
 # ─── CloudAWS Operator (services cluster) ──────────────────────────────────
 cloudAWSOperator:
@@ -1501,8 +1532,13 @@ cloudAWSOperator:
         vaultPath: awshelper-creator-sa
         refreshInterval: "1h"
     samples:
-      enabled: false
-      items: []
+      enabled: true
+      items:
+        - name: dev-aws-env
+          namespace: entity-acme-corp
+          account: "390403869973"
+          vaultPath: "aws/accounts/shc_admin"
+          baseDomain: "sandbox5530.opentlc.com"
 
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
