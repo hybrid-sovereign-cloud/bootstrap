@@ -1351,18 +1351,17 @@ platformOpenshiftOperator:
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
   enabled: true
-  chartVersion: "0.4.6"
+  chartVersion: "0.5.0"
   syncWave: "36"
   destinationNamespace: sovereign-cloud-helpers
   values:
     namespace: sovereign-cloud-helpers
     image:
       repository: quay.signal9.gg/hybrid-sovereign/helper-cloudoso
-      tag: "0.4.4"
+      tag: "0.5.0"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
-    giteaUrl: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
     resources:
       limits:
         cpu: 500m
@@ -1395,11 +1394,10 @@ helperCloudOSO:
 
 # ─── AWS Helper Operator ────────────────────────────────────────────────────
 # Provisions OCP clusters in AWS via AWSHelper CRs → MCE/Hive ClusterDeployments
-# The operator writes to the cluster_builds Gitea repo; the cluster-builds-clusters
-# ApplicationSet detects the files and triggers ACM to provision the cluster.
+# Deploys mce-cluster-build Helm chart directly to the hub cluster.
 helperCloudAWS:
   enabled: true
-  chartVersion: "0.3.7"
+  chartVersion: "0.4.0"
   chartRegistry: "quay.signal9.gg"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-helpers
@@ -1407,7 +1405,7 @@ helperCloudAWS:
     namespace: sovereign-cloud-helpers
     image:
       repository: quay.signal9.gg/hybrid-sovereign/helper-cloudaws-operator
-      tag: "0.2.5"
+      tag: "0.3.0"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1420,7 +1418,6 @@ helperCloudAWS:
       requests:
         cpu: 10m
         memory: 256Mi
-    giteaUrl: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
     crossClusterSA:
       enabled: true
       name: awshelper-creator-sa
