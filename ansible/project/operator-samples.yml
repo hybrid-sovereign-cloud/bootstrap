@@ -122,6 +122,11 @@
           spec:
             aapConfig: "aap-sovereign-services"
             description: "Automation org for Acme Corp"
+            aapAdminRbac:
+              - "acme-corp-platform-engineering-admins"
+            aapJobExecutorRbac:
+              - "acme-corp-platform-engineering-editors"
+              - "acme-corp-platform-ops-admins"
 
     - name: Create AAPOrg for globex-industries
       kubernetes.core.k8s:
@@ -138,6 +143,10 @@
           spec:
             aapConfig: "aap-sovereign-services"
             description: "Automation org for Globex Industries"
+            aapAdminRbac:
+              - "globex-industries-platform-engineering-admins"
+            aapJobExecutorRbac:
+              - "globex-industries-platform-engineering-editors"
 
     # ── QuayOrg CRs (spec.quayConfig per CRD schema, NOT spec.config) ─────────
     - name: Create QuayOrg for acme-corp
@@ -154,6 +163,13 @@
             namespace: entity-acme-corp
           spec:
             quayConfig: "quay-sovereign-services"
+            quayAdminRbac:
+              - "acme-corp-platform-engineering-admins"
+            quayCreatorRbac:
+              - "acme-corp-platform-engineering-editors"
+            quayMemberRbac:
+              - "acme-corp-platform-ops-admins"
+              - "acme-corp-platform-engineering-viewers"
 
     - name: Create QuayOrg for globex-industries
       kubernetes.core.k8s:
@@ -169,6 +185,10 @@
             namespace: entity-globex-industries
           spec:
             quayConfig: "quay-sovereign-services"
+            quayAdminRbac:
+              - "globex-industries-platform-engineering-admins"
+            quayCreatorRbac:
+              - "globex-industries-platform-engineering-editors"
 
     # ── Supplemental RBAC: plugin-iaac missing events list/watch (Issue 17) ────
     # The upstream plugin-iaac chart ClusterRole only grants create/patch for

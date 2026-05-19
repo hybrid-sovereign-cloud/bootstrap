@@ -385,6 +385,9 @@ quayServices:
         SUPER_USERS:
           - sovereign_admin
         FEATURE_USER_CREATION: true
+        FEATURE_TEAM_SYNCING: true
+        TEAM_RESYNC_STALE_TIME: "60m"
+        FEATURE_NONSUPERUSER_TEAM_SYNCING_SETUP: false
       configBundleSecretName: svc-sovereign-registry-config-bundle
       components:
         objectstorage:
@@ -1152,7 +1155,7 @@ pluginVault:
 # ─── Plugin AAP Operator (services cluster) ───────────────────────────────
 pluginAap:
   enabled: true
-  chartVersion: "0.2.3"
+  chartVersion: "0.2.4"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -1192,7 +1195,7 @@ pluginAap:
 # ─── Plugin Quay Operator (services cluster) ──────────────────────────────
 pluginQuay:
   enabled: true
-  chartVersion: "0.2.6"
+  chartVersion: "0.2.7"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -1200,7 +1203,7 @@ pluginQuay:
     createNamespace: false
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-quay
-      tag: "0.0.6"
+      tag: "0.0.8"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1333,10 +1336,21 @@ platformOpenshiftOperator:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/platformopenshift-operator
-      tag: "0.3.2"
+      tag: "0.3.3"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
+    keycloak:
+      internalUrl: "http://rhbk-services-service.rhbk.svc:8080"
+      externalUrl: "https://rhbk-services.apps.shcservices.lab.signal9.gg"
+      realm: "sovereign-tenants"
+      adminSecretName: "rhbk-admin-credentials"
+      adminSecret:
+        enabled: true
+        secretStoreName: vault-backend
+        secretStoreKind: ClusterSecretStore
+        vaultPath: rhbk-services-admin
+        refreshInterval: "1h"
     centralSA:
       secretName: awshelper-creator-sa
       externalSecret:

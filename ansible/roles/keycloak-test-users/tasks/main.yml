@@ -50,9 +50,3 @@
 - name: Pause to allow test user logins to settle
   ansible.builtin.pause:
     seconds: 10
-
-- name: Delete test users (leave groups)
-  include_tasks: delete-test-user.yml
-  loop: "{{ keycloak_test_users }}"
-  loop_control:
-    loop_var: test_user
