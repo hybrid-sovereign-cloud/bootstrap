@@ -1291,7 +1291,7 @@ teamOperator:
 # ─── Assignment Operator (services cluster) ────────────────────────────────
 assignmentOperator:
   enabled: true
-  chartVersion: "0.4.0"
+  chartVersion: "0.4.1"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
