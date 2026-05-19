@@ -27,6 +27,10 @@ spec:
     namespace: {{ .Values.helperCloudOSO.destinationNamespace | default "sovereign-cloud-helpers" }}
 
   ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/template/spec/imagePullSecrets
     {{- include "sovereign-central.esoIgnoreDifferences" . | nindent 4 }}
 
   syncPolicy:

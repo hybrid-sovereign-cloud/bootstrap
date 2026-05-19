@@ -1343,7 +1343,7 @@ platformOpenshiftOperator:
       externalSecret:
         enabled: false
     samples:
-      enabled: true
+      enabled: false
       items: []
       awsItems: []
       openstackItems: []
@@ -1430,9 +1430,9 @@ helperCloudAWS:
         secretStoreKind: ClusterSecretStore
         vaultPath: awshelper-creator-sa
     samples:
-      enabled: true
+      enabled: false
       environmentprep:
-        enabled: true
+        enabled: false
         name: dev-project
         awsAccountId: "390403869973"
         vaultPath: "aws/accounts/shc_admin"
@@ -1478,7 +1478,7 @@ cloudOSOOperator:
         vaultPath: osohelper-creator-sa
         refreshInterval: "1h"
     samples:
-      enabled: true
+      enabled: false
       items: []
 
 # ─── CloudAWS Operator (services cluster) ──────────────────────────────────
@@ -1504,7 +1504,7 @@ cloudAWSOperator:
         vaultPath: awshelper-creator-sa
         refreshInterval: "1h"
     samples:
-      enabled: true
+      enabled: false
       items: []
 
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
