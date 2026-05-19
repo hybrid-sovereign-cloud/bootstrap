@@ -858,7 +858,7 @@ sovereignJobs:
         - name: SERVICES_REALM_NAME
           value: "sovereign-tenants"
     giteaInit:
-      enabled: true
+      enabled: false  # cluster-build no longer depends on Gitea (direct Helm by operators)
       playbook: gitea-init.yml
       activeDeadlineSeconds: 600
       syncWave: "35"
@@ -903,7 +903,7 @@ sovereignJobs:
         - name: SECRETS_NAMESPACE
           value: "sovereign-cloud-jobs"
     giteaCreateRepo:
-      enabled: true
+      enabled: false  # cluster-build no longer depends on Gitea (direct Helm by operators)
       playbook: gitea-create-repo.yml
       activeDeadlineSeconds: 300
       syncWave: "36"
@@ -1044,7 +1044,7 @@ sovereignJobs:
     # Idempotent — safe to re-run; repo creation and secret upsert are guarded.
     # Runs at wave 37 so the ApplicationSet (wave 50) can connect immediately.
     giteaClusterBuildsRepo:
-      enabled: true
+      enabled: false  # cluster-build no longer depends on Gitea (direct Helm by operators)
       playbook: gitea-cluster-builds.yml
       activeDeadlineSeconds: 300
       syncWave: "37"
