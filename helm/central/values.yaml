@@ -1519,7 +1519,7 @@ cloudAWSOperator:
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
   enabled: true
-  chartVersion: "0.9.2"
+  chartVersion: "0.9.3"
   syncWave: "40"
   destinationNamespace: sovereign-cloud
   values:
@@ -1527,7 +1527,7 @@ sovereignDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/sovereign-cloud-dashboard
-      tag: "1.2.1"
+      tag: "1.2.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
