@@ -1088,7 +1088,7 @@ sovereignJobs:
 # ─── Plugin RBAC Operator (services cluster) ────────────────────────────────
 pluginRbac:
   enabled: true
-  chartVersion: "0.4.5"
+  chartVersion: "0.4.6"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -1096,7 +1096,7 @@ pluginRbac:
     createNamespace: false
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-rbac
-      tag: "0.0.3"
+      tag: "0.0.6"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1257,14 +1257,14 @@ pluginIaac:
 # ─── Entity Operator (services cluster) ─────────────────────────────────────
 entityOperator:
   enabled: true
-  chartVersion: "0.6.4"
+  chartVersion: "0.6.5"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/entity-operator
-      tag: "0.0.5"
+      tag: "0.0.7"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1519,7 +1519,7 @@ cloudAWSOperator:
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
   enabled: true
-  chartVersion: "0.9.5"
+  chartVersion: "0.9.6"
   syncWave: "40"
   destinationNamespace: sovereign-cloud
   values:
@@ -1527,7 +1527,7 @@ sovereignDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/sovereign-cloud-dashboard
-      tag: "1.2.4"
+      tag: "1.2.5"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
