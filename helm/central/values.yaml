@@ -947,6 +947,8 @@ sovereignJobs:
           value: "sovereign-cloud-jobs"
         - name: REALM_NAME
           value: "sovereign-tenants"
+        - name: FORCE_RERUN
+          value: "2026-05-22"
     keycloakServicesGroups:
       enabled: true
       playbook: keycloak-groups.yml
