@@ -75,6 +75,23 @@
             description: "Globex Industries"
             websiteLink: "https://globex.example.com"
 
+    - name: Create waynetech Entity CR
+      kubernetes.core.k8s:
+        host: "{{ services_server }}"
+        api_key: "{{ services_bearer_token }}"
+        validate_certs: false
+        state: present
+        definition:
+          apiVersion: hybridsovereign.redhat/v1alpha1
+          kind: Entity
+          metadata:
+            name: waynetech
+            namespace: "{{ entity_namespace }}"
+          spec:
+            billingID: "WAYNE-001"
+            description: "Wayne Technologies"
+            websiteLink: "https://waynetech.example.com"
+
     # ── Wait for entity namespaces to be provisioned by the operator ───────────
     - name: Wait for entity-acme-corp namespace to become Active
       kubernetes.core.k8s_info:
@@ -105,6 +122,21 @@
       until: >-
         globex_ns.resources | length > 0 and
         globex_ns.resources[0].status.phase == 'Active'
+
+    - name: Wait for entity-waynetech namespace to become Active
+      kubernetes.core.k8s_info:
+        host: "{{ services_server }}"
+        api_key: "{{ services_bearer_token }}"
+        validate_certs: false
+        api_version: v1
+        kind: Namespace
+        name: entity-waynetech
+      register: waynetech_ns
+      retries: 30
+      delay: 15
+      until: >-
+        waynetech_ns.resources | length > 0 and
+        waynetech_ns.resources[0].status.phase == 'Active'
 
     # ── AAPOrg CRs (spec.aapConfig per CRD schema, NOT spec.config) ───────────
     - name: Create AAPOrg for acme-corp
