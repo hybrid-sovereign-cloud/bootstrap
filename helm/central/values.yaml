@@ -1090,7 +1090,7 @@ sovereignJobs:
 # ─── Plugin RBAC Operator (services cluster) ────────────────────────────────
 pluginRbac:
   enabled: true
-  chartVersion: "0.4.6"
+  chartVersion: "0.4.7"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -1098,7 +1098,7 @@ pluginRbac:
     createNamespace: false
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-rbac
-      tag: "0.0.6"
+      tag: "0.0.7"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1296,7 +1296,7 @@ teamOperator:
 # ─── Assignment Operator (services cluster) ────────────────────────────────
 assignmentOperator:
   enabled: true
-  chartVersion: "0.4.6"
+  chartVersion: "0.4.7"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
