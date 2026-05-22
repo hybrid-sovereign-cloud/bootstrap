@@ -1259,7 +1259,7 @@ pluginIaac:
 # ─── Entity Operator (services cluster) ─────────────────────────────────────
 entityOperator:
   enabled: true
-  chartVersion: "0.6.7"
+  chartVersion: "0.6.8"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
