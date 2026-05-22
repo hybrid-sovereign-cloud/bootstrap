@@ -1088,7 +1088,7 @@ sovereignJobs:
 # ─── Plugin RBAC Operator (services cluster) ────────────────────────────────
 pluginRbac:
   enabled: true
-  chartVersion: "0.4.4"
+  chartVersion: "0.4.5"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -1125,7 +1125,7 @@ pluginRbac:
 # ─── Plugin Vault Operator (services cluster) ──────────────────────────────
 pluginVault:
   enabled: true
-  chartVersion: "0.2.11"
+  chartVersion: "0.2.12"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -1155,7 +1155,7 @@ pluginVault:
 # ─── Plugin AAP Operator (services cluster) ───────────────────────────────
 pluginAap:
   enabled: true
-  chartVersion: "0.2.5"
+  chartVersion: "0.2.6"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -1195,7 +1195,7 @@ pluginAap:
 # ─── Plugin Quay Operator (services cluster) ──────────────────────────────
 pluginQuay:
   enabled: true
-  chartVersion: "0.2.7"
+  chartVersion: "0.2.8"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -1233,7 +1233,7 @@ pluginQuay:
 # ─── Plugin IaaC Operator (services cluster) ────────────────────────────────
 pluginIaac:
   enabled: true
-  chartVersion: "0.1.6"
+  chartVersion: "0.1.7"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -1257,7 +1257,7 @@ pluginIaac:
 # ─── Entity Operator (services cluster) ─────────────────────────────────────
 entityOperator:
   enabled: true
-  chartVersion: "0.6.3"
+  chartVersion: "0.6.4"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1277,7 +1277,7 @@ entityOperator:
 # ─── Team Operator (services cluster) ─────────────────────────────────────
 teamOperator:
   enabled: true
-  chartVersion: "0.3.5"
+  chartVersion: "0.3.6"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1294,7 +1294,7 @@ teamOperator:
 # ─── Assignment Operator (services cluster) ────────────────────────────────
 assignmentOperator:
   enabled: true
-  chartVersion: "0.4.5"
+  chartVersion: "0.4.6"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
@@ -1312,7 +1312,7 @@ assignmentOperator:
 # ─── Project Operator (services cluster) ───────────────────────────────────
 projectOperator:
   enabled: true
-  chartVersion: "0.3.5"
+  chartVersion: "0.3.6"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1329,7 +1329,7 @@ projectOperator:
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
   enabled: true
-  chartVersion: "0.5.5"
+  chartVersion: "0.5.6"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1469,7 +1469,7 @@ helperCloudAWS:
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
   enabled: true
-  chartVersion: "0.5.1"
+  chartVersion: "0.5.2"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1494,7 +1494,7 @@ cloudOSOOperator:
 # ─── CloudAWS Operator (services cluster) ──────────────────────────────────
 cloudAWSOperator:
   enabled: true
-  chartVersion: "0.1.1"
+  chartVersion: "0.1.2"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
@@ -1551,7 +1551,7 @@ sovereignDashboard:
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
   enabled: true
-  chartVersion: "1.1.0"
+  chartVersion: "1.1.1"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
   values:
@@ -1559,7 +1559,7 @@ tenancyDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/tenancy-dashboard
-      tag: "3.5.0"
+      tag: "3.5.1"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
