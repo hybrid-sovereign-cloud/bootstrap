@@ -1259,14 +1259,14 @@ pluginIaac:
 # ─── Entity Operator (services cluster) ─────────────────────────────────────
 entityOperator:
   enabled: true
-  chartVersion: "0.7.2"
+  chartVersion: "0.7.3"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/entity-operator
-      tag: "0.1.1"
+      tag: "0.1.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
