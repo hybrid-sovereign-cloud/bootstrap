@@ -1413,7 +1413,7 @@ helperCloudOSO:
 # Deploys mce-cluster-build Helm chart directly to the hub cluster.
 helperCloudAWS:
   enabled: true
-  chartVersion: "0.5.11"
+  chartVersion: "0.5.12"
   chartRegistry: "quay.signal9.gg"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-helpers
@@ -1421,7 +1421,7 @@ helperCloudAWS:
     namespace: sovereign-cloud-helpers
     image:
       repository: quay.signal9.gg/hybrid-sovereign/helper-cloudaws-operator
-      tag: "0.3.19"
+      tag: "0.3.20"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
