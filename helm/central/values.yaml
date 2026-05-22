@@ -715,7 +715,7 @@ vaultSecretStoreServices:
 # ─── Sovereign Jobs RBAC ────────────────────────────────────────────────────
 sovereignJobsRbac:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.1.1"
   syncWave: "3"
   values:
     namespace: sovereign-cloud-jobs

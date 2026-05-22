@@ -1,0 +1,28 @@
+---
+# ClusterRole granting the dashboard-central-reader SA read access to routes and
+# deployments on the central cluster. Used by the sovereign-cloud-dashboard to
+# enumerate central cluster service URLs and operator statuses.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: dashboard-central-reader
+rules:
+  - apiGroups: ["route.openshift.io"]
+    resources: ["routes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dashboard-central-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: dashboard-central-reader
+subjects:
+  - kind: ServiceAccount
+    name: dashboard-central-reader
+    namespace: sovereign-cloud
