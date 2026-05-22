@@ -1266,7 +1266,7 @@ entityOperator:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/entity-operator
-      tag: "0.1.0"
+      tag: "0.1.1"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
