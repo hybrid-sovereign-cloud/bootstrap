@@ -1127,7 +1127,7 @@ pluginRbac:
 # ─── Plugin Vault Operator (services cluster) ──────────────────────────────
 pluginVault:
   enabled: true
-  chartVersion: "0.2.12"
+  chartVersion: "0.2.13"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -1157,7 +1157,7 @@ pluginVault:
 # ─── Plugin AAP Operator (services cluster) ───────────────────────────────
 pluginAap:
   enabled: true
-  chartVersion: "0.2.6"
+  chartVersion: "0.2.7"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -1197,7 +1197,7 @@ pluginAap:
 # ─── Plugin Quay Operator (services cluster) ──────────────────────────────
 pluginQuay:
   enabled: true
-  chartVersion: "0.2.8"
+  chartVersion: "0.2.9"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -1279,7 +1279,7 @@ entityOperator:
 # ─── Team Operator (services cluster) ─────────────────────────────────────
 teamOperator:
   enabled: true
-  chartVersion: "0.3.6"
+  chartVersion: "0.3.7"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1331,7 +1331,7 @@ projectOperator:
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
   enabled: true
-  chartVersion: "0.5.6"
+  chartVersion: "0.5.7"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1471,7 +1471,7 @@ helperCloudAWS:
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
   enabled: true
-  chartVersion: "0.5.2"
+  chartVersion: "0.5.3"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1496,7 +1496,7 @@ cloudOSOOperator:
 # ─── CloudAWS Operator (services cluster) ──────────────────────────────────
 cloudAWSOperator:
   enabled: true
-  chartVersion: "0.1.2"
+  chartVersion: "0.1.3"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
