@@ -1318,7 +1318,7 @@ assignmentCentralRbac:
 # ─── Assignment Operator (services cluster) ────────────────────────────────
 assignmentOperator:
   enabled: true
-  chartVersion: "0.5.2"
+  chartVersion: "0.5.3"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
