@@ -1296,7 +1296,7 @@ teamOperator:
 # ─── Assignment Operator (services cluster) ────────────────────────────────
 assignmentOperator:
   enabled: true
-  chartVersion: "0.4.7"
+  chartVersion: "0.4.8"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
@@ -1367,7 +1367,7 @@ platformOpenshiftOperator:
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
   enabled: true
-  chartVersion: "0.6.7"
+  chartVersion: "0.6.8"
   syncWave: "36"
   destinationNamespace: sovereign-cloud-helpers
   values:
@@ -1413,7 +1413,7 @@ helperCloudOSO:
 # Deploys mce-cluster-build Helm chart directly to the hub cluster.
 helperCloudAWS:
   enabled: true
-  chartVersion: "0.5.13"
+  chartVersion: "0.5.14"
   chartRegistry: "quay.signal9.gg"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-helpers
@@ -1471,7 +1471,7 @@ helperCloudAWS:
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
   enabled: true
-  chartVersion: "0.5.3"
+  chartVersion: "0.5.4"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1496,7 +1496,7 @@ cloudOSOOperator:
 # ─── CloudAWS Operator (services cluster) ──────────────────────────────────
 cloudAWSOperator:
   enabled: true
-  chartVersion: "0.1.4"
+  chartVersion: "0.1.5"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
@@ -1553,7 +1553,7 @@ sovereignDashboard:
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
   enabled: true
-  chartVersion: "1.1.1"
+  chartVersion: "1.1.2"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
   values:
