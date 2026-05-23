@@ -1,0 +1,56 @@
+{{- if and (include "sovereign-central.applicationsEnabled" .) .Values.assignmentCentralRbac.enabled }}
+---
+# Deploys assignment-acm-creator SA + Role + RoleBinding + SA token Secret + PushSecret
+# to the CENTRAL cluster in sovereign-cloud-helpers namespace.
+# The PushSecret pushes the SA token to Vault so the Assignment operator on the services
+# cluster can pull it via ExternalSecret and use it to create ACM Policies.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: assignment-central-rbac
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rbac
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.assignmentCentralRbac.syncWave | quote }}
+spec:
+  project: central
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/assignment-central-rbac" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: assignment-central-rbac
+    targetRevision: {{ .Values.assignmentCentralRbac.chartVersion | quote }}
+    helm:
+      releaseName: assignment-central-rbac
+      values: |
+        {{- toYaml .Values.assignmentCentralRbac.values | nindent 8 }}
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.assignmentCentralRbac.destinationNamespace | default "sovereign-cloud-helpers" }}
+
+  ignoreDifferences:
+    - group: ""
+      kind: ServiceAccount
+      jsonPointers:
+        - /imagePullSecrets
+        - /secrets
+    {{- include "sovereign-central.esoIgnoreDifferences" . | nindent 4 }}
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
+{{- end }}

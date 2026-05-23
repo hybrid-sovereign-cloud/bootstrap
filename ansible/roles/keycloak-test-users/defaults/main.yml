@@ -83,3 +83,40 @@ keycloak_test_users:
     password: "AcmeTest123!"
     groups:
       - "acme-corp-infra-admins"
+  # ── Assignment RBAC test users (ocp-ses10 assignment validation) ─────────────
+  - realm: "sovereign-tenants"
+    keycloak_url_key: services
+    username: "test-assignment-admin"
+    email: "test-assignment-admin@example.com"
+    firstName: "Test"
+    lastName: "AssignmentAdmin"
+    password: "AssignmentTest123!"
+    groups:
+      - "acme-corp-assignment-admins"
+  - realm: "sovereign-tenants"
+    keycloak_url_key: services
+    username: "test-assignment-developer"
+    email: "test-assignment-developer@example.com"
+    firstName: "Test"
+    lastName: "AssignmentDeveloper"
+    password: "AssignmentTest123!"
+    groups:
+      - "acme-corp-developers"
+  - realm: "sovereign-tenants"
+    keycloak_url_key: services
+    username: "test-assignment-viewer"
+    email: "test-assignment-viewer@example.com"
+    firstName: "Test"
+    lastName: "AssignmentViewer"
+    password: "AssignmentTest123!"
+    groups:
+      - "acme-corp-platform-viewers"
+  - realm: "sovereign-tenants"
+    keycloak_url_key: services
+    username: "test-assignment-ops"
+    email: "test-assignment-ops@example.com"
+    firstName: "Test"
+    lastName: "AssignmentOps"
+    password: "AssignmentTest123!"
+    groups:
+      - "acme-corp-devops"
