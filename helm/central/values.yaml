@@ -1413,7 +1413,7 @@ helperCloudOSO:
 # Deploys mce-cluster-build Helm chart directly to the hub cluster.
 helperCloudAWS:
   enabled: true
-  chartVersion: "0.5.14"
+  chartVersion: "0.5.15"
   chartRegistry: "quay.signal9.gg"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-helpers
