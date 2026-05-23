@@ -1331,14 +1331,14 @@ projectOperator:
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
   enabled: true
-  chartVersion: "0.5.17"
+  chartVersion: "0.5.18"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/platformopenshift-operator
-      tag: "0.3.11"
+      tag: "0.3.12"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
