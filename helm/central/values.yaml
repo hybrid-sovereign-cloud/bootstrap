@@ -1314,14 +1314,14 @@ assignmentOperator:
 # ─── Project Operator (services cluster) ───────────────────────────────────
 projectOperator:
   enabled: true
-  chartVersion: "0.3.6"
+  chartVersion: "0.3.7"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/project-operator
-      tag: "0.0.2"
+      tag: "0.0.4"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
