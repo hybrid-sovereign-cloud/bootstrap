@@ -1331,7 +1331,7 @@ projectOperator:
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
   enabled: true
-  chartVersion: "0.5.11"
+  chartVersion: "0.5.12"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
