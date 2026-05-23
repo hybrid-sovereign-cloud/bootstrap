@@ -1338,7 +1338,7 @@ platformOpenshiftOperator:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/platformopenshift-operator
-      tag: "0.3.4"
+      tag: "0.3.5"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
