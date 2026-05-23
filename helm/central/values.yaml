@@ -1135,7 +1135,7 @@ pluginVault:
     createNamespace: false
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-vault
-      tag: "0.0.12"
+      tag: "0.0.13"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1165,7 +1165,7 @@ pluginAap:
     createNamespace: false
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-aap
-      tag: "0.0.9"
+      tag: "0.0.10"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1205,7 +1205,7 @@ pluginQuay:
     createNamespace: false
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-quay
-      tag: "0.0.8"
+      tag: "0.0.9"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1286,7 +1286,7 @@ teamOperator:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/team-operator
-      tag: "0.0.2"
+      tag: "0.0.4"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1338,7 +1338,7 @@ platformOpenshiftOperator:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/platformopenshift-operator
-      tag: "0.3.3"
+      tag: "0.3.4"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1478,7 +1478,7 @@ cloudOSOOperator:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/cloudoso-operator
-      tag: "0.3.0"
+      tag: "0.3.1"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1503,7 +1503,7 @@ cloudAWSOperator:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/cloudaws-operator
-      tag: "0.1.0"
+      tag: "0.1.1"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
