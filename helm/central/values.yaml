@@ -1298,7 +1298,7 @@ teamOperator:
 # Must deploy BEFORE assignmentOperator so the ExternalSecret has a Vault path to pull from.
 assignmentCentralRbac:
   enabled: true
-  chartVersion: "0.1.1"
+  chartVersion: "0.1.2"
   syncWave: "38"
   destinationNamespace: sovereign-cloud-helpers
   values:
@@ -1318,7 +1318,7 @@ assignmentCentralRbac:
 # ─── Assignment Operator (services cluster) ────────────────────────────────
 assignmentOperator:
   enabled: true
-  chartVersion: "0.5.5"
+  chartVersion: "0.5.6"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
@@ -1326,7 +1326,7 @@ assignmentOperator:
     centralApiServer: "https://api.shc-central.lab.signal9.gg:6443"
     image:
       repository: quay.signal9.gg/hybrid-sovereign/assignment-operator
-      tag: "0.2.3"
+      tag: "0.2.4"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
