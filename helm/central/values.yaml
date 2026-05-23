@@ -1279,7 +1279,7 @@ entityOperator:
 # ─── Team Operator (services cluster) ─────────────────────────────────────
 teamOperator:
   enabled: true
-  chartVersion: "0.3.8"
+  chartVersion: "0.3.9"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1314,7 +1314,7 @@ assignmentOperator:
 # ─── Project Operator (services cluster) ───────────────────────────────────
 projectOperator:
   enabled: true
-  chartVersion: "0.3.7"
+  chartVersion: "0.3.8"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1331,7 +1331,7 @@ projectOperator:
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
   enabled: true
-  chartVersion: "0.5.7"
+  chartVersion: "0.5.8"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
