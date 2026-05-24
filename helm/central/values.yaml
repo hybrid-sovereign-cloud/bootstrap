@@ -1279,7 +1279,7 @@ entityOperator:
 # ─── Team Operator (services cluster) ─────────────────────────────────────
 teamOperator:
   enabled: true
-  chartVersion: "0.4.0"
+  chartVersion: "0.4.1"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1336,7 +1336,7 @@ assignmentOperator:
 # ─── Project Operator (services cluster) ───────────────────────────────────
 projectOperator:
   enabled: true
-  chartVersion: "0.3.9"
+  chartVersion: "0.4.0"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
