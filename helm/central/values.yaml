@@ -1318,7 +1318,7 @@ assignmentCentralRbac:
 # ─── Assignment Operator (services cluster) ────────────────────────────────
 assignmentOperator:
   enabled: true
-  chartVersion: "0.5.8"
+  chartVersion: "0.5.9"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
@@ -1326,7 +1326,7 @@ assignmentOperator:
     centralApiServer: "https://api.shc-central.lab.signal9.gg:6443"
     image:
       repository: quay.signal9.gg/hybrid-sovereign/assignment-operator
-      tag: "0.2.6"
+      tag: "0.2.7"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
