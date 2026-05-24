@@ -1279,14 +1279,14 @@ entityOperator:
 # ─── Team Operator (services cluster) ─────────────────────────────────────
 teamOperator:
   enabled: true
-  chartVersion: "0.3.9"
+  chartVersion: "0.4.0"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/team-operator
-      tag: "0.0.4"
+      tag: "0.0.5"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1336,14 +1336,14 @@ assignmentOperator:
 # ─── Project Operator (services cluster) ───────────────────────────────────
 projectOperator:
   enabled: true
-  chartVersion: "0.3.8"
+  chartVersion: "0.3.9"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/project-operator
-      tag: "0.0.4"
+      tag: "0.0.5"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1575,7 +1575,7 @@ sovereignDashboard:
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
   enabled: true
-  chartVersion: "1.1.2"
+  chartVersion: "1.1.3"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
   values:
@@ -1583,7 +1583,7 @@ tenancyDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/tenancy-dashboard
-      tag: "3.5.1"
+      tag: "3.5.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
