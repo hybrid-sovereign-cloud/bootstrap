@@ -1336,7 +1336,7 @@ assignmentOperator:
 # ─── Project Operator (services cluster) ───────────────────────────────────
 projectOperator:
   enabled: true
-  chartVersion: "0.4.6"
+  chartVersion: "0.4.7"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
