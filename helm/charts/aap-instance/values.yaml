@@ -16,6 +16,8 @@ controller:
 eda:
   enabled: true
   replicas: 1
+  rbac:
+    enabled: true
 
 hub:
   enabled: false
