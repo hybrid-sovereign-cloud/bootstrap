@@ -337,7 +337,7 @@ aapCentral:
 # ─── Event Forwarder (services cluster) ─────────────────────────────────────
 eventForwarder:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.2.0"
   syncWave: "32"
   image:
     repository: quay.signal9.gg/hybrid-sovereign/event-forwarder
