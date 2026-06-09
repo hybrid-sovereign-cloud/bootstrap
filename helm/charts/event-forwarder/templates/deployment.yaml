@@ -19,6 +19,8 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
+      imagePullSecrets:
+        - name: quay-pull-secret
       containers:
         - name: forwarder
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
