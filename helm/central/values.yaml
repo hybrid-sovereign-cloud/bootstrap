@@ -337,11 +337,11 @@ aapCentral:
 # ─── Event Forwarder (services cluster) ─────────────────────────────────────
 eventForwarder:
   enabled: true
-  chartVersion: "0.3.0"
+  chartVersion: "0.4.0"
   syncWave: "32"
   image:
     repository: quay.signal9.gg/hybrid-sovereign/event-forwarder
-    tag: "0.1.0"
+    tag: "0.2.0"
   eventStreamUrl: "https://sovereign-aap-aap.apps.shc-central.lab.signal9.gg/eda-event-streams/api/eda/v1/external_event_stream/f70a0b74-ab23-4fa9-bcf4-f283bf80082a/post/"
   vaultSecretPath: "central/event-forwarder"
 

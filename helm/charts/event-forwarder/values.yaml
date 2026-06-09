@@ -1,6 +1,6 @@
 image:
   repository: quay.signal9.gg/hybrid-sovereign/event-forwarder
-  tag: "0.1.0"
+  tag: "0.2.0"
   pullPolicy: Always
 
 replicas: 1
