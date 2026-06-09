@@ -15,8 +15,8 @@ spec:
   project: central
 
   source:
-    repoURL: {{ printf "oci://%s/%s/aap" .Values.oci.registry .Values.oci.repositoryBase | quote }}
-    chart: aap
+    repoURL: {{ printf "oci://%s/%s/aap-instance" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: aap-instance
     targetRevision: {{ .Values.aapCentral.chartVersion | quote }}
     helm:
       releaseName: aap-central

@@ -319,21 +319,19 @@ aap:
 # ─── AAP (central cluster — EDA controller) ────────────────────────────────
 aapCentral:
   enabled: true
-  chartVersion: "0.5.2"
+  chartVersion: "0.1.0"
   syncWave: "30"
   destinationNamespace: aap
   values:
     namespace: aap
-    instance:
-      enabled: true
-      name: sovereign-aap
+    name: sovereign-aap
     controller:
       enabled: true
+      replicas: 1
     eda:
       enabled: true
+      replicas: 1
     hub:
-      enabled: false
-    postgres:
       enabled: false
 
 # ─── Event Forwarder (services cluster) ─────────────────────────────────────

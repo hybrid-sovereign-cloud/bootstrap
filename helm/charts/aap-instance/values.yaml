@@ -1,0 +1,14 @@
+namespace: aap
+
+name: sovereign-aap
+
+controller:
+  enabled: true
+  replicas: 1
+
+eda:
+  enabled: true
+  replicas: 1
+
+hub:
+  enabled: false

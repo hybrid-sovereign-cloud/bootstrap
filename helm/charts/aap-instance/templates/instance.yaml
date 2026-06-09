@@ -1,0 +1,25 @@
+---
+apiVersion: aap.ansible.com/v1alpha1
+kind: AnsibleAutomationPlatform
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  api:
+    replicas: 1
+  {{- if .Values.controller.enabled }}
+  controller:
+    replicas: {{ .Values.controller.replicas | default 1 }}
+  {{- end }}
+  {{- if .Values.eda.enabled }}
+  eda:
+    replicas: {{ .Values.eda.replicas | default 1 }}
+  {{- end }}
+  hub:
+    disabled: true
+    replicas: 0
+  no_log: true
+  redis_mode: standalone
+  route_tls_termination_mechanism: Edge
