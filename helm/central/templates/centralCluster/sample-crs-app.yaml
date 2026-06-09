@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sample-crs-test
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: https://gitea-gitea.apps.shc-central.lab.signal9.gg/gitea_admin/sample-crs.git
+    targetRevision: main
+    path: sovereign-cloud
+    directory:
+      recurse: false
+  destination:
+    server: https://api.shcservices.lab.signal9.gg:6443
+    namespace: entity-acme-corp
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
