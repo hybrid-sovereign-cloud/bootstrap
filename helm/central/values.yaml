@@ -319,7 +319,7 @@ aap:
 # ─── AAP (central cluster — EDA controller) ────────────────────────────────
 aapCentral:
   enabled: true
-  chartVersion: "0.5.1"
+  chartVersion: "0.5.2"
   syncWave: "30"
   destinationNamespace: aap
   values:
