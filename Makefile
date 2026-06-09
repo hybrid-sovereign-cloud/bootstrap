@@ -37,6 +37,7 @@ endef
 
 # ─── Import targets from make/ ───────────────────────────────────────────────
 include make/check-env.mk
+include make/check-env-central.mk
 include make/add-docker-repo.mk
 include make/upload-acm-chart.mk
 include make/upload-rhbk-chart.mk
@@ -70,7 +71,10 @@ include make/upload-platformopenshift-operator-chart.mk
 include make/upload-cloudoso-operator-chart.mk
 include make/upload-ocp-base-chart.mk
 include make/ansible-runner.mk
+include make/init-bootstrap-common.mk
 include make/init-central-argo.mk
+include make/init-central-secrets.mk
+include make/init-central-applicationset.mk
 include make/init-services-pull-secrets.mk
 include make/init-services-argocd-sa.mk
 include make/init-services-gitea-secret.mk

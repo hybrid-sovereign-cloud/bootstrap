@@ -1,0 +1,23 @@
+---
+- name: Configure EDA Decision Environments and Rulebook Activations
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    eda_controller_url: "{{ lookup('env', 'EDA_CONTROLLER_URL') }}"
+    eda_admin_token: "{{ lookup('file', '/var/run/secrets/aap-admin/token') }}"
+    eda_organization: "Default"
+    de_registry: "quay.signal9.gg/hybrid-sovereign"
+    de_tag: "0.1.0"
+    event_stream_name: "sovereign-operator-events"
+
+  pre_tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - eda_controller_url | length > 0
+        fail_msg: "EDA_CONTROLLER_URL environment variable is required"
+
+  roles:
+    - eda-config

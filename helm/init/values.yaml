@@ -7,9 +7,17 @@ gitops:
   # Personal / service-account token with read access to the repo
   token: ""
 
-# bootstrapPhase: operator — install GitOps operator only (make init-central-argo phase 1)
-# bootstrapPhase: full    — operator plus secrets, ApplicationSet, and app-of-apps (phase 2)
+# bootstrap layers (cumulative — each make target enables its layer plus prior layers):
+#   make init-central-argo           → bootstrap.operator=true
+#   make init-central-secrets        → bootstrap.operator + bootstrap.secrets
+#   make init-central-applicationset → all three true
 # The openshift-gitops Argo CD instance is created by the GitopsService CR, not this chart.
+bootstrap:
+  operator: false
+  secrets: false
+  applicationset: false
+
+# Deprecated: use bootstrap.* flags above. Kept for backward-compatible helm --set only.
 bootstrapPhase: full
 
 # ─── Red Hat OpenShift GitOps operator + default Argo CD instance ─────────────
@@ -22,6 +30,18 @@ gitopsOperator:
   # Application-controller sync operation timeout (seconds). Syncs exceeding this are terminated.
   cmdParams:
     controller.sync.timeout.seconds: "600"
+  # Per-component CPU/memory overrides for Argo CD workloads. Leave empty for no reservations.
+  # Components: controller, server, repo, applicationSet, dex, redis
+  # Example:
+  #   resourceOverrides:
+  #     controller:
+  #       limits:
+  #         cpu: "2"
+  #         memory: 2Gi
+  #       requests:
+  #         cpu: 250m
+  #         memory: 1Gi
+  resourceOverrides: {}
 
 # Default retry for ApplicationSet-generated apps (per-app retry in helm/central may override).
 argocdSyncPolicy:

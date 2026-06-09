@@ -1,4 +1,4 @@
-{{- if ne .Values.bootstrapPhase "operator" }}
+{{- if include "sovereign-init.bootstrapApplicationSet" . }}
 ---
 # ApplicationSet generates the central app-of-apps only.
 # All Applications (including those targeting the services cluster) live in helm/central.

@@ -1,30 +1,12 @@
-##@ Bootstrap Cluster
+##@ Bootstrap Cluster — Layer 1: Argo CD
 
 .PHONY: init-central-argo
-init-central-argo: check-env init-services-argocd-sa init-services-pull-secrets ## Bootstrap ArgoCD on central cluster: install GitOps operator, ArgoCD, init chart, app-of-apps
-	@echo "$(BOLD)Fetching ArgoCD manager token from services cluster...$(RESET)"
-	@SVC_TOKEN=$$(oc login "$(OCP_SERVICES_SERVER)" \
-	  --username="$(OCP_SERVICES_USERNAME)" \
-	  --password="$(OCP_SERVICES_PASSWORD)" \
-	  --insecure-skip-tls-verify=true >/dev/null 2>&1 && \
-	  for i in $$(seq 1 30); do \
-	    TOKEN=$$(oc get secret argocd-manager-token -n kube-system -o jsonpath='{.data.token}' 2>/dev/null | base64 -d 2>/dev/null); \
-	    [ -n "$$TOKEN" ] && echo "$$TOKEN" && exit 0; \
-	    sleep 2; \
-	  done; \
-	  exit 1) && \
-	$(call ok,ArgoCD manager token retrieved) && \
-	echo "$(BOLD)Logging in to central cluster...$(RESET)" && \
-	oc login "$(OCP_CENTRAL_SERVER)" \
-	  --username="$(OCP_CENTRAL_USERNAME)" \
-	  --password="$(OCP_CENTRAL_PASSWORD)" \
-	  --insecure-skip-tls-verify=true > /dev/null 2>&1 && \
-	if [ -z "$$SVC_TOKEN" ]; then \
-	  printf "  $(RED)✗$(RESET)  argocd-manager token is empty — run: make init-services-argocd-sa\n"; \
-	  exit 1; \
-	fi && \
-	echo "$(BOLD)Phase 1: Installing OpenShift GitOps operator...$(RESET)" && \
-	if [ "$$(oc get namespace openshift-gitops -o jsonpath='{.status.phase}' 2>/dev/null)" = "Terminating" ]; then \
+init-central-argo: check-env-central ## Install OpenShift GitOps operator and wait for Argo CD (no secrets or ApplicationSet)
+	@echo "$(BOLD)Logging in to central cluster...$(RESET)"
+	@$(call sovereign_login_central)
+	$(call ok,Logged in to central cluster)
+	@echo "$(BOLD)Installing OpenShift GitOps operator (bootstrap.operator)...$(RESET)"
+	@if [ "$$(oc get namespace openshift-gitops -o jsonpath='{.status.phase}' 2>/dev/null)" = "Terminating" ]; then \
 	  echo "  Waiting for openshift-gitops namespace to finish terminating..."; \
 	  WAIT=0; \
 	  while oc get namespace openshift-gitops >/dev/null 2>&1; do \
@@ -36,10 +18,19 @@ init-central-argo: check-env init-services-argocd-sa init-services-pull-secrets 
 	    WAIT=$$((WAIT + 5)); \
 	  done; \
 	fi && \
-	oc create namespace openshift-gitops-operator --dry-run=client -o yaml | oc apply -f - > /dev/null && \
+	if oc get namespace openshift-gitops-operator >/dev/null 2>&1; then \
+	  if [ "$$(oc get namespace openshift-gitops-operator -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}' 2>/dev/null)" != "Helm" ]; then \
+	    echo "  Adopting pre-existing openshift-gitops-operator namespace for Helm..."; \
+	    oc label namespace openshift-gitops-operator app.kubernetes.io/managed-by=Helm --overwrite >/dev/null && \
+	    oc annotate namespace openshift-gitops-operator \
+	      meta.helm.sh/release-name=sovereign-init \
+	      meta.helm.sh/release-namespace=openshift-gitops-operator --overwrite >/dev/null; \
+	  fi; \
+	fi && \
 	helm upgrade --install sovereign-init helm/init \
 	  --namespace openshift-gitops-operator \
-	  --set bootstrapPhase=operator \
+	  --create-namespace \
+	  $(SOVEREIGN_INIT_BOOTSTRAP_OPERATOR) \
 	  --wait --timeout=5m && \
 	echo "$(BOLD)Waiting for OpenShift GitOps operator CSV...$(RESET)" && \
 	CSV="" && \
@@ -66,24 +57,13 @@ init-central-argo: check-env init-services-argocd-sa init-services-pull-secrets 
 	echo "$(BOLD)Waiting for Argo CD server...$(RESET)" && \
 	oc wait --for=condition=Available deployment/openshift-gitops-server -n openshift-gitops --timeout=15m && \
 	$(call ok_print,Argo CD server available) && \
-	echo "$(BOLD)Configuring Argo CD sync timeout (10m) and retries...$(RESET)" && \
+	echo "$(BOLD)Configuring Argo CD cmdParams...$(RESET)" && \
 	oc patch argocd openshift-gitops -n openshift-gitops --type=merge \
 	  -p '{"spec":{"cmdParams":{"controller.sync.timeout.seconds":"600"}}}' > /dev/null && \
-	oc rollout status statefulset/openshift-gitops-application-controller -n openshift-gitops --timeout=5m > /dev/null && \
-	$(call ok_print,Argo CD sync timeout set to 600s) && \
-	echo "$(BOLD)Phase 2: Deploying sovereign-init (secrets + ApplicationSet)...$(RESET)" && \
-	helm upgrade --install sovereign-init helm/init \
-	  --namespace openshift-gitops-operator \
-	  --set bootstrapPhase=full \
-	  --set gitops.repoURL="$(GITHUB_URL)" \
-	  --set gitops.token="$(GITHUB_TOKEN)" \
-	  --set clusters.services.server="$(OCP_SERVICES_SERVER)" \
-	  --set clusters.services.bearerToken="$$SVC_TOKEN" \
-	  --set clusters.services.tlsSkipVerify=true \
-	  --set oci.registry="$(OCI_HOST)" \
-	  --set oci.namespace="$(OCI_NAMESPACE)" \
-	  --set oci.robotUsername="$(OCI_ROBOT_USERNAME)" \
-	  --set oci.robotPassword="$(OCI_ROBOT_PASSWORD)" \
-	  --set gitea.adminPassword="$(GITEA_ADMIN_PASSWORD)" \
-	  --wait --timeout=5m
-	$(call ok,sovereign-init deployed — ApplicationSet and app-of-apps triggered)
+	echo "$(BOLD)Removing default Argo CD resource reservations...$(RESET)" && \
+	for component in controller server repo applicationSet dex redis; do \
+	  oc patch argocd openshift-gitops -n openshift-gitops --type=json \
+	    -p "[{\"op\":\"remove\",\"path\":\"/spec/$$component/resources\"}]" 2>/dev/null || true; \
+	done && \
+	oc rollout status statefulset/openshift-gitops-application-controller -n openshift-gitops --timeout=5m > /dev/null
+	$(call ok,Argo CD ready — next: make init-central-secrets)

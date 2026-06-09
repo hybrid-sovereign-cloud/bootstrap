@@ -1,3 +1,9 @@
+# ─── Rebuild baseline (005-phased-env-rebuild) ───────────────────────────────
+# applicationsEnabled MUST stay true so sovereign-central-apps syncs.
+# Every Application-level *.enabled below MUST be false for phased rebuild.
+# Enable one component per commit — see specs/005-phased-env-rebuild/quickstart.md
+# Do NOT change nested chart sub-values (vault HA, keycloak instance, etc.) here.
+
 # ─── ArgoCD namespace ─────────────────────────────────────────────────────────
 argocd:
   namespace: openshift-gitops
@@ -10,9 +16,8 @@ argocd:
         factor: 2
         maxDuration: 10m
 
-# Master switch: when false, the central chart renders no ArgoCD Application (or
-# ApplicationSet) resources — only supporting AppProjects / repo secrets remain.
-# Use false for make init-central-argo until charts are uploaded and enabled individually.
+# Master switch: when false, no Application CRs render at all. For phased rebuild
+# keep true and disable each component's enabled flag individually.
 applicationsEnabled: true
 
 # ─── Services cluster (managed by central ArgoCD) ────────────────────────────
@@ -26,7 +31,7 @@ oci:
 
 # ─── Sovereign Namespaces (central cluster) ──────────────────────────────────
 sovereignNamespaces:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.1"
   syncWave: "1"
   values:
@@ -38,7 +43,7 @@ sovereignNamespaces:
 
 # ─── Sovereign Namespaces (services cluster) ────────────────────────────────
 sovereignNamespacesServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.1"
   syncWave: "1"
   values:
@@ -54,7 +59,7 @@ sovereignNamespacesServices:
 
 # ─── RHBK Central (Keycloak) ─────────────────────────────────────────────────
 rhbk:
-  enabled: true
+  enabled: false
   chartVersion: "0.10.1"
   syncWave: "20"
   destinationNamespace: rhbk
@@ -76,7 +81,7 @@ rhbk:
 
 # ─── RHBK Services (Keycloak) ────────────────────────────────────────────────
 rhbkServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.10.1"
   syncWave: "20"
   destinationNamespace: rhbk
@@ -136,7 +141,7 @@ acsServices:
 
 # ─── Vault Central ───────────────────────────────────────────────────────────
 vault:
-  enabled: true
+  enabled: false
   chartVersion: "0.6.5"
   syncWave: "15"
   values:
@@ -187,7 +192,7 @@ vault:
 
 # ─── Vault Services ─────────────────────────────────────────────────────────
 vaultServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.6.5"
   syncWave: "15"
   values:
@@ -252,7 +257,7 @@ vaultServices:
 
 # ─── Vault Services Init (separate App to avoid StatefulSet health deadlock) ─
 vaultServicesInit:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.3"
   syncWave: "20"
   values:
@@ -271,7 +276,7 @@ vaultServicesInit:
 
 # ─── RHACM ───────────────────────────────────────────────────────────────────
 rhacm:
-  enabled: true
+  enabled: false
   chartVersion: "0.5.0"
   enableMultiClusterHub: true
   destinationNamespace: open-cluster-management
@@ -293,6 +298,26 @@ rhacm:
 
 # ─── AAP (services cluster) ─────────────────────────────────────────────────
 aap:
+  enabled: false
+  chartVersion: "0.5.1"
+  syncWave: "30"
+  destinationNamespace: aap
+  values:
+    namespace: aap
+    instance:
+      enabled: true
+      name: sovereign-aap
+    controller:
+      enabled: true
+    eda:
+      enabled: true
+    hub:
+      enabled: false
+    postgres:
+      enabled: false
+
+# ─── AAP (central cluster — EDA controller) ────────────────────────────────
+aapCentral:
   enabled: true
   chartVersion: "0.5.1"
   syncWave: "30"
@@ -310,6 +335,17 @@ aap:
       enabled: false
     postgres:
       enabled: false
+
+# ─── Event Forwarder (services cluster) ─────────────────────────────────────
+eventForwarder:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "32"
+  image:
+    repository: quay.signal9.gg/hybrid-sovereign/event-forwarder
+    tag: "0.1.0"
+  eventStreamUrl: ""
+  vaultSecretPath: "central/event-forwarder"
 
 # ─── ODF / Noobaa (central) ─────────────────────────────────────────────────
 odf:
@@ -368,7 +404,7 @@ quay:
 
 # ─── Quay (services) ────────────────────────────────────────────────────────
 quayServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.5.4"
   syncWave: "35"
   destinationNamespace: quay-enterprise
@@ -416,7 +452,7 @@ quayServices:
 
 # ─── Gitea (services cluster) ──────────────────────────────────────────────
 gitea:
-  enabled: true
+  enabled: false
   chartVersion: "0.4.3"
   syncWave: "18"
   values:
@@ -524,7 +560,7 @@ gitea:
 # Manages the Gitea instance running on the central cluster itself.
 # This is separate from the services-cluster Gitea (managed by the 'gitea' app above).
 giteaCentral:
-  enabled: true
+  enabled: false
   chartVersion: "0.4.3"
   syncWave: "18"
   values:
@@ -632,7 +668,7 @@ crunchyPostgresServices:
 
 # ─── External Secrets Operator (central) ────────────────────────────────────
 externalSecrets:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.2"
   syncWave: "5"
 
@@ -646,7 +682,7 @@ externalSecrets:
 
 # ─── External Secrets Operator (services) ───────────────────────────────────
 externalSecretsServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.2"
   syncWave: "5"
   values:
@@ -659,7 +695,7 @@ externalSecretsServices:
 
 # ─── Vault Central Namespace (backup copies of init secrets) ─────────────────
 vaultCentralNamespace:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.0"
   syncWave: "27"
   argocdChartsRepo: false
@@ -681,7 +717,7 @@ argocdClusterBuildsRepo:
 
 # ─── Vault ClusterSecretStore (central) — uses k8s auth ─────────────────────
 vaultSecretStore:
-  enabled: true
+  enabled: false
   chartVersion: "0.3.3"
   syncWave: "22"
   values:
@@ -698,7 +734,7 @@ vaultSecretStore:
 # ─── Vault ClusterSecretStore (services → vault-central via external route) ─
 # Uses kubernetes-services auth mount on central vault (k8s auth, no root token)
 vaultSecretStoreServices:
-  enabled: true
+  enabled: false
   chartVersion: "0.3.3"
   syncWave: "22"
   values:
@@ -714,7 +750,7 @@ vaultSecretStoreServices:
 
 # ─── Sovereign Jobs RBAC ────────────────────────────────────────────────────
 sovereignJobsRbac:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.1"
   syncWave: "3"
   values:
@@ -734,7 +770,7 @@ sovereignJobs:
     - name: quay-pull-secret
   jobs:
     vaultInit:
-      enabled: true
+      enabled: false
       playbook: vault-init.yml
       activeDeadlineSeconds: 600
       syncWave: "23"
@@ -742,7 +778,7 @@ sovereignJobs:
         - name: VAULT_ADDR
           value: "http://vault.vault.svc:8200"
     vaultKv:
-      enabled: true
+      enabled: false
       playbook: vault-kv.yml
       activeDeadlineSeconds: 600
       syncWave: "24"
@@ -750,7 +786,7 @@ sovereignJobs:
         - name: VAULT_ADDR
           value: "http://vault.vault.svc:8200"
     deliverVaultToken:
-      enabled: true
+      enabled: false
       playbook: deliver-vault-token.yml
       activeDeadlineSeconds: 300
       syncWave: "25"
@@ -762,7 +798,7 @@ sovereignJobs:
         - name: TARGET_SECRET_NAME
           value: "vault-central-token"
     vaultK8sAuth:
-      enabled: true
+      enabled: false
       playbook: vault-k8s-auth.yml
       activeDeadlineSeconds: 600
       syncWave: "26"
@@ -774,7 +810,7 @@ sovereignJobs:
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
     keycloakRealms:
-      enabled: true
+      enabled: false
       playbook: keycloak-realms.yml
       activeDeadlineSeconds: 600
       syncWave: "26"
@@ -786,7 +822,7 @@ sovereignJobs:
         - name: KEYCLOAK_ADMIN_SECRET_NS
           value: "rhbk"
     keycloakGroups:
-      enabled: true
+      enabled: false
       playbook: keycloak-groups.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
@@ -798,7 +834,7 @@ sovereignJobs:
         - name: KEYCLOAK_ADMIN_SECRET_NS
           value: "rhbk"
     keycloakClients:
-      enabled: true
+      enabled: false
       playbook: keycloak-clients.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
@@ -831,7 +867,7 @@ sovereignJobs:
         - name: SECRETS_NAMESPACE
           value: "sovereign-cloud-jobs"
     keycloakRbac:
-      enabled: true
+      enabled: false
       playbook: keycloak-rbac.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
@@ -839,7 +875,7 @@ sovereignJobs:
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
     keycloakOauth:
-      enabled: true
+      enabled: false
       playbook: keycloak-oauth.yml
       activeDeadlineSeconds: 600
       syncWave: "27"
@@ -923,7 +959,7 @@ sovereignJobs:
         - name: REPO_NAME
           value: "tenancy_repo"
     keycloakServicesRealms:
-      enabled: true
+      enabled: false
       playbook: keycloak-realms.yml
       activeDeadlineSeconds: 600
       syncWave: "28"
@@ -950,7 +986,7 @@ sovereignJobs:
         - name: FORCE_RERUN
           value: "2026-05-22"
     keycloakServicesGroups:
-      enabled: true
+      enabled: false
       playbook: keycloak-groups.yml
       activeDeadlineSeconds: 600
       syncWave: "29"
@@ -968,7 +1004,7 @@ sovereignJobs:
         - name: EXTRA_GROUPS
           value: '[{"name":"acme-corp-platform-engineering-admins"},{"name":"acme-corp-platform-engineering-editors"},{"name":"acme-corp-platform-engineering-viewers"},{"name":"acme-corp-platform-ops-admins"},{"name":"acme-corp-platform-ops-editors"},{"name":"acme-corp-platform-ops-viewers"},{"name":"acme-corp-assignment-admins"},{"name":"acme-corp-developers"},{"name":"acme-corp-platform-viewers"},{"name":"acme-corp-devops"}]'
     keycloakServicesClients:
-      enabled: true
+      enabled: false
       playbook: keycloak-clients.yml
       activeDeadlineSeconds: 600
       syncWave: "30"
@@ -1000,7 +1036,7 @@ sovereignJobs:
         - name: VAULT_SECRET_NAMESPACE
           value: "sovereign-cloud-jobs"
     vaultOidcAuth:
-      enabled: true
+      enabled: false
       playbook: vault-oidc-auth.yml
       activeDeadlineSeconds: 600
       syncWave: "29"
@@ -1025,8 +1061,121 @@ sovereignJobs:
           value: "sovereign-cloud-jobs"
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
+    aapLicenseServices:
+      enabled: false
+      playbook: aap-license.yml
+      activeDeadlineSeconds: 600
+      syncWave: "31"
+      externalSecrets:
+        aapManifest:
+          enabled: true
+          targetSecretName: aap-manifest
+          data:
+            - secretKey: manifest_b64
+              remoteKey: central/aap-manifest
+              property: manifest_b64
+        aapAdmin:
+          enabled: true
+          targetSecretName: aap-admin-credentials
+          data:
+            - secretKey: token
+              remoteKey: central/aap-admin
+              property: token
+      env:
+        - name: AAP_GATEWAY_URL
+          value: "https://sovereign-aap-aap.apps.shcservices.lab.signal9.gg"
+      volumeMounts:
+        - name: aap-manifest
+          mountPath: /var/run/secrets/aap-manifest
+          readOnly: true
+        - name: aap-admin
+          mountPath: /var/run/secrets/aap-admin
+          readOnly: true
+      volumes:
+        - name: aap-manifest
+          secret:
+            secretName: aap-manifest
+        - name: aap-admin
+          secret:
+            secretName: aap-admin-credentials
+    aapLicenseCentral:
+      enabled: false
+      playbook: aap-license.yml
+      activeDeadlineSeconds: 600
+      syncWave: "31"
+      externalSecrets:
+        aapManifestCentral:
+          enabled: true
+          targetSecretName: aap-manifest-central
+          data:
+            - secretKey: manifest_b64
+              remoteKey: central/aap-manifest
+              property: manifest_b64
+        aapAdminCentral:
+          enabled: true
+          targetSecretName: aap-admin-credentials-central
+          data:
+            - secretKey: token
+              remoteKey: central/aap-admin-central
+              property: token
+      env:
+        - name: AAP_GATEWAY_URL
+          value: "https://sovereign-aap-aap.apps.shc-central.lab.signal9.gg"
+      volumeMounts:
+        - name: aap-manifest
+          mountPath: /var/run/secrets/aap-manifest
+          readOnly: true
+        - name: aap-admin
+          mountPath: /var/run/secrets/aap-admin
+          readOnly: true
+      volumes:
+        - name: aap-manifest
+          secret:
+            secretName: aap-manifest-central
+        - name: aap-admin
+          secret:
+            secretName: aap-admin-credentials-central
+    edaConfig:
+      enabled: false
+      playbook: eda-config.yml
+      activeDeadlineSeconds: 900
+      syncWave: "32"
+      externalSecrets:
+        aapAdminEda:
+          enabled: true
+          targetSecretName: eda-admin-credentials
+          data:
+            - secretKey: token
+              remoteKey: central/aap-admin
+              property: token
+        eventStreamToken:
+          enabled: true
+          targetSecretName: event-stream-token
+          data:
+            - secretKey: token
+              remoteKey: central/event-forwarder
+              property: token
+      env:
+        - name: EDA_CONTROLLER_URL
+          value: "https://sovereign-aap-eda-aap.apps.shc-central.lab.signal9.gg"
+        - name: RULEBOOK_REPO_URL
+          value: "https://gitea-gitea.apps.shc-central.lab.signal9.gg/sovereign/eda-rulebooks.git"
+      volumeMounts:
+        - name: aap-admin
+          mountPath: /var/run/secrets/aap-admin
+          readOnly: true
+        - name: event-stream
+          mountPath: /var/run/secrets/event-stream
+          readOnly: true
+      volumes:
+        - name: aap-admin
+          secret:
+            secretName: eda-admin-credentials
+        - name: event-stream
+          secret:
+            secretName: event-stream-token
     keycloakTestUsers:
-      enabled: true
+      enabled: false
       playbook: keycloak-test-users.yml
       activeDeadlineSeconds: 300
       syncWave: "32"
@@ -1079,7 +1228,7 @@ sovereignJobs:
     # Runs after all operators are deployed (wave 45) so their CRDs exist.
     # Disables broken chart-default samples that have incorrect field names.
     operatorSamples:
-      enabled: true
+      enabled: false
       playbook: operator-samples.yml
       activeDeadlineSeconds: 900
       syncWave: "45"
@@ -1089,7 +1238,7 @@ sovereignJobs:
 
 # ─── Plugin RBAC Operator (services cluster) ────────────────────────────────
 pluginRbac:
-  enabled: true
+  enabled: false
   chartVersion: "0.4.7"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -1126,7 +1275,7 @@ pluginRbac:
 
 # ─── Plugin Vault Operator (services cluster) ──────────────────────────────
 pluginVault:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.13"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -1156,7 +1305,7 @@ pluginVault:
 
 # ─── Plugin AAP Operator (services cluster) ───────────────────────────────
 pluginAap:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.7"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -1196,7 +1345,7 @@ pluginAap:
 
 # ─── Plugin Quay Operator (services cluster) ──────────────────────────────
 pluginQuay:
-  enabled: true
+  enabled: false
   chartVersion: "0.2.9"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
@@ -1234,7 +1383,7 @@ pluginQuay:
 
 # ─── Plugin IaaC Operator (services cluster) ────────────────────────────────
 pluginIaac:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.7"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-plugins
@@ -1258,7 +1407,7 @@ pluginIaac:
 
 # ─── Entity Operator (services cluster) ─────────────────────────────────────
 entityOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.7.4"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1278,7 +1427,7 @@ entityOperator:
 
 # ─── Team Operator (services cluster) ─────────────────────────────────────
 teamOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.4.8"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1297,7 +1446,7 @@ teamOperator:
 # Creates the assignment-acm-creator SA + least-privilege Role + PushSecret on central.
 # Must deploy BEFORE assignmentOperator so the ExternalSecret has a Vault path to pull from.
 assignmentCentralRbac:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.2"
   syncWave: "38"
   destinationNamespace: sovereign-cloud-helpers
@@ -1317,7 +1466,7 @@ assignmentCentralRbac:
 
 # ─── Assignment Operator (services cluster) ────────────────────────────────
 assignmentOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.5.10"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
@@ -1335,7 +1484,7 @@ assignmentOperator:
 
 # ─── Project Operator (services cluster) ───────────────────────────────────
 projectOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.4.7"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1352,7 +1501,7 @@ projectOperator:
 
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.5.21"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1388,7 +1537,7 @@ platformOpenshiftOperator:
 
 # ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
 helperCloudOSO:
-  enabled: true
+  enabled: false
   chartVersion: "0.6.9"
   syncWave: "36"
   destinationNamespace: sovereign-cloud-helpers
@@ -1434,7 +1583,7 @@ helperCloudOSO:
 # Provisions OCP clusters in AWS via AWSHelper CRs → MCE/Hive ClusterDeployments
 # Deploys mce-cluster-build Helm chart directly to the hub cluster.
 helperCloudAWS:
-  enabled: true
+  enabled: false
   chartVersion: "0.5.16"
   chartRegistry: "quay.signal9.gg"
   syncWave: "40"
@@ -1492,7 +1641,7 @@ helperCloudAWS:
 
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.5.4"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1517,7 +1666,7 @@ cloudOSOOperator:
 
 # ─── CloudAWS Operator (services cluster) ──────────────────────────────────
 cloudAWSOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.5"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
@@ -1542,7 +1691,7 @@ cloudAWSOperator:
 
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
-  enabled: true
+  enabled: false
   chartVersion: "0.9.9"
   syncWave: "40"
   destinationNamespace: sovereign-cloud
@@ -1574,7 +1723,7 @@ sovereignDashboard:
 
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
-  enabled: true
+  enabled: false
   chartVersion: "1.1.3"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
@@ -1615,7 +1764,7 @@ clusterBuilds:
 
 # ─── ACM Policy: install ExternalSecrets on provisioned clusters ──────────────
 acmPolicies:
-  enabled: true
+  enabled: false
   syncWave: "55"
   namespace: openshift-gitops
   externalSecrets:
@@ -1638,7 +1787,7 @@ acmPolicies:
 # Targets clusters labeled basechart:true by helper_CloudOSO / helper_CloudAWS.
 # Installs External Secrets Operator and OpenShift GitOps Operator via OLM.
 acmBasechart:
-  enabled: true
+  enabled: false
   syncWave: "56"
   namespace: openshift-gitops
   externalSecrets:

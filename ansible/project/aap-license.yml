@@ -1,0 +1,19 @@
+---
+- name: Install AAP subscription license
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    aap_gateway_url: "{{ lookup('env', 'AAP_GATEWAY_URL') }}"
+    aap_admin_token: "{{ lookup('file', '/var/run/secrets/aap-admin/token') }}"
+
+  pre_tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - aap_gateway_url | length > 0
+        fail_msg: "AAP_GATEWAY_URL environment variable is required"
+
+  roles:
+    - aap-license

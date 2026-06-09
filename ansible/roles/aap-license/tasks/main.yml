@@ -1,0 +1,57 @@
+---
+- name: Read AAP manifest from mounted secret
+  ansible.builtin.set_fact:
+    aap_manifest_b64: "{{ lookup('file', '/var/run/secrets/aap-manifest/manifest_b64') }}"
+  no_log: true
+
+- name: Decode manifest to temp file
+  ansible.builtin.copy:
+    content: "{{ aap_manifest_b64 | b64decode }}"
+    dest: /tmp/aap_manifest.zip
+    mode: "0600"
+  no_log: true
+
+- name: Wait for AAP Gateway to be reachable
+  ansible.builtin.uri:
+    url: "{{ aap_gateway_url }}/api/gateway/v1/ping/"
+    method: GET
+    validate_certs: false
+    status_code: [200]
+  register: aap_ping
+  retries: 30
+  delay: 10
+  until: aap_ping.status | default(0) == 200
+
+- name: Apply AAP subscription manifest
+  ansible.controller.license:
+    controller_host: "{{ aap_gateway_url }}"
+    controller_oauthtoken: "{{ aap_admin_token }}"
+    validate_certs: false
+    manifest: /tmp/aap_manifest.zip
+    force: false
+  no_log: true
+  register: license_result
+
+- name: Verify license is active
+  ansible.builtin.uri:
+    url: "{{ aap_gateway_url }}/api/controller/v2/config/"
+    method: GET
+    validate_certs: false
+    headers:
+      Authorization: "Bearer {{ aap_admin_token }}"
+    status_code: [200]
+  register: aap_config
+  no_log: true
+
+- name: Confirm license type
+  ansible.builtin.assert:
+    that:
+      - aap_config.json.license_info.license_type != "open"
+    fail_msg: "AAP license not applied — still showing open/trial license"
+    success_msg: "AAP license active: {{ aap_config.json.license_info.license_type }}"
+
+- name: Clean up temp manifest file
+  ansible.builtin.file:
+    path: /tmp/aap_manifest.zip
+    state: absent
+  no_log: true

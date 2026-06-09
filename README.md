@@ -65,7 +65,7 @@ Each OpenShift cluster must have the following installed **before** running the 
 | **OpenShift 4.x** | Both `central` and `services` clusters |
 | **ArgoCD (OpenShift GitOps)** | Installed by `make init-central-argo` (init chart phase 1) |
 
-> OpenShift GitOps / Argo CD on central is installed by the init chart. Everything after `make init-central-argo` is ArgoCD-driven.
+> OpenShift GitOps / Argo CD on central is installed by `make init-central-argo`. Secrets and ApplicationSet follow via `make init-central-secrets` and `make init-central-applicationset`. Everything after the ApplicationSet is ArgoCD-driven.
 
 ### 3. Quay Robot Account
 
@@ -80,6 +80,7 @@ The OCI robot account (`hybrid-sovereign+pull`) has **read-only** access on all 
 | Target | Description |
 |---|---|
 | `make check-env` | Verify all required env vars + test OCP and OCI logins |
+| `make check-env-central` | Verify central cluster env vars + login only (layer 1 bootstrap) |
 | `make add-docker-repo` | Trust `IMAGE_REGISTRY` on both clusters (create pull secret) |
 
 ### Build Artifacts
@@ -95,7 +96,11 @@ The OCI robot account (`hybrid-sovereign+pull`) has **read-only** access on all 
 
 | Target | Description |
 |---|---|
-| `make init-central-argo` | Deploy `helm/init`, trigger ApplicationSet for both clusters |
+| `make init-central-argo` | Layer 1: Install OpenShift GitOps operator and wait for Argo CD (`check-env-central` only) |
+| `make init-central-secrets` | Layer 2: Seed bootstrap secrets (repo, cluster, OCI, pull, Gitea) |
+| `make init-central-applicationset` | Layer 3: Install ApplicationSet (central app-of-apps) |
+
+> Run in order: `init-central-argo` → `init-central-secrets` → `init-central-applicationset`. Each layer is cumulative in the `sovereign-init` Helm release (`bootstrap.operator`, `bootstrap.secrets`, `bootstrap.applicationset`).
 
 ---
 
@@ -112,8 +117,10 @@ make upload-sovereign-namespaces-chart  ← push namespace chart to OCI
 make upload-rhbk-chart      ← push Keycloak chart to OCI
 make ansible-runner         ← build and push ansible-runner image
 
-# 3. Bootstrap cluster
-make init-central-argo      ← deploy init chart → ArgoCD takes over
+# 3. Bootstrap cluster (three layers — run in order)
+make init-central-argo           ← GitOps operator + Argo CD
+make init-central-secrets        ← bootstrap secrets
+make init-central-applicationset ← ApplicationSet → ArgoCD takes over
 ```
 
 ---
@@ -130,7 +137,10 @@ bootstrap/
 │   ├── upload-sovereign-namespaces-chart.mk
 │   ├── upload-rhbk-chart.mk
 │   ├── ansible-runner.mk
+│   ├── init-bootstrap-common.mk
 │   ├── init-central-argo.mk
+│   ├── init-central-secrets.mk
+│   ├── init-central-applicationset.mk
 │   └── help.mk
 ├── helm/
 │   ├── charts/

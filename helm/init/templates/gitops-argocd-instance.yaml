@@ -1,0 +1,26 @@
+{{- if and .Values.gitopsOperator.enabled (include "sovereign-init.bootstrapSecrets" .) }}
+# Declarative Argo CD instance tuning (cmdParams + optional per-component resource overrides).
+# Default resource stripping runs via configure-argocd-instance.sh during bootstrap.
+apiVersion: argoproj.io/v1beta1
+kind: ArgoCD
+metadata:
+  name: {{ .Values.gitopsOperator.argocdInstanceName }}
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-init.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.gitopsOperator.cmdParams }}
+  cmdParams:
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+  {{- $overrides := .Values.gitopsOperator.resourceOverrides | default dict }}
+  {{- range $component := list "controller" "server" "repo" "applicationSet" "dex" "redis" }}
+  {{- with index $overrides $component }}
+  {{ $component }}:
+    resources:
+      {{- toYaml . | nindent 6 }}
+  {{- end }}
+  {{- end }}
+{{- end }}

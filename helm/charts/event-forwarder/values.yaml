@@ -1,0 +1,24 @@
+image:
+  repository: quay.signal9.gg/hybrid-sovereign/event-forwarder
+  tag: "0.1.0"
+  pullPolicy: Always
+
+replicas: 1
+
+eventStream:
+  url: ""
+  tokenSecretName: event-forwarder-token
+  tokenSecretKey: token
+
+vaultSecretPath: "central/event-forwarder"
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+serviceAccount:
+  name: event-forwarder
