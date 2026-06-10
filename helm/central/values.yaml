@@ -359,7 +359,7 @@ odf:
 
 # ─── ODF / Noobaa (services) ────────────────────────────────────────────────
 odfServices:
-  enabled: false
+  enabled: true
   chartVersion: "0.5.0"
   syncWave: "12"
   destinationNamespace: openshift-storage
