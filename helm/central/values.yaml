@@ -337,7 +337,7 @@ aapCentral:
 # ─── SDX Operator (services cluster) ──────────────────────────────────────
 pluginSdx:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.1.1"
   syncWave: "33"
   image:
     repository: quay.signal9.gg/hybrid-sovereign/plugin-sdx
