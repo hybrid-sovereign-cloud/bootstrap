@@ -81,6 +81,7 @@ include make/init-services-gitea-secret.mk
 include make/init-central-gitea-secret.mk
 include make/install-rbac-samples.mk
 include make/help.mk
+include make/eda-sync.mk
 
 ##@ Convenience
 

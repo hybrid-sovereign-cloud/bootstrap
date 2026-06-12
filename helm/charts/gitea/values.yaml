@@ -106,3 +106,11 @@ pullSecretExternalSecret:
   secretStoreKind: ClusterSecretStore
   vaultPath: oci-credentials
   refreshInterval: "1h"
+
+crunchy:
+  enabled: false
+  name: gitea-pgcluster
+  namespace: gitea
+  instances: 2
+  storage: 10Gi
+  backupStorage: 10Gi

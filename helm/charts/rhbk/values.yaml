@@ -27,6 +27,12 @@ keycloak:
     passwordSecret:
       name: keycloak-db-secret
       key: password
+    crunchy:
+      enabled: false
+      name: rhbk-pgcluster
+      instances: 2
+      storage: 10Gi
+      backupStorage: 10Gi
   tls:
     enabled: false
     secretName: keycloak-tls-secret

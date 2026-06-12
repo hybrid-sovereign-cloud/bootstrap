@@ -1,0 +1,38 @@
+{{- if and .Values.keycloak.enabled .Values.keycloak.db.enabled .Values.keycloak.db.crunchy.enabled }}
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: {{ .Values.keycloak.db.crunchy.name | default "rhbk-pgcluster" }}
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  postgresVersion: 16
+  instances:
+    - name: pgha
+      replicas: {{ .Values.keycloak.db.crunchy.instances | default 2 }}
+      dataVolumeClaimSpec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.keycloak.db.crunchy.storage | default "10Gi" }}
+  backups:
+    pgbackrest:
+      repos:
+        - name: repo1
+          volume:
+            volumeClaimSpec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: {{ .Values.keycloak.db.crunchy.backupStorage | default "10Gi" }}
+  users:
+    - name: keycloak
+      databases:
+        - keycloak
+      options: "SUPERUSER"
+{{- end }}

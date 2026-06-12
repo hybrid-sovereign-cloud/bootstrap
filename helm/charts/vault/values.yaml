@@ -1,3 +1,5 @@
+namespace: vault
+
 pushSecretToVault: false
 
 # ─── OCI pull secret via ExternalSecret (for services cluster vault namespace) ─

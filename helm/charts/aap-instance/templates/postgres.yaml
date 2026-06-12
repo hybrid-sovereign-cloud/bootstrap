@@ -1,0 +1,38 @@
+{{- if .Values.postgres.enabled }}
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: {{ .Values.postgres.name | default "aap-pgcluster" }}
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  postgresVersion: 16
+  instances:
+    - name: pgha
+      replicas: {{ .Values.postgres.instances | default 2 }}
+      dataVolumeClaimSpec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.postgres.storage | default "10Gi" }}
+  backups:
+    pgbackrest:
+      repos:
+        - name: repo1
+          volume:
+            volumeClaimSpec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: {{ .Values.postgres.backupStorage | default "10Gi" }}
+  users:
+    - name: aap
+      databases:
+        - aap
+      options: "SUPERUSER"
+{{- end }}

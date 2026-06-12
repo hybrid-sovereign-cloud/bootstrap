@@ -24,7 +24,7 @@ spec:
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: vault
+    namespace: {{ .Values.vault.destinationNamespace | default "vault" }}
 
   ignoreDifferences:
     - group: route.openshift.io

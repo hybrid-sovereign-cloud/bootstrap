@@ -25,7 +25,7 @@ spec:
 
   destination:
     server: {{ .Values.servicesCluster.server | quote }}
-    namespace: vault
+    namespace: {{ .Values.vaultServices.destinationNamespace | default "vault" }}
 
   ignoreDifferences:
     - group: route.openshift.io

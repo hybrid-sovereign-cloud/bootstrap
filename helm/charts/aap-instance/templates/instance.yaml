@@ -12,6 +12,19 @@ spec:
   {{- if .Values.controller.enabled }}
   controller:
     replicas: {{ .Values.controller.replicas | default 1 }}
+    {{- if .Values.postgres.enabled }}
+    database:
+      host: {{ printf "%s-primary.%s.svc" (.Values.postgres.name | default "aap-pgcluster") .Values.namespace }}
+      port: 5432
+      name: aap
+      sslmode: prefer
+      username_secret:
+        name: {{ printf "%s-pguser-aap" (.Values.postgres.name | default "aap-pgcluster") }}
+        key: user
+      password_secret:
+        name: {{ printf "%s-pguser-aap" (.Values.postgres.name | default "aap-pgcluster") }}
+        key: password
+    {{- end }}
   {{- end }}
   {{- if .Values.eda.enabled }}
   eda:

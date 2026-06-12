@@ -21,3 +21,10 @@ eda:
 
 hub:
   enabled: false
+
+postgres:
+  enabled: false
+  name: aap-pgcluster
+  instances: 2
+  storage: 10Gi
+  backupStorage: 10Gi

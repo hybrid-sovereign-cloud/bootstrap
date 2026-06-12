@@ -36,3 +36,10 @@ registry:
 
 objectStorage:
   bucketName: "quay-datastorage"
+
+crunchy:
+  enabled: false
+  name: quay-pgcluster
+  instances: 2
+  storage: 20Gi
+  backupStorage: 20Gi
