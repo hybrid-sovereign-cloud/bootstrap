@@ -1435,14 +1435,14 @@ entityOperator:
 # ─── Persona Operator (services cluster) ──────────────────────────────────
 personaOperator:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.1.2"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/persona-operator
-      tag: "0.1.0"
+      tag: "v0.1.0"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1724,7 +1724,7 @@ sovereignDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/sovereign-cloud-dashboard
-      tag: "1.2.8"
+      tag: "1.3.0"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
