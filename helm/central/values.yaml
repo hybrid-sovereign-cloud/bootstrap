@@ -1166,7 +1166,7 @@ sovereignJobs:
         - name: EDA_CONTROLLER_URL
           value: "https://sovereign-aap-eda-aap.apps.shc-central.lab.signal9.gg"
         - name: RULEBOOK_REPO_URL
-          value: "https://gitea-gitea.apps.shc-central.lab.signal9.gg/sovereign/eda-rulebooks.git"
+          value: "https://github.com/hybrid-sovereign-cloud/eda.git"
       volumeMounts:
         - name: aap-admin
           mountPath: /var/run/secrets/aap-admin
@@ -1246,7 +1246,7 @@ sovereignJobs:
 # ─── Plugin RBAC Operator (services cluster) ────────────────────────────────
 pluginRbac:
   enabled: false
-  chartVersion: "0.4.7"
+  chartVersion: "0.4.8"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -1283,7 +1283,7 @@ pluginRbac:
 # ─── Plugin Vault Operator (services cluster) ──────────────────────────────
 pluginVault:
   enabled: false
-  chartVersion: "0.2.13"
+  chartVersion: "0.2.14"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -1313,7 +1313,7 @@ pluginVault:
 # ─── Plugin AAP Operator (services cluster) ───────────────────────────────
 pluginAap:
   enabled: false
-  chartVersion: "0.2.7"
+  chartVersion: "0.2.8"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -1353,7 +1353,7 @@ pluginAap:
 # ─── Plugin Quay Operator (services cluster) ──────────────────────────────
 pluginQuay:
   enabled: false
-  chartVersion: "0.2.9"
+  chartVersion: "0.2.10"
   syncWave: "39"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -1391,7 +1391,7 @@ pluginQuay:
 # ─── Plugin IaaC Operator (services cluster) ────────────────────────────────
 pluginIaac:
   enabled: false
-  chartVersion: "0.1.7"
+  chartVersion: "0.1.9"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -1415,7 +1415,7 @@ pluginIaac:
 # ─── Entity Operator (services cluster) ─────────────────────────────────────
 entityOperator:
   enabled: false
-  chartVersion: "0.7.4"
+  chartVersion: "0.7.5"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1435,7 +1435,7 @@ entityOperator:
 # ─── Persona Operator (services cluster) ──────────────────────────────────
 personaOperator:
   enabled: true
-  chartVersion: "0.1.2"
+  chartVersion: "0.1.6"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1452,7 +1452,7 @@ personaOperator:
 # ─── Team Operator (services cluster) ─────────────────────────────────────
 teamOperator:
   enabled: false
-  chartVersion: "0.4.8"
+  chartVersion: "0.4.9"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1491,7 +1491,7 @@ assignmentCentralRbac:
 # ─── Assignment Operator (services cluster) ────────────────────────────────
 assignmentOperator:
   enabled: false
-  chartVersion: "0.5.10"
+  chartVersion: "0.5.11"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
@@ -1509,7 +1509,7 @@ assignmentOperator:
 # ─── Project Operator (services cluster) ───────────────────────────────────
 projectOperator:
   enabled: false
-  chartVersion: "0.4.7"
+  chartVersion: "0.4.8"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1526,7 +1526,7 @@ projectOperator:
 # ─── PlatformOpenshift Operator (services cluster) ─────────────────────────
 platformOpenshiftOperator:
   enabled: false
-  chartVersion: "0.5.21"
+  chartVersion: "0.5.22"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1666,7 +1666,7 @@ helperCloudAWS:
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
   enabled: false
-  chartVersion: "0.5.4"
+  chartVersion: "0.5.5"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -1691,7 +1691,7 @@ cloudOSOOperator:
 # ─── CloudAWS Operator (services cluster) ──────────────────────────────────
 cloudAWSOperator:
   enabled: false
-  chartVersion: "0.1.5"
+  chartVersion: "0.1.6"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
@@ -1724,7 +1724,7 @@ sovereignDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/sovereign-cloud-dashboard
-      tag: "1.3.0"
+      tag: "1.6.0"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1756,7 +1756,7 @@ tenancyDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/tenancy-dashboard
-      tag: "3.5.2"
+      tag: "3.8.0"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret

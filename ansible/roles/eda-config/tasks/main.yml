@@ -32,6 +32,16 @@
         rulebooks:
           - { name: "cloudoso-create", file: "cloudoso-create.yml" }
           - { name: "cloudoso-delete", file: "cloudoso-delete.yml" }
+      - name: cloudaws
+        de_image: "{{ de_registry }}/de-cloudaws:{{ de_tag }}"
+        rulebooks:
+          - { name: "cloudaws-create", file: "cloudaws-create.yml" }
+          - { name: "cloudaws-delete", file: "cloudaws-delete.yml" }
+      - name: persona
+        de_image: "{{ de_registry }}/de-persona:{{ de_tag }}"
+        rulebooks:
+          - { name: "persona-create", file: "persona-create.yml" }
+          - { name: "persona-delete", file: "persona-delete.yml" }
       - name: plugin-rbac
         de_image: "{{ de_registry }}/de-plugin-rbac:{{ de_tag }}"
         rulebooks:
