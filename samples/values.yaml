@@ -67,6 +67,19 @@ samples:
   iaac:
     iaac:
       enabled: true
+  persona:
+    persona_assignment_admin:
+      enabled: true
+    persona_auditor:
+      enabled: true
+    persona_cloud_viewer:
+      enabled: true
+    persona_entity_admin:
+      enabled: true
+    persona_identity_admin:
+      enabled: true
+    persona_platform_admin:
+      enabled: true
   platformopenshift:
     ocp_prod:
       enabled: true
