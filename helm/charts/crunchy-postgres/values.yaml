@@ -1,9 +1,9 @@
 namePrefix: ""
 
-operator:
-  channel: v5
-  installPlanApproval: Automatic
-  source: certified-operators
-  sourceNamespace: openshift-marketplace
+namespace: postgres-operator
 
-namespace: openshift-operators
+# Values forwarded to the upstream pgo subchart.
+# Override images here if you are mirroring to a private registry.
+pgo:
+  controllerImages:
+    cluster: registry.developers.crunchydata.com/crunchydata/postgres-operator:ubi9-5.8.7-0

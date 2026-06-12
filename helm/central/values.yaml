@@ -731,21 +731,21 @@ giteaCentral:
 # ─── Crunchy Postgres (central) ─────────────────────────────────────────────
 crunchyPostgres:
   enabled: true
-  chartVersion: "0.4.0"
+  chartVersion: "0.5.0"
   syncWave: "11"
-  destinationNamespace: openshift-operators
+  destinationNamespace: postgres-operator
   values:
-    namespace: openshift-operators
+    namespace: postgres-operator
 
 # ─── Crunchy Postgres (services) ────────────────────────────────────────────
 crunchyPostgresServices:
   enabled: true
-  chartVersion: "0.4.0"
+  chartVersion: "0.5.0"
   syncWave: "11"
-  destinationNamespace: openshift-operators
+  destinationNamespace: postgres-operator
   values:
     namePrefix: "svc-"
-    namespace: openshift-operators
+    namespace: postgres-operator
 
 # ─── External Secrets Operator (central) ────────────────────────────────────
 externalSecrets:

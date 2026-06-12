@@ -15,6 +15,7 @@ upload-crunchy-postgres-chart: check-env ## Package and push Crunchy Postgres fo
 	  --username='$$oauthtoken' --password-stdin > /dev/null 2>&1
 	$(call ok,Logged in to $(OCI_HOST))
 	@echo "$(BOLD)Packaging and pushing Crunchy Postgres for Kubernetes chart...$(RESET)"
+	@helm dep update helm/charts/crunchy-postgres > /dev/null
 	@helm package helm/charts/crunchy-postgres -d /tmp/helm-pkg --version $$(grep '^version:' helm/charts/crunchy-postgres/Chart.yaml | awk '{print $$2}') > /dev/null
 	@helm push /tmp/helm-pkg/crunchy-postgres-$$(grep '^version:' helm/charts/crunchy-postgres/Chart.yaml | awk '{print $$2}').tgz oci://$(OCI_HOST)/$(OCI_NAMESPACE)
-	$(call ok,Crunchy Postgres for Kubernetes chart pushed to oci://$(OCI_HOST)/$(OCI_NAMESPACE)/crunchy-postgres)
+	@printf "  $(GREEN)✓$(RESET)  Crunchy Postgres chart pushed to oci://$(OCI_HOST)/$(OCI_NAMESPACE)/crunchy-postgres\n"
