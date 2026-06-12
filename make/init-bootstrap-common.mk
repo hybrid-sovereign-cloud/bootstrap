@@ -18,8 +18,12 @@ SOVEREIGN_INIT_HELM_SECRETS_SETS := \
   --set oci.robotPassword="$(OCI_ROBOT_PASSWORD)" \
   --set gitea.adminPassword="$(GITEA_ADMIN_PASSWORD)"
 
+# The ApplicationSet repoURL must point to the bootstrap repository (not the monorepo GITHUB_URL).
+# Derive it automatically from the current git remote; fall back to GITHUB_URL if detection fails.
+BOOTSTRAP_REPO_URL := $(shell git -C "$(CURDIR)" remote get-url origin 2>/dev/null | sed 's|git@github.com:|https://github.com/|')
+
 SOVEREIGN_INIT_HELM_APPSET_SETS := \
-  --set gitops.repoURL="$(GITHUB_URL)" \
+  --set gitops.repoURL="$(BOOTSTRAP_REPO_URL)" \
   --set gitops.token="$(GITHUB_TOKEN)"
 
 define sovereign_login_central

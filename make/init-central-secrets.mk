@@ -1,7 +1,7 @@
-##@ Bootstrap Cluster — Layer 3: ApplicationSet
+##@ Bootstrap Cluster — Layer 2: Secrets
 
-.PHONY: init-central-applicationset
-init-central-applicationset: check-env init-services-argocd-sa ## Install ApplicationSet (central app-of-apps) — requires init-central-argo and init-central-secrets first
+.PHONY: init-central-secrets
+init-central-secrets: check-env init-services-argocd-sa ## Seed bootstrap secrets (repo, cluster, OCI, pull, Gitea) via sovereign-init chart
 	@echo "$(BOLD)Fetching ArgoCD manager token from services cluster...$(RESET)"
 	@SVC_TOKEN=$$(oc login "$(OCP_SERVICES_SERVER)" \
 	  --username="$(OCP_SERVICES_USERNAME)" \
@@ -28,12 +28,11 @@ init-central-applicationset: check-env init-services-argocd-sa ## Install Applic
 	      meta.helm.sh/release-namespace=openshift-gitops-operator --overwrite >/dev/null; \
 	  fi; \
 	fi && \
-	echo "$(BOLD)Deploying ApplicationSet (all bootstrap layers)...$(RESET)" && \
+	echo "$(BOLD)Deploying bootstrap secrets (bootstrap.operator + bootstrap.secrets)...$(RESET)" && \
 	helm upgrade --install sovereign-init helm/init \
 	  --namespace openshift-gitops-operator \
 	  --create-namespace \
-	  $(SOVEREIGN_INIT_BOOTSTRAP_APPSET) \
+	  $(SOVEREIGN_INIT_BOOTSTRAP_SECRETS) \
 	  $(SOVEREIGN_INIT_HELM_SECRETS_SETS) \
-	  $(SOVEREIGN_INIT_HELM_APPSET_SETS) \
-	  --wait --timeout=5m
-	@printf "  $(GREEN)✓$(RESET)  ApplicationSet deployed — sovereign-central-apps will sync from Git\n"
+	  --wait --timeout=5m && \
+	printf "  $(GREEN)✓$(RESET)  Bootstrap secrets deployed — next: make init-central-applicationset\n"
