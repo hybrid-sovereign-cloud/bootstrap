@@ -1432,6 +1432,23 @@ entityOperator:
       # the operator-samples Ansible job with the correct field name.
       enabled: false
 
+# ─── Persona Operator (services cluster) ──────────────────────────────────
+personaOperator:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "38"
+  destinationNamespace: sovereign-cloud
+  values:
+    namespace: sovereign-cloud
+    image:
+      repository: quay.signal9.gg/hybrid-sovereign/persona-operator
+      tag: "0.1.0"
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: quay-pull-secret
+    samples:
+      enabled: false
+
 # ─── Team Operator (services cluster) ─────────────────────────────────────
 teamOperator:
   enabled: false
