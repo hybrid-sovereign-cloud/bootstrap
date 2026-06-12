@@ -334,6 +334,15 @@ aapCentral:
     hub:
       enabled: false
 
+# ─── SDX Operator (services cluster) ──────────────────────────────────────
+pluginSdx:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "33"
+  image:
+    repository: quay.signal9.gg/hybrid-sovereign/plugin-sdx
+    tag: "0.1.0"
+
 # ─── Event Forwarder (services cluster) ─────────────────────────────────────
 eventForwarder:
   enabled: true
