@@ -1,0 +1,13 @@
+{{- if .Values.samples.vault.vaultkv_globex.enabled }}
+apiVersion: hybridsovereign.redhat/v1alpha1
+kind: VaultKV
+metadata:
+  name: globex-secrets
+  namespace: entity-globex
+spec:
+  vault: globex-vault
+  vaultAdminRbac:
+    - platform-admins
+  vaultReaderRbac:
+    - developers
+{{- end }}

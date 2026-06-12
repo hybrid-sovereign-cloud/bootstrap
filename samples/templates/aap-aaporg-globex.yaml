@@ -1,0 +1,13 @@
+{{- if .Values.samples.aap.aaporg_globex.enabled }}
+apiVersion: hybridsovereign.redhat/v1alpha1
+kind: AAPOrg
+metadata:
+  name: globex-automation
+  namespace: entity-globex
+spec:
+  aapConfig: aap-sovereign-services
+  aapAdminRbac:
+    - globex-platform-admins
+  aapJobExecutorRbac:
+    - globex-developers
+{{- end }}

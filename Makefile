@@ -120,3 +120,9 @@ UPLOAD_TARGETS := \
 .PHONY: upload-all-charts
 upload-all-charts: $(UPLOAD_TARGETS) ## Upload ALL Helm charts to OCI registry
 	$(call ok,All charts uploaded)
+
+.PHONY: deploy-samples
+deploy-samples: ## Render and apply all enabled sample CRs to the services cluster
+	@echo "Rendering samples chart..."
+	helm template sovereign-samples samples/ | oc apply --context=services-admin -f - 2>&1
+	$(call ok,Samples deployed)
