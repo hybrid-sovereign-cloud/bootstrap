@@ -51,6 +51,9 @@ vault:
     image:
       repository: quay.signal9.gg/hybrid-sovereign/vault
       tag: "1.21.2"
+    readinessProbe:
+      enabled: true
+      path: "/v1/sys/health?standbyok=true&sealedok=true&uninitok=true"
   ui:
     enabled: true
   injector:
