@@ -1211,6 +1211,10 @@ sovereignJobs:
       env:
         - name: VAULT_ADDR
           value: "http://vault-active.central-vault.svc:8200"
+        - name: VAULT_SECRET_NAMESPACE
+          value: "central-vault"
+        - name: VAULT_SECRET_NAME
+          value: "vault-init-secrets"
         - name: VAULT_SERVICES_ADDR
           value: "https://vault-services.apps.shcservices.lab.signal9.gg"
         # External HTTPS URL — Vault needs this to match the issuer in OIDC discovery doc.
