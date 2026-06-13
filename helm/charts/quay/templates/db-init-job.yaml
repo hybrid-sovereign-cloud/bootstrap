@@ -83,8 +83,7 @@ spec:
               fi
 
               echo "Injecting DB_URI into configBundle..."
-              NEW_CONFIG="${CURRENT_CONFIG}
-DB_URI: ${DB_URI}"
+              NEW_CONFIG=$(printf '%s\nDB_URI: %s' "$CURRENT_CONFIG" "$DB_URI")
               NEW_CONFIG_B64=$(echo "$NEW_CONFIG" | base64 -w0)
 
               oc patch secret "$BUNDLE_SECRET" -n "$NS" \
