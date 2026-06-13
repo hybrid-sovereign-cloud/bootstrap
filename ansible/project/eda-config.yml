@@ -45,5 +45,18 @@
         event_stream_token: "{{ event_stream_secret_raw.resources[0].data.token | b64decode }}"
       no_log: true
 
+    - name: Read GitHub token from ArgoCD repo secret
+      kubernetes.core.k8s_info:
+        kind: Secret
+        namespace: openshift-gitops
+        name: sovereign-bootstrap-repo
+      register: github_secret_raw
+      no_log: true
+
+    - name: Set GitHub token fact
+      ansible.builtin.set_fact:
+        github_token: "{{ github_secret_raw.resources[0].data.password | b64decode }}"
+      no_log: true
+
   roles:
     - eda-config

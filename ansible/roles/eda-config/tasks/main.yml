@@ -117,6 +117,46 @@
     state: present
   no_log: true
 
+- name: Create EDA Source Control credential for GitHub
+  ansible.eda.credential:
+    controller_host: "{{ eda_controller_url }}"
+    controller_username: "{{ eda_admin_username }}"
+    controller_password: "{{ eda_admin_password }}"
+    validate_certs: false
+    name: "sovereign-github-token"
+    credential_type_name: "GitHub Personal Access Token"
+    organization_name: "{{ eda_organization }}"
+    inputs:
+      token: "{{ github_token }}"
+    state: present
+  no_log: true
+
+- name: Delete existing EDA project if in failed import state
+  ansible.builtin.uri:
+    url: "{{ eda_controller_url }}/api/eda/v1/projects/?name=sovereign-eda-rulebooks"
+    method: GET
+    validate_certs: false
+    url_username: "{{ eda_admin_username }}"
+    url_password: "{{ eda_admin_password }}"
+    force_basic_auth: true
+    status_code: [200]
+  register: existing_project
+  no_log: false
+
+- name: Remove failed project to allow recreation with credentials
+  ansible.builtin.uri:
+    url: "{{ eda_controller_url }}/api/eda/v1/projects/{{ existing_project.json.results[0].id }}/"
+    method: DELETE
+    validate_certs: false
+    url_username: "{{ eda_admin_username }}"
+    url_password: "{{ eda_admin_password }}"
+    force_basic_auth: true
+    status_code: [204]
+  when:
+    - existing_project.json.results | length > 0
+    - existing_project.json.results[0].import_state in ['failed', 'pending']
+  no_log: false
+
 - name: Create EDA Project for sovereign rulebooks
   ansible.eda.project:
     controller_host: "{{ eda_controller_url }}"
@@ -125,9 +165,25 @@
     validate_certs: false
     name: "sovereign-eda-rulebooks"
     url: "{{ lookup('env', 'RULEBOOK_REPO_URL') }}"
+    credential: "sovereign-github-token"
     organization_name: "{{ eda_organization }}"
     state: present
   no_log: true
+
+- name: Wait for EDA project to be imported (up to 5 min)
+  ansible.builtin.uri:
+    url: "{{ eda_controller_url }}/api/eda/v1/projects/?name=sovereign-eda-rulebooks"
+    method: GET
+    validate_certs: false
+    url_username: "{{ eda_admin_username }}"
+    url_password: "{{ eda_admin_password }}"
+    force_basic_auth: true
+    status_code: [200]
+  register: project_status
+  retries: 30
+  delay: 10
+  until: project_status.json.results[0].import_state == 'completed'
+  no_log: false
 
 - name: Create Rulebook Activations
   ansible.eda.rulebook_activation:
@@ -147,3 +203,4 @@
   loop: "{{ eda_operators | subelements('rulebooks') }}"
   loop_control:
     label: "{{ item.1.name }}-activation"
+  no_log: true
