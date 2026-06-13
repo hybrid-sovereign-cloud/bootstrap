@@ -147,4 +147,3 @@
   loop: "{{ eda_operators | subelements('rulebooks') }}"
   loop_control:
     label: "{{ item.1.name }}-activation"
-  no_log: true
