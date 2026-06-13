@@ -408,6 +408,19 @@ pluginSdx:
   image:
     repository: quay.signal9.gg/hybrid-sovereign/plugin-sdx
     tag: "v0.1.1"
+  values:
+    gitea:
+      url: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
+      repoOwner: gitea_admin
+      repoName: tenancy_repo
+      secretName: gitea-admin-token
+      secretNamespace: sovereign-cloud-plugins
+      tokenSecretKey: admin_token
+      externalSecret:
+        enabled: true
+        secretStoreName: vault-backend
+        secretStoreKind: ClusterSecretStore
+        vaultPath: gitea-admin
 
 # ─── Event Forwarder (services cluster) ─────────────────────────────────────
 eventForwarder:
