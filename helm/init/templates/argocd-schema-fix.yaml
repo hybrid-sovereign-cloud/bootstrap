@@ -116,6 +116,7 @@ data:
 
     def refresh_loop():
         global SHIMS
+        time.sleep(90)  # Let old pod terminate and API aggregation cache refresh
         while True:
             try:
                 s = load_shims()
@@ -124,7 +125,7 @@ data:
                 print(f'Schema shims refreshed: {len(s)} definitions', flush=True)
             except Exception as e:
                 print(f'Shim refresh failed: {e}', flush=True)
-            time.sleep(3600)
+            time.sleep(120)  # Re-check every 2 minutes
 
     class Handler(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
