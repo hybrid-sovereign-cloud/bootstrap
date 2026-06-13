@@ -861,7 +861,7 @@ sovereignJobsRbac:
 
 # ─── Sovereign Jobs (individual Ansible job Applications) ────────────────────
 sovereignJobs:
-  chartVersion: "0.1.6"
+  chartVersion: "0.1.7"
   namespace: sovereign-cloud-jobs
   serviceAccount: sovereign-ansible-runner
   image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
