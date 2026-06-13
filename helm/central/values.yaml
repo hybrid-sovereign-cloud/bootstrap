@@ -32,7 +32,7 @@ oci:
 # ─── Sovereign Namespaces (central cluster) ──────────────────────────────────
 sovereignNamespaces:
   enabled: true
-  chartVersion: "0.2.3"
+  chartVersion: "0.2.4"
   syncWave: "1"
   values:
     namespaces:
@@ -40,19 +40,13 @@ sovereignNamespaces:
         enabled: true
       - name: sovereign-cloud-helpers
         enabled: true
-      - name: central-vault
-        enabled: true
-      - name: central-rhbk
-        enabled: true
-      - name: central-quay
-        enabled: true
-      - name: aap
-        enabled: true
+      # central-vault, central-rhbk, central-quay, and aap are created by their
+      # respective charts. Do NOT add them here to avoid ArgoCD ownership conflicts.
 
 # ─── Sovereign Namespaces (services cluster) ────────────────────────────────
 sovereignNamespacesServices:
   enabled: true
-  chartVersion: "0.2.3"
+  chartVersion: "0.2.4"
   syncWave: "1"
   values:
     ociPullSecret:
@@ -69,15 +63,13 @@ sovereignNamespacesServices:
         enabled: true
       - name: sovereign-cloud-plugins
         enabled: true
-      - name: services-vault
-        enabled: true
-        pullSecret: false  # vault-services chart manages its own pull secret
       - name: services-rhbk
         enabled: true
       - name: services-quay
         enabled: true
-      - name: aap
-        enabled: true
+      # aap and services-vault namespaces are created by their respective charts
+      # (aap/templates/operator.yaml and vault/templates/namespace.yaml).
+      # Do NOT add them here to avoid ArgoCD ownership conflicts.
 
 # ─── RHBK Central (Keycloak) ─────────────────────────────────────────────────
 rhbk:
@@ -314,7 +306,7 @@ vaultServices:
 # ─── Vault Services Init (separate App to avoid StatefulSet health deadlock) ─
 vaultServicesInit:
   enabled: true
-  chartVersion: "0.2.3"
+  chartVersion: "0.2.4"
   syncWave: "20"
   values:
     namespace: services-vault
@@ -855,7 +847,7 @@ vaultSecretStoreServices:
 # ─── Sovereign Jobs RBAC ────────────────────────────────────────────────────
 sovereignJobsRbac:
   enabled: true
-  chartVersion: "0.1.2"
+  chartVersion: "0.1.3"
   syncWave: "3"
   values:
     namespace: sovereign-cloud-jobs

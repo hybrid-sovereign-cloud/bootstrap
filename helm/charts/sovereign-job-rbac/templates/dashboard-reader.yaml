@@ -49,31 +49,86 @@ subjects:
     name: dashboard-central-reader
     namespace: sovereign-cloud-helpers
 ---
-# Push SA token to central Vault so the services-cluster dashboard can pull it
-apiVersion: external-secrets.io/v1alpha1
-kind: PushSecret
+# RBAC: allow the job SA to read the dashboard-central-reader-token secret
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
 metadata:
-  name: dashboard-central-reader-push
+  name: dashboard-reader-token-reader
   namespace: sovereign-cloud-helpers
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
-    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    argocd.argoproj.io/sync-wave: "2"
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["dashboard-central-reader-token"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dashboard-reader-token-reader
+  namespace: sovereign-cloud-helpers
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: dashboard-reader-token-reader
+subjects:
+  - kind: ServiceAccount
+    name: sovereign-ansible-runner
+    namespace: sovereign-cloud-helpers
+---
+# Job to push the SA token to central Vault
+# ESO PushSecret cannot manage kubernetes.io/service-account-token typed secrets,
+# so this Job reads the token and writes it to Vault via the Vault HTTP API.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vault-push-dashboard-reader
+  namespace: sovereign-cloud-helpers
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
-  refreshInterval: 1h
-  secretStoreRefs:
-    - name: vault-backend
-      kind: ClusterSecretStore
-  selector:
-    secret:
-      name: dashboard-central-reader-token
-  data:
-    - match:
-        secretKey: token
-        remoteRef:
-          remoteKey: dashboard-central-reader
-          property: token
-    - match:
-        secretKey: ca.crt
-        remoteRef:
-          remoteKey: dashboard-central-reader
-          property: ca_crt
+  backoffLimit: 4
+  activeDeadlineSeconds: 300
+  template:
+    spec:
+      serviceAccountName: sovereign-ansible-runner
+      restartPolicy: OnFailure
+      containers:
+        - name: vault-push
+          image: registry.redhat.io/ansible-automation-platform/ee-supported-rhel9:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              SA_TOKEN=$(cat /var/run/secrets/sa-token/token)
+              CA_CRT=$(base64 -w0 /var/run/secrets/sa-token/ca.crt)
+              API_SERVER=$(cat /var/run/secrets/kubernetes.io/serviceaccount/apiserver-url 2>/dev/null || \
+                           echo "https://kubernetes.default.svc")
+              # Vault login via kubernetes auth
+              VAULT_ADDR=http://vault.central-vault.svc.cluster.local:8200
+              KUBE_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+              VAULT_TOKEN=$(curl -sf $VAULT_ADDR/v1/auth/kubernetes-central/login \
+                -d "{\"jwt\":\"$KUBE_TOKEN\",\"role\":\"sovereign-ansible-runner\"}" | \
+                python3 -c "import sys,json; print(json.load(sys.stdin)['auth']['client_token'])")
+              # Write to Vault
+              curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
+                -X POST "$VAULT_ADDR/v1/central/data/dashboard-central-reader" \
+                -d "{\"data\":{\"token\":\"$SA_TOKEN\",\"ca_crt\":\"$CA_CRT\",\"api_server\":\"$API_SERVER\"}}"
+              echo "dashboard-central-reader secret pushed to Vault"
+          env:
+            - name: HOME
+              value: /tmp
+          volumeMounts:
+            - name: sa-token
+              mountPath: /var/run/secrets/sa-token
+              readOnly: true
+      volumes:
+        - name: sa-token
+          secret:
+            secretName: dashboard-central-reader-token
