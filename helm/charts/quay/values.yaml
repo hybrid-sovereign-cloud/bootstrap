@@ -43,3 +43,6 @@ crunchy:
   instances: 2
   storage: 20Gi
   backupStorage: 20Gi
+
+dbInitJob:
+  image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"

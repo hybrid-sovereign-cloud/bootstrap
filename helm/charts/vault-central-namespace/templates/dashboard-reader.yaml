@@ -1,0 +1,134 @@
+{{- if .Values.dashboardCentralReader.enabled }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dashboard-central-reader
+  namespace: {{ .Values.dashboardCentralReader.namespace | default "sovereign-cloud-jobs" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: dashboard-central-reader
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+rules:
+  - apiGroups: ["hybridsovereign.redhat.com"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["helper.hybridsovereign.redhat.com"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["namespaces", "events"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dashboard-central-reader
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: dashboard-central-reader
+subjects:
+  - kind: ServiceAccount
+    name: dashboard-central-reader
+    namespace: {{ .Values.dashboardCentralReader.namespace | default "sovereign-cloud-jobs" }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dashboard-central-reader-token
+  namespace: {{ .Values.dashboardCentralReader.namespace | default "sovereign-cloud-jobs" }}
+  annotations:
+    kubernetes.io/service-account.name: dashboard-central-reader
+    argocd.argoproj.io/sync-wave: "6"
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: dashboard-central-reader-push
+  namespace: {{ .Values.dashboardCentralReader.namespace | default "sovereign-cloud-jobs" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dashboard-central-reader-push
+  namespace: {{ .Values.dashboardCentralReader.namespace | default "sovereign-cloud-jobs" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: dashboard-central-reader-push
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.dashboardCentralReader.jobServiceAccount | default "sovereign-ansible-runner" }}
+    namespace: {{ .Values.dashboardCentralReader.namespace | default "sovereign-cloud-jobs" }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: push-dashboard-central-reader
+  namespace: {{ .Values.dashboardCentralReader.namespace | default "sovereign-cloud-jobs" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "7"
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 5
+  activeDeadlineSeconds: 120
+  template:
+    spec:
+      serviceAccountName: {{ .Values.dashboardCentralReader.jobServiceAccount | default "sovereign-ansible-runner" }}
+      restartPolicy: OnFailure
+      {{- if .Values.dashboardCentralReader.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.dashboardCentralReader.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: push-token
+          image: {{ .Values.dashboardCentralReader.image | default "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest" }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+              NS="{{ .Values.dashboardCentralReader.namespace | default "sovereign-cloud-jobs" }}"
+              VAULT_ADDR="{{ .Values.dashboardCentralReader.vaultAddr | default "http://vault-active.central-vault.svc:8200" }}"
+              VAULT_PATH="{{ .Values.dashboardCentralReader.vaultPath | default "central/data/dashboard-central-reader" }}"
+              API_SERVER="{{ .Values.dashboardCentralReader.apiServer }}"
+
+              echo "Reading vault root token..."
+              VAULT_TOKEN=$(oc get secret vault-init-secrets -n central-vault -o jsonpath='{.data.root_token}' | base64 -d)
+
+              echo "Reading dashboard-central-reader-token..."
+              SA_TOKEN=$(oc get secret dashboard-central-reader-token -n "$NS" -o jsonpath='{.data.token}' | base64 -d)
+              CA_CRT=$(oc get secret dashboard-central-reader-token -n "$NS" -o jsonpath='{.data.ca\.crt}')
+
+              if [ -z "$SA_TOKEN" ]; then
+                echo "ERROR: SA token not yet available"
+                exit 1
+              fi
+
+              echo "Pushing to Vault at $VAULT_PATH..."
+              HTTP=$(curl -sk -o /dev/null -w "%{http_code}" \
+                -X POST "$VAULT_ADDR/v1/$VAULT_PATH" \
+                -H "X-Vault-Token: $VAULT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{\"data\":{\"token\":\"$SA_TOKEN\",\"ca_crt\":\"$CA_CRT\",\"api_server\":\"$API_SERVER\"}}")
+              echo "Vault write HTTP: $HTTP"
+              [[ "$HTTP" =~ ^2 ]] && echo "Dashboard reader credentials pushed to Vault" || exit 1
+{{- end }}

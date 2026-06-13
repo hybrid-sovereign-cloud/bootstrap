@@ -75,6 +75,7 @@ include make/upload-ocp-base-chart.mk
 include make/upload-assignment-central-rbac-chart.mk
 include make/upload-sovereign-assignment-chart.mk
 include make/aap-load-manifest.mk
+include make/aap-store-admin.mk
 include make/upload-oso-creds.mk
 include make/upload-aws-creds.mk
 include make/ansible-runner.mk

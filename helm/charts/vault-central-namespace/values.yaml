@@ -23,7 +23,7 @@ vaultInitSecretsCopy:
   enabled: true
   targetSecretName: vault-init-secrets-copy
   refreshInterval: "1h"
-  vaultPath: "central/data/vault-init"
+  vaultPath: "vault-init"
   keys:
     - secretKey: root_token
       property: root_token
@@ -37,7 +37,7 @@ vaultServicesInitSecretsCopy:
   enabled: true
   targetSecretName: vault-services-init-secrets-copy
   refreshInterval: "1h"
-  vaultPath: "central/data/vault-services-init"
+  vaultPath: "vault-services-init"
   keys:
     - secretKey: root_token
       property: root_token
@@ -45,3 +45,15 @@ vaultServicesInitSecretsCopy:
       property: unseal_keys
     - secretKey: unseal_keys_base64
       property: unseal_keys_base64
+
+# Dashboard Central Reader: SA + token + push to Vault
+dashboardCentralReader:
+  enabled: false
+  namespace: sovereign-cloud-jobs
+  jobServiceAccount: sovereign-ansible-runner
+  image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
+  imagePullSecrets:
+    - name: quay-pull-secret
+  vaultAddr: "http://vault-active.central-vault.svc:8200"
+  vaultPath: "central/data/dashboard-central-reader"
+  apiServer: ""

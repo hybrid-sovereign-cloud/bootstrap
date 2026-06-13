@@ -457,7 +457,7 @@ odfServices:
 # ─── Quay (central) ─────────────────────────────────────────────────────────
 quay:
   enabled: true
-  chartVersion: "0.5.3"
+  chartVersion: "0.5.4"
   syncWave: "35"
   destinationNamespace: central-quay
   values:
@@ -502,7 +502,7 @@ quay:
 # ─── Quay (services) ────────────────────────────────────────────────────────
 quayServices:
   enabled: true
-  chartVersion: "0.5.3"
+  chartVersion: "0.5.4"
   syncWave: "35"
   destinationNamespace: services-quay
   values:
@@ -809,7 +809,7 @@ externalSecretsServices:
 # ─── Vault Central Namespace (backup copies of init secrets) ─────────────────
 vaultCentralNamespace:
   enabled: true
-  chartVersion: "0.1.3"
+  chartVersion: "0.1.4"
   syncWave: "27"
   argocdChartsRepo: false
   values:
@@ -824,6 +824,16 @@ vaultCentralNamespace:
     # Services vault init PushSecret disabled: services-vault namespace is on services cluster
     vaultServicesInitPushSecret:
       enabled: false
+    dashboardCentralReader:
+      enabled: true
+      namespace: sovereign-cloud-jobs
+      jobServiceAccount: sovereign-ansible-runner
+      image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
+      imagePullSecrets:
+        - name: quay-pull-secret
+      vaultAddr: "http://vault-active.central-vault.svc:8200"
+      vaultPath: "central/data/dashboard-central-reader"
+      apiServer: "https://api.shc-central.lab.signal9.gg:6443"
 
 # ─── ArgoCD Repo Secret: cluster_builds (Gitea → Vault → ESO) ────────────────
 argocdClusterBuildsRepo:
@@ -1209,14 +1219,14 @@ sovereignJobs:
           targetSecretName: aap-manifest
           data:
             - secretKey: manifest_b64
-              remoteKey: central/aap-manifest
+              remoteKey: aap-manifest
               property: manifest_b64
         aapAdmin:
           enabled: true
           targetSecretName: aap-admin-credentials
           data:
             - secretKey: token
-              remoteKey: central/aap-admin
+              remoteKey: aap-admin
               property: token
       env:
         - name: AAP_GATEWAY_URL
@@ -1246,14 +1256,14 @@ sovereignJobs:
           targetSecretName: aap-manifest-central
           data:
             - secretKey: manifest_b64
-              remoteKey: central/aap-manifest
+              remoteKey: aap-manifest
               property: manifest_b64
         aapAdminCentral:
           enabled: true
           targetSecretName: aap-admin-credentials-central
           data:
             - secretKey: token
-              remoteKey: central/aap-admin-central
+              remoteKey: aap-admin-central
               property: token
       env:
         - name: AAP_GATEWAY_URL
@@ -1283,27 +1293,27 @@ sovereignJobs:
           targetSecretName: eda-admin-credentials
           data:
             - secretKey: token
-              remoteKey: central/aap-admin
+              remoteKey: aap-admin
               property: token
         eventStreamToken:
           enabled: true
           targetSecretName: event-stream-token
           data:
             - secretKey: token
-              remoteKey: central/event-forwarder
+              remoteKey: event-forwarder
               property: token
         ociCredentials:
           enabled: true
           targetSecretName: eda-oci-credentials
           data:
             - secretKey: username
-              remoteKey: central/oci-credentials
+              remoteKey: oci-credentials
               property: username
             - secretKey: password
-              remoteKey: central/oci-credentials
+              remoteKey: oci-credentials
               property: password
             - secretKey: registry
-              remoteKey: central/oci-credentials
+              remoteKey: oci-credentials
               property: registry
       env:
         - name: EDA_CONTROLLER_URL

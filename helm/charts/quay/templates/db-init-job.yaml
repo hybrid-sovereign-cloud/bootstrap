@@ -1,0 +1,94 @@
+{{- if and .Values.crunchy.enabled (not .Values.registry.components.postgres.managed) }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: quay-db-init
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: quay-db-init
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: quay-db-init
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: quay-db-init
+subjects:
+  - kind: ServiceAccount
+    name: quay-db-init
+    namespace: {{ .Values.namespace }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: quay-db-init
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 5
+  activeDeadlineSeconds: 120
+  template:
+    spec:
+      serviceAccountName: quay-db-init
+      restartPolicy: OnFailure
+      imagePullSecrets:
+        - name: quay-pull-secret
+      containers:
+        - name: db-init
+          image: {{ .Values.dbInitJob.image | default "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest" }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+              NS="{{ .Values.namespace }}"
+              CRUNCHY_SECRET="{{ .Values.crunchy.name }}-pguser-quay"
+              BUNDLE_SECRET="{{ .Values.registry.configBundleSecretName | default (printf "%s-config-bundle" .Values.registry.name) }}"
+
+              echo "Reading Crunchy postgres URI..."
+              DB_URI=$(oc get secret "$CRUNCHY_SECRET" -n "$NS" -o jsonpath='{.data.uri}' | base64 -d)
+              if [ -z "$DB_URI" ]; then
+                echo "ERROR: Could not read DB URI from $CRUNCHY_SECRET"
+                exit 1
+              fi
+
+              echo "Reading current configBundle..."
+              CURRENT_CONFIG=$(oc get secret "$BUNDLE_SECRET" -n "$NS" -o jsonpath='{.data.config\.yaml}' | base64 -d)
+
+              # Only add DB_URI if not already present
+              if echo "$CURRENT_CONFIG" | grep -q "^DB_URI:"; then
+                echo "DB_URI already present in configBundle, skipping"
+                exit 0
+              fi
+
+              echo "Injecting DB_URI into configBundle..."
+              NEW_CONFIG="${CURRENT_CONFIG}
+DB_URI: ${DB_URI}"
+              NEW_CONFIG_B64=$(echo "$NEW_CONFIG" | base64 -w0)
+
+              oc patch secret "$BUNDLE_SECRET" -n "$NS" \
+                --type=merge \
+                -p "{\"data\":{\"config.yaml\":\"${NEW_CONFIG_B64}\"}}"
+              echo "configBundle updated with DB_URI"
+{{- end }}
