@@ -1,6 +1,6 @@
 ---
 vault_secret_name: "vault-init-secrets"
-vault_secret_namespace: "vault"
+vault_secret_namespace: "{{ lookup('env', 'VAULT_NAMESPACE') | default('vault', true) }}"
 target_secret_name: "vault-central-token"
-target_namespace: "vault"
+target_namespace: "{{ lookup('env', 'TARGET_NAMESPACE') | default('vault', true) }}"
 services_server: "{{ lookup('env', 'OCP_SERVICES_SERVER') }}"

@@ -888,6 +888,8 @@ sovereignJobs:
           value: "services-vault"
         - name: TARGET_SECRET_NAME
           value: "vault-central-token"
+        - name: VAULT_NAMESPACE
+          value: "central-vault"
     vaultK8sAuth:
       enabled: true
       playbook: vault-k8s-auth.yml
@@ -900,6 +902,8 @@ sovereignJobs:
           value: "https://vault-services.apps.shcservices.lab.signal9.gg"
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
+        - name: VAULT_SECRET_NAMESPACE
+          value: "central-vault"
     keycloakRealms:
       enabled: true
       playbook: keycloak-realms.yml
