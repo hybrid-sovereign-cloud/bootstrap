@@ -457,7 +457,7 @@ odfServices:
 # ─── Quay (central) ─────────────────────────────────────────────────────────
 quay:
   enabled: true
-  chartVersion: "0.5.7"
+  chartVersion: "0.5.8"
   syncWave: "35"
   destinationNamespace: central-quay
   values:
@@ -499,8 +499,13 @@ quay:
                 cpu: "250m"
                 memory: "1Gi"
               limits:
-                cpu: "1"
-                memory: "4Gi"
+                cpu: "2"
+                memory: "8Gi"
+        horizontalpodautoscaler:
+          managed: true
+          overrides:
+            minReplicas: 2
+            maxReplicas: 3
     crunchy:
       enabled: true
       name: quay-pgcluster
@@ -511,7 +516,7 @@ quay:
 # ─── Quay (services) ────────────────────────────────────────────────────────
 quayServices:
   enabled: true
-  chartVersion: "0.5.7"
+  chartVersion: "0.5.8"
   syncWave: "35"
   destinationNamespace: services-quay
   values:
