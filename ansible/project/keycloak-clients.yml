@@ -46,21 +46,35 @@
       ansible.builtin.set_fact:
         keycloak_clients: "{{ clients_json if clients_json is not string else (clients_json | from_json) }}"
 
+    - name: Retrieve Vault root token from secret
+      kubernetes.core.k8s_info:
+        kind: Secret
+        name: "vault-init-secrets"
+        namespace: "{{ lookup('env', 'VAULT_NAMESPACE') | default('central-vault', true) }}"
+      register: vault_secret
+      retries: 10
+      delay: 10
+      until: vault_secret.resources | length > 0
+
+    - name: Set vault root token
+      ansible.builtin.set_fact:
+        vault_root_token: "{{ (vault_secret.resources[0].data.root_token | b64decode) }}"
+        vault_addr: "{{ lookup('env', 'VAULT_ADDR') | default('http://vault.central-vault.svc:8200', true) }}"
+
   roles:
     - keycloak-clients
 
   post_tasks:
-    - name: Store client secrets as K8s secret for PushSecret pickup
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: Secret
-          metadata:
-            name: keycloak-client-secrets
-            namespace: "{{ lookup('env', 'SECRETS_NAMESPACE') | default('sovereign-jobs', true) }}"
-            labels:
-              sovereign.io/push-to-vault: "true"
-          type: Opaque
-          stringData: "{{ keycloak_client_secrets }}"
-      when: keycloak_client_secrets is defined and keycloak_client_secrets | length > 0
+    - name: Write client secrets directly to Vault
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/central/data/keycloak-clients"
+        method: POST
+        validate_certs: false
+        headers:
+          X-Vault-Token: "{{ vault_root_token }}"
+        body_format: json
+        body:
+          data: "{{ keycloak_client_secrets }}"
+        status_code: [200, 204]
+      when: keycloak_client_secrets is defined and keycloak_client_secrets | length > 0 and vault_root_token is defined
+      no_log: true

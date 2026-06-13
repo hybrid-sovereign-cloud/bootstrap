@@ -11,6 +11,8 @@ job:
   playbook: ""
   activeDeadlineSeconds: 600
   env: []
+  volumeMounts: []
+  volumes: []
 
 externalSecrets: {}
 pushSecrets: {}

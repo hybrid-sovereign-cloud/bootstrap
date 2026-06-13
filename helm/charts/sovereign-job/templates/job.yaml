@@ -39,3 +39,11 @@ spec:
           env:
             {{- toYaml .Values.job.env | nindent 12 }}
           {{- end }}
+          {{- if .Values.job.volumeMounts }}
+          volumeMounts:
+            {{- toYaml .Values.job.volumeMounts | nindent 12 }}
+          {{- end }}
+      {{- if .Values.job.volumes }}
+      volumes:
+        {{- toYaml .Values.job.volumes | nindent 8 }}
+      {{- end }}
