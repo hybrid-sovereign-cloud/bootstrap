@@ -37,6 +37,14 @@ spec:
           env:
             {{- toYaml $job.env | nindent 12 }}
           {{- end }}
+          {{- if $job.volumeMounts }}
+          volumeMounts:
+            {{- toYaml $job.volumeMounts | nindent 12 }}
+          {{- end }}
+          {{- if $job.volumes }}
+          volumes:
+            {{- toYaml $job.volumes | nindent 12 }}
+          {{- end }}
         {{- if $job.externalSecrets }}
         externalSecrets:
           {{- toYaml $job.externalSecrets | nindent 10 }}
