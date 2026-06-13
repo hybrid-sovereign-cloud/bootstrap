@@ -39,12 +39,6 @@ spec:
       {{- end }}
     - kind: horizontalpodautoscaler
       managed: {{ .Values.registry.components.horizontalpodautoscaler.managed | default true }}
-      {{- if .Values.registry.components.horizontalpodautoscaler }}
-      {{- with .Values.registry.components.horizontalpodautoscaler.overrides }}
-      overrides:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- end }}
     - kind: clairpostgres
       managed: {{ .Values.registry.components.clairpostgres.managed | default true }}
 {{- end }}
