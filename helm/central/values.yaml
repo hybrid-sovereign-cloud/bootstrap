@@ -782,7 +782,7 @@ crunchyPostgresServices:
 # ─── External Secrets Operator (central) ────────────────────────────────────
 externalSecrets:
   enabled: true
-  chartVersion: "0.1.2"
+  chartVersion: "0.1.3"
   syncWave: "5"
 
   values:
@@ -796,7 +796,7 @@ externalSecrets:
 # ─── External Secrets Operator (services) ───────────────────────────────────
 externalSecretsServices:
   enabled: true
-  chartVersion: "0.1.2"
+  chartVersion: "0.1.3"
   syncWave: "5"
   values:
     operator:
@@ -809,7 +809,7 @@ externalSecretsServices:
 # ─── Vault Central Namespace (backup copies of init secrets) ─────────────────
 vaultCentralNamespace:
   enabled: true
-  chartVersion: "0.1.1"
+  chartVersion: "0.1.2"
   syncWave: "27"
   argocdChartsRepo: false
   values:

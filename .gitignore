@@ -13,3 +13,5 @@
 *token*
 !**/templates/*secret*
 !**/templates/*token*
+# Helm dependencies (downloaded by helm dependency build)
+helm/charts/*/charts/*.tgz
