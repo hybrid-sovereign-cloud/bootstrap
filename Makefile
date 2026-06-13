@@ -77,6 +77,7 @@ include make/init-central-secrets.mk
 include make/init-central-applicationset.mk
 include make/init-services-pull-secrets.mk
 include make/init-services-argocd-sa.mk
+include make/upload-event-forwarder-chart.mk
 include make/init-services-gitea-secret.mk
 include make/init-central-gitea-secret.mk
 include make/install-rbac-samples.mk

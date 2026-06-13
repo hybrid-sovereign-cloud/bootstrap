@@ -46,6 +46,8 @@ sovereignNamespaces:
         enabled: true
       - name: central-quay
         enabled: true
+      - name: aap
+        enabled: true
 
 # ─── Sovereign Namespaces (services cluster) ────────────────────────────────
 sovereignNamespacesServices:
@@ -61,6 +63,14 @@ sovereignNamespacesServices:
       - name: sovereign-cloud
         enabled: true
       - name: sovereign-cloud-plugins
+        enabled: true
+      - name: services-vault
+        enabled: true
+      - name: services-rhbk
+        enabled: true
+      - name: services-quay
+        enabled: true
+      - name: aap
         enabled: true
 
 # ─── RHBK Central (Keycloak) ─────────────────────────────────────────────────
@@ -137,16 +147,16 @@ rhbkServices:
       tls:
         enabled: false
 
-# ─── RHBK Config (DEPRECATED) ────────────────────────────────────────────────
+# ─── RHBK Config (DEPRECATED — replaced by sovereignJobs keycloak* jobs) ─────
 rhbkConfig:
-  enabled: true
+  enabled: false
   chartVersion: "0.4.0"
   syncWave: "30"
-  destinationNamespace: rhbk
+  destinationNamespace: central-rhbk
   values:
-    namespace: rhbk
+    namespace: central-rhbk
     ansibleJob:
-      enabled: true
+      enabled: false
 
 # ─── ACS (disabled) ──────────────────────────────────────────────────────────
 acs:
@@ -1632,7 +1642,7 @@ platformOpenshiftOperator:
 
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.5.5"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1657,7 +1667,7 @@ cloudOSOOperator:
 
 # ─── CloudAWS Operator (services cluster) ──────────────────────────────────
 cloudAWSOperator:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.6"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
