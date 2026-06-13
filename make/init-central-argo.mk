@@ -35,7 +35,10 @@ init-central-argo: check-env-central ## Install OpenShift GitOps operator and wa
 	echo "$(BOLD)Waiting for OpenShift GitOps operator CSV...$(RESET)" && \
 	CSV="" && \
 	for i in $$(seq 1 60); do \
-	  CSV=$$(oc get subscription openshift-gitops-operator -n openshift-gitops-operator -o jsonpath='{.status.installedCSV}' 2>/dev/null); \
+	  CSV=$$(oc get subscriptions.operators.coreos.com/openshift-gitops-operator -n openshift-gitops-operator -o jsonpath='{.status.installedCSV}' 2>/dev/null); \
+	  if [ -z "$$CSV" ]; then \
+	    CSV=$$(oc get csv -n openshift-gitops-operator -o jsonpath='{.items[?(@.spec.displayName=="Red Hat OpenShift GitOps")].metadata.name}' 2>/dev/null); \
+	  fi; \
 	  [ -n "$$CSV" ] && break; \
 	  sleep 5; \
 	done && \
