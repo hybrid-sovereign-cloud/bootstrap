@@ -34,6 +34,7 @@ init-central-secrets: check-env init-services-argocd-sa ## Seed bootstrap secret
 	  [ -n "$$EXISTING_CSV" ] && INSTALL_OPERATOR_FLAG="--set gitopsOperator.installOperator=false"; \
 	fi && \
 	echo "$(BOLD)Deploying bootstrap secrets (bootstrap.operator + bootstrap.secrets)...$(RESET)" && \
+	oc create namespace argocd-schema-fix 2>/dev/null || true && \
 	helm upgrade --install sovereign-init helm/init \
 	  --namespace openshift-gitops-operator \
 	  --create-namespace \
