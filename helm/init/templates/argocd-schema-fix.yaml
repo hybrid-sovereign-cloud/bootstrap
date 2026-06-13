@@ -38,7 +38,7 @@ metadata:
   labels:
     {{- include "sovereign-init.labels" . | nindent 4 }}
 rules:
-  - nonResourceURLs: ["/openapi/v2", "/openapi/v3"]
+  - nonResourceURLs: ["/openapi/v2", "/openapi/v3", "/openapi/v3/*"]
     verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -82,33 +82,68 @@ data:
     TOKEN_FILE = '/var/run/secrets/kubernetes.io/serviceaccount/token'
     CA_FILE = '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
 
-    def load_shims():
-        """Discover all tilde-encoded $ref keys missing from the cluster OpenAPI v2 spec
-        and return them as a dict mapping tilde-key -> definition (copied from slash-key)."""
+    def kube_get(path):
         with open(TOKEN_FILE) as f:
             token = f.read().strip()
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ctx.load_verify_locations(CA_FILE)
         req = urllib.request.Request(
-            f'https://{KUBE_API}:{KUBE_PORT}/openapi/v2',
+            f'https://{KUBE_API}:{KUBE_PORT}{path}',
             headers={'Authorization': f'Bearer {token}'}
         )
         with urllib.request.urlopen(req, context=ctx) as r:
-            spec = json.loads(r.read())
-        defs = spec.get('definitions', {})
-        spec_str = json.dumps(spec)
-        all_refs = set(re.findall(r'"#/definitions/([^"]+)"', spec_str))
+            return json.loads(r.read())
+
+    def load_shims():
+        """Build shim definitions by:
+        1. Scanning aggregated /openapi/v2 for ~1-encoded $ref keys not in definitions
+        2. Scanning per-group /openapi/v3 for all schema names → add tilde-encoded stubs
+           (v3 is not affected by our own contributions to the v2 aggregated spec)
+        """
+        v2_spec = kube_get('/openapi/v2')
+        v2_defs = v2_spec.get('definitions', {})
+        v2_str = json.dumps(v2_spec)
+        all_v2_refs = set(re.findall(r'"#/definitions/([^"]+)"', v2_str))
+
         shims = {}
-        for tilde_key in all_refs:
+
+        # Step 1: from aggregated v2 — find all tilde-encoded $ref keys missing from defs
+        for tilde_key in all_v2_refs:
             if '~1' not in tilde_key:
                 continue
-            if tilde_key in defs:
-                continue
             slash_key = tilde_key.replace('~1', '/').replace('~0', '~')
-            shims[tilde_key] = defs.get(
-                slash_key,
-                {'type': 'object', 'x-kubernetes-preserve-unknown-fields': True}
-            )
+            if slash_key in v2_defs:
+                # Add the slash-decoded definition under the tilde-encoded key
+                shims[tilde_key] = v2_defs[slash_key]
+
+        # Step 2: from per-group v3 — get all schema names from API groups that have
+        # slash-separated definition names (these are the ones that cause ~1 ref issues)
+        try:
+            v3_index = kube_get('/openapi/v3')
+            for path_info in v3_index.get('paths', {}).values():
+                group_path = path_info.get('serverRelativeURL', '')
+                if not group_path:
+                    continue
+                try:
+                    v3_spec = kube_get(group_path.split('?')[0])
+                    for schema_name in v3_spec.get('components', {}).get('schemas', {}).keys():
+                        if '/' not in schema_name:
+                            continue
+                        tilde_key = schema_name.replace('~', '~0').replace('/', '~1')
+                        if tilde_key not in shims:
+                            slash_key = schema_name
+                            if slash_key in v2_defs:
+                                shims[tilde_key] = v2_defs[slash_key]
+                            else:
+                                shims[tilde_key] = {
+                                    'type': 'object',
+                                    'x-kubernetes-preserve-unknown-fields': True
+                                }
+                except Exception:
+                    pass
+        except Exception as e:
+            print(f'v3 group scan failed (non-fatal): {e}', flush=True)
+
         return shims
 
     SHIMS = {}
