@@ -145,14 +145,14 @@ rhbkServices:
 
 # ─── RHBK Config (DEPRECATED) ────────────────────────────────────────────────
 rhbkConfig:
-  enabled: false
+  enabled: true
   chartVersion: "0.4.0"
   syncWave: "30"
   destinationNamespace: rhbk
   values:
     namespace: rhbk
     ansibleJob:
-      enabled: false
+      enabled: true
 
 # ─── ACS (disabled) ──────────────────────────────────────────────────────────
 acs:

@@ -28,11 +28,17 @@ init-central-secrets: check-env init-services-argocd-sa ## Seed bootstrap secret
 	      meta.helm.sh/release-namespace=openshift-gitops-operator --overwrite >/dev/null; \
 	  fi; \
 	fi && \
+	INSTALL_OPERATOR_FLAG="" && \
+	if ! oc get subscriptions.operators.coreos.com/openshift-gitops-operator -n openshift-gitops-operator >/dev/null 2>&1; then \
+	  EXISTING_CSV=$$(oc get csv -A -o jsonpath='{.items[?(@.spec.displayName=="Red Hat OpenShift GitOps")].metadata.name}' 2>/dev/null | tr ' ' '\n' | head -1); \
+	  [ -n "$$EXISTING_CSV" ] && INSTALL_OPERATOR_FLAG="--set gitopsOperator.installOperator=false"; \
+	fi && \
 	echo "$(BOLD)Deploying bootstrap secrets (bootstrap.operator + bootstrap.secrets)...$(RESET)" && \
 	helm upgrade --install sovereign-init helm/init \
 	  --namespace openshift-gitops-operator \
 	  --create-namespace \
 	  $(SOVEREIGN_INIT_BOOTSTRAP_SECRETS) \
 	  $(SOVEREIGN_INIT_HELM_SECRETS_SETS) \
+	  $$INSTALL_OPERATOR_FLAG \
 	  --wait --timeout=5m && \
 	printf "  $(GREEN)✓$(RESET)  Bootstrap secrets deployed — next: make init-central-applicationset\n"

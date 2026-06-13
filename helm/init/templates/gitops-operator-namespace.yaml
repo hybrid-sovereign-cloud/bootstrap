@@ -1,4 +1,4 @@
-{{- if and .Values.gitopsOperator.enabled (include "sovereign-init.bootstrapOperator" .) }}
+{{- if and .Values.gitopsOperator.enabled (include "sovereign-init.bootstrapOperator" .) (.Values.gitopsOperator.installOperator | default true) }}
 ---
 apiVersion: v1
 kind: Namespace

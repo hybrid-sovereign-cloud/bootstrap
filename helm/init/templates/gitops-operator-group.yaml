@@ -1,4 +1,4 @@
-{{- if and .Values.gitopsOperator.enabled (include "sovereign-init.bootstrapOperator" .) }}
+{{- if and .Values.gitopsOperator.enabled (include "sovereign-init.bootstrapOperator" .) (.Values.gitopsOperator.installOperator | default true) }}
 ---
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup

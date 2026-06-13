@@ -23,6 +23,11 @@ bootstrapPhase: full
 # ─── Red Hat OpenShift GitOps operator + default Argo CD instance ─────────────
 gitopsOperator:
   enabled: true
+  # installOperator: set false when the GitOps operator is pre-installed on the cluster
+  # (e.g. installed system-wide in openshift-operators during cluster provisioning).
+  # When false, the OLM Subscription, OperatorGroup and Namespace templates are skipped
+  # but the ArgoCD instance CR is still managed.
+  installOperator: true
   operatorNamespace: openshift-gitops-operator
   channel: latest
   installPlanApproval: Automatic
