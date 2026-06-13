@@ -117,20 +117,6 @@
     state: present
   no_log: true
 
-- name: Create EDA Source Control credential for GitHub
-  ansible.eda.credential:
-    controller_host: "{{ eda_controller_url }}"
-    controller_username: "{{ eda_admin_username }}"
-    controller_password: "{{ eda_admin_password }}"
-    validate_certs: false
-    name: "sovereign-github-token"
-    credential_type_name: "GitHub Personal Access Token"
-    organization_name: "{{ eda_organization }}"
-    inputs:
-      token: "{{ github_token }}"
-    state: present
-  no_log: true
-
 - name: Delete existing EDA project if in failed import state
   ansible.builtin.uri:
     url: "{{ eda_controller_url }}/api/eda/v1/projects/?name=sovereign-eda-rulebooks"
@@ -157,15 +143,14 @@
     - existing_project.json.results[0].import_state in ['failed', 'pending']
   no_log: false
 
-- name: Create EDA Project for sovereign rulebooks
+- name: Create EDA Project for sovereign rulebooks (authenticated URL for private repo)
   ansible.eda.project:
     controller_host: "{{ eda_controller_url }}"
     controller_username: "{{ eda_admin_username }}"
     controller_password: "{{ eda_admin_password }}"
     validate_certs: false
     name: "sovereign-eda-rulebooks"
-    url: "{{ lookup('env', 'RULEBOOK_REPO_URL') }}"
-    credential: "sovereign-github-token"
+    url: "{{ lookup('env', 'RULEBOOK_REPO_URL') | regex_replace('^https://', 'https://' + github_token + '@') }}"
     organization_name: "{{ eda_organization }}"
     state: present
   no_log: true
