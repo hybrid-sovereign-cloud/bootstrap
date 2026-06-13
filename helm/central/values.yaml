@@ -395,7 +395,7 @@ aapCentral:
 # ─── SDX Operator (services cluster) ──────────────────────────────────────
 pluginSdx:
   enabled: true
-  chartVersion: "0.1.4"
+  chartVersion: "0.1.5"
   syncWave: "33"
   image:
     repository: quay.signal9.gg/hybrid-sovereign/plugin-sdx
@@ -683,6 +683,7 @@ giteaCentral:
                 secretKeyRef:
                   name: gitea-pgcluster-pguser-gitea
                   key: password
+            SSL_MODE: require
           session:
             PROVIDER: memory
           cache:
