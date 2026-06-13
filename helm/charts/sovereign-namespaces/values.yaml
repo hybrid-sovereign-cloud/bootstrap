@@ -3,3 +3,9 @@ namespaces:
     enabled: true
   - name: sovereign-cloud-helpers
     enabled: true
+
+ociPullSecret:
+  enabled: false
+  vaultPath: "oci-credentials"
+  secretStoreName: "vault-backend"
+  secretStoreKind: "ClusterSecretStore"
