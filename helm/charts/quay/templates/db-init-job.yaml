@@ -57,14 +57,18 @@ spec:
       containers:
         - name: db-init
           image: {{ .Values.dbInitJob.image | default "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest" }}
+          env:
+            - name: CRUNCHY_SECRET
+              value: "{{ .Values.crunchy.name }}-pguser-quay"
+            - name: BUNDLE_SECRET
+              value: "{{ .Values.registry.configBundleSecretName | default (printf "%s-config-bundle" .Values.registry.name) }}"
+            - name: NS
+              value: "{{ .Values.namespace }}"
           command:
             - /bin/bash
             - -c
             - |
               set -euo pipefail
-              NS="{{ .Values.namespace }}"
-              CRUNCHY_SECRET="{{ .Values.crunchy.name }}-pguser-quay"
-              BUNDLE_SECRET="{{ .Values.registry.configBundleSecretName | default (printf "%s-config-bundle" .Values.registry.name) }}"
 
               echo "Reading Crunchy postgres URI..."
               DB_URI=$(oc get secret "$CRUNCHY_SECRET" -n "$NS" -o jsonpath='{.data.uri}' | base64 -d)
@@ -73,21 +77,35 @@ spec:
                 exit 1
               fi
 
+              echo "Enabling required PostgreSQL extensions (pg_trgm, fuzzystrmatch)..."
+              python3 -c "
+              import psycopg2, os, sys
+              uri = os.environ['DB_URI_FOR_PY']
+              try:
+                  conn = psycopg2.connect(uri)
+                  conn.autocommit = True
+                  cur = conn.cursor()
+                  cur.execute('CREATE EXTENSION IF NOT EXISTS pg_trgm;')
+                  cur.execute('CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;')
+                  conn.close()
+                  print('PostgreSQL extensions enabled successfully')
+              except Exception as e:
+                  print(f'Warning: Could not enable extensions: {e}', file=sys.stderr)
+              " DB_URI_FOR_PY="$DB_URI"
+
               echo "Reading current configBundle..."
               CURRENT_CONFIG=$(oc get secret "$BUNDLE_SECRET" -n "$NS" -o jsonpath='{.data.config\.yaml}' | base64 -d)
 
               # Only add DB_URI if not already present
               if echo "$CURRENT_CONFIG" | grep -q "^DB_URI:"; then
-                echo "DB_URI already present in configBundle, skipping"
-                exit 0
+                echo "DB_URI already present in configBundle, skipping injection"
+              else
+                echo "Injecting DB_URI into configBundle..."
+                NEW_CONFIG=$(printf '%s\nDB_URI: %s' "$CURRENT_CONFIG" "$DB_URI")
+                NEW_CONFIG_B64=$(echo "$NEW_CONFIG" | base64 -w0)
+                oc patch secret "$BUNDLE_SECRET" -n "$NS" \
+                  --type=merge \
+                  -p "{\"data\":{\"config.yaml\":\"${NEW_CONFIG_B64}\"}}"
+                echo "configBundle updated with DB_URI"
               fi
-
-              echo "Injecting DB_URI into configBundle..."
-              NEW_CONFIG=$(printf '%s\nDB_URI: %s' "$CURRENT_CONFIG" "$DB_URI")
-              NEW_CONFIG_B64=$(echo "$NEW_CONFIG" | base64 -w0)
-
-              oc patch secret "$BUNDLE_SECRET" -n "$NS" \
-                --type=merge \
-                -p "{\"data\":{\"config.yaml\":\"${NEW_CONFIG_B64}\"}}"
-              echo "configBundle updated with DB_URI"
 {{- end }}
