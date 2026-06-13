@@ -15,6 +15,32 @@
   delay: 10
   until: gitea_user_check.status is defined
 
+- name: List existing admin tokens
+  ansible.builtin.uri:
+    url: "{{ gitea_url }}/api/v1/users/{{ gitea_admin_user }}/tokens"
+    method: GET
+    user: "{{ gitea_admin_user }}"
+    password: "{{ gitea_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [200]
+  register: gitea_existing_tokens
+
+- name: Find sovereign-admin-token ID if it exists
+  ansible.builtin.set_fact:
+    existing_token_id: "{{ (gitea_existing_tokens.json | selectattr('name', 'equalto', 'sovereign-admin-token') | list | first).id | default('') }}"
+
+- name: Delete existing sovereign-admin-token to regenerate
+  ansible.builtin.uri:
+    url: "{{ gitea_url }}/api/v1/users/{{ gitea_admin_user }}/tokens/{{ existing_token_id }}"
+    method: DELETE
+    user: "{{ gitea_admin_user }}"
+    password: "{{ gitea_admin_password }}"
+    force_basic_auth: true
+    validate_certs: false
+    status_code: [204, 404]
+  when: existing_token_id != ''
+
 - name: Generate admin API token
   ansible.builtin.uri:
     url: "{{ gitea_url }}/api/v1/users/{{ gitea_admin_user }}/tokens"
@@ -28,36 +54,36 @@
       name: "sovereign-admin-token"
       scopes:
         - "all"
-    status_code: [201, 400, 422]
+    status_code: [201]
   register: gitea_token_result
   retries: 3
-  delay: 10
+  delay: 5
 
 - name: Set Gitea admin token
   ansible.builtin.set_fact:
-    gitea_admin_token: "{{ gitea_token_result.json.sha1 | default('') }}"
-  when: gitea_token_result.status == 201
-
-- name: Retrieve existing token list if token already existed
-  ansible.builtin.uri:
-    url: "{{ gitea_url }}/api/v1/users/{{ gitea_admin_user }}/tokens"
-    method: GET
-    user: "{{ gitea_admin_user }}"
-    password: "{{ gitea_admin_password }}"
-    force_basic_auth: true
-    validate_certs: false
-    status_code: [200]
-  register: gitea_existing_tokens
-  when: gitea_token_result.status in [400, 422]
-
-- name: Set token from existing tokens
-  ansible.builtin.set_fact:
-    gitea_admin_token: "existing-token"
-  when: gitea_token_result.status in [400, 422]
+    gitea_admin_token: "{{ gitea_token_result.json.sha1 }}"
 
 - name: Set Gitea credentials fact
   ansible.builtin.set_fact:
     gitea_credentials:
       admin_user: "{{ gitea_admin_user }}"
       admin_password: "{{ gitea_admin_password }}"
-      admin_token: "{{ gitea_admin_token | default('existing-token') }}"
+      admin_token: "{{ gitea_admin_token }}"
+
+- name: Write gitea credentials directly to Vault
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/central/data/gitea-admin"
+    method: POST
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      data:
+        admin_user: "{{ gitea_admin_user }}"
+        admin_password: "{{ gitea_admin_password }}"
+        admin_token: "{{ gitea_admin_token }}"
+        admin_email: "{{ lookup('env', 'GITEA_ADMIN_EMAIL') | default('admin@sovereign.local', true) }}"
+    status_code: [200, 204]
+  when: vault_root_token is defined and vault_root_token != ''
+  no_log: true

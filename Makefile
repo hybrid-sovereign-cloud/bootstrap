@@ -13,7 +13,7 @@ REQUIRED_VARS := \
 OCI_HOST := $(shell echo "$(OCI_REGISTRY)" | sed -E 's|^https?://||' | cut -d'/' -f1)
 OCI_NAMESPACE := $(shell echo "$(OCI_REGISTRY)" | sed -E 's|^https?://||' | sed -n 's|.*/organization/||p' | cut -d'/' -f1)
 ifeq ($(OCI_NAMESPACE),)
-  OCI_NAMESPACE := sovereign
+  OCI_NAMESPACE := hybrid-sovereign
 endif
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -61,6 +61,7 @@ include make/upload-entity-operator-chart.mk
 include make/upload-plugin-rbac-chart.mk
 include make/upload-plugin-vault-chart.mk
 include make/upload-plugin-aap-chart.mk
+include make/upload-plugin-sdx-chart.mk
 include make/upload-plugin-quay-chart.mk
 include make/upload-dashboard-chart.mk
 include make/upload-tenancy-dashboard-chart.mk
@@ -108,6 +109,7 @@ UPLOAD_TARGETS := \
   upload-plugin-rbac-chart \
   upload-plugin-vault-chart \
   upload-plugin-aap-chart \
+  upload-plugin-sdx-chart \
   upload-plugin-quay-chart \
   upload-dashboard-chart \
   upload-tenancy-dashboard-chart \

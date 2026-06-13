@@ -347,7 +347,7 @@ rhacm:
 # ─── AAP (services cluster) ─────────────────────────────────────────────────
 aap:
   enabled: true
-  chartVersion: "0.5.2"
+  chartVersion: "0.5.3"
   syncWave: "30"
   destinationNamespace: aap
   values:
@@ -1013,13 +1013,13 @@ sovereignJobs:
         - name: SERVICES_REALM_NAME
           value: "sovereign-tenants"
     giteaInit:
-      enabled: true  # enables Gitea init + token push to Vault
+      enabled: true  # enables Gitea init + token write to Vault
       playbook: gitea-init.yml
       activeDeadlineSeconds: 600
       syncWave: "35"
       externalSecrets:
         giteaAdminCredentials:
-          enabled: false
+          enabled: true
           targetSecretName: gitea-admin-credentials
           data:
             - secretKey: admin_user
@@ -1028,12 +1028,9 @@ sovereignJobs:
             - secretKey: admin_password
               remoteKey: gitea-admin
               property: admin_password
-            - secretKey: admin_token
-              remoteKey: gitea-admin
-              property: admin_token
       pushSecrets:
         pushGiteaAdmin:
-          enabled: true
+          enabled: false
           secretName: gitea-credentials
           data:
             - secretKey: admin_user
@@ -1055,6 +1052,10 @@ sovereignJobs:
             secretKeyRef:
               name: gitea-admin-credentials
               key: admin_password
+        - name: VAULT_ADDR
+          value: "http://vault.central-vault.svc:8200"
+        - name: VAULT_NAMESPACE
+          value: "central-vault"
         - name: SECRETS_NAMESPACE
           value: "sovereign-cloud-jobs"
     giteaCreateRepo:
@@ -1388,6 +1389,8 @@ pluginRbac:
       name: keycloak-sovereign-tenants-services
       type: keycloak
       secret: rhbk-services-admin
+    samples:
+      enabled: false
 
 # ─── Plugin Vault Operator (services cluster) ──────────────────────────────
 pluginVault:
@@ -1418,6 +1421,8 @@ pluginVault:
       secretStoreKind: ClusterSecretStore
       vaultPath: rhbk-services-admin
       refreshInterval: "1h"
+    samples:
+      enabled: false
 
 # ─── Plugin AAP Operator (services cluster) ───────────────────────────────
 pluginAap:
