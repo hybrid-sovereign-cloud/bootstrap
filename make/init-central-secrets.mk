@@ -35,10 +35,15 @@ init-central-secrets: check-env init-services-argocd-sa ## Seed bootstrap secret
 	fi && \
 	echo "$(BOLD)Deploying bootstrap secrets (bootstrap.operator + bootstrap.secrets)...$(RESET)" && \
 	oc create namespace argocd-schema-fix 2>/dev/null || true && \
+	APPSET_FLAG="" && \
+	if oc get applicationsets.argoproj.io sovereign-bootstrap -n openshift-gitops >/dev/null 2>&1; then \
+	  APPSET_FLAG="--set bootstrap.applicationset=true"; \
+	fi && \
 	helm upgrade --install sovereign-init helm/init \
 	  --namespace openshift-gitops-operator \
 	  --create-namespace \
 	  $(SOVEREIGN_INIT_BOOTSTRAP_SECRETS) \
+	  $$APPSET_FLAG \
 	  $(SOVEREIGN_INIT_HELM_SECRETS_SETS) \
 	  $$INSTALL_OPERATOR_FLAG \
 	  --wait --timeout=5m && \
