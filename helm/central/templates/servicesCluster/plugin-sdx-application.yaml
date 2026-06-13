@@ -36,6 +36,11 @@ spec:
 
   ignoreDifferences:
     {{- include "sovereign-central.esoIgnoreDifferences" . | nindent 4 }}
+    - kind: ServiceAccount
+      jsonPointers:
+        - /metadata/annotations/openshift.io~1internal-registry-pull-secret-ref
+        - /imagePullSecrets
+        - /secrets
 
   syncPolicy:
     automated:
