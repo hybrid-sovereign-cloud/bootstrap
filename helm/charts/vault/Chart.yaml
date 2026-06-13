@@ -2,7 +2,7 @@ apiVersion: v2
 name: vault
 description: HashiCorp Vault in HA mode via Helm subchart
 type: application
-version: 0.6.6
+version: 0.6.7
 appVersion: "1.21"
 dependencies:
   - name: vault
