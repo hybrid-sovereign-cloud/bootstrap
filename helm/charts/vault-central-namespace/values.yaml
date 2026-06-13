@@ -4,6 +4,20 @@ secretStore:
   name: vault-backend
   kind: ClusterSecretStore
 
+# PushSecret: push vault-init-secrets K8s secret → Vault (runs AFTER vault-init job)
+vaultInitPushSecret:
+  enabled: true
+  sourceNamespace: central-vault
+  sourceSecretName: vault-init-secrets
+  remoteKey: vault-init
+
+# PushSecret: push vault-services-init-secrets K8s secret → Vault (runs AFTER vault-services-init job)
+vaultServicesInitPushSecret:
+  enabled: true
+  sourceNamespace: services-vault
+  sourceSecretName: vault-services-init-secrets
+  remoteKey: vault-services-init
+
 # Copy of central vault init secrets (backup reference)
 vaultInitSecretsCopy:
   enabled: true

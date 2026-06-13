@@ -191,7 +191,7 @@ vault:
   destinationNamespace: central-vault
   values:
     namespace: central-vault
-    pushSecretToVault: true
+    pushSecretToVault: false
     vault:
       global:
         openshift: true
@@ -809,7 +809,7 @@ externalSecretsServices:
 # ─── Vault Central Namespace (backup copies of init secrets) ─────────────────
 vaultCentralNamespace:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.1.1"
   syncWave: "27"
   argocdChartsRepo: false
   values:
