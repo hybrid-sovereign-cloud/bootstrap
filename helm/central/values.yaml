@@ -1276,11 +1276,39 @@ sovereignJobs:
             - secretKey: token
               remoteKey: central/event-forwarder
               property: token
+        ociCredentials:
+          enabled: true
+          targetSecretName: eda-oci-credentials
+          data:
+            - secretKey: username
+              remoteKey: central/oci-credentials
+              property: username
+            - secretKey: password
+              remoteKey: central/oci-credentials
+              property: password
+            - secretKey: registry
+              remoteKey: central/oci-credentials
+              property: registry
       env:
         - name: EDA_CONTROLLER_URL
           value: "https://sovereign-aap-eda-aap.apps.shc-central.lab.signal9.gg"
         - name: RULEBOOK_REPO_URL
           value: "https://github.com/hybrid-sovereign-cloud/eda.git"
+        - name: OCI_REGISTRY
+          valueFrom:
+            secretKeyRef:
+              name: eda-oci-credentials
+              key: registry
+        - name: OCI_ROBOT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: eda-oci-credentials
+              key: username
+        - name: OCI_ROBOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: eda-oci-credentials
+              key: password
     keycloakTestUsers:
       enabled: false
       playbook: keycloak-test-users.yml

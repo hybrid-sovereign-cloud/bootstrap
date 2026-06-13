@@ -76,6 +76,23 @@
           - { name: "iaac-create", file: "iaac-create.yml" }
           - { name: "iaac-delete", file: "iaac-delete.yml" }
 
+- name: Create Container Registry credential for Quay
+  ansible.eda.credential:
+    controller_host: "{{ eda_controller_url }}"
+    controller_username: "{{ eda_admin_username }}"
+    controller_password: "{{ eda_admin_password }}"
+    validate_certs: false
+    name: "quay-registry-credential"
+    credential_type_name: "Container Registry"
+    organization_name: "{{ eda_organization }}"
+    inputs:
+      host: "{{ lookup('env', 'OCI_REGISTRY') | default('quay.signal9.gg') }}"
+      username: "{{ lookup('env', 'OCI_ROBOT_USERNAME') }}"
+      password: "{{ lookup('env', 'OCI_ROBOT_PASSWORD') }}"
+      verify_ssl: false
+    state: present
+  no_log: true
+
 - name: Register Decision Environments
   ansible.eda.decision_environment:
     controller_host: "{{ eda_controller_url }}"
@@ -84,6 +101,7 @@
     validate_certs: false
     name: "de-{{ item.name }}"
     image_url: "{{ item.de_image }}"
+    credential: "quay-registry-credential"
     organization_name: "{{ eda_organization }}"
     state: present
   loop: "{{ eda_operators }}"
