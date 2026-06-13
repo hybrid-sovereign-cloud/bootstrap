@@ -20,11 +20,14 @@ aap-load-manifest: check-env-central ## Base64-encode AAP manifest ZIP and write
 	  exit 1; \
 	fi; \
 	MANIFEST_B64=$$(base64 -w 0 "$$AAP_MANIFEST"); \
+	TMPFILE=$$(mktemp /tmp/aap-manifest-XXXXXX.json); \
+	printf '{"data":{"manifest_b64":"%s"}}' "$$MANIFEST_B64" > "$$TMPFILE"; \
 	HTTP_CODE=$$(curl -sk -o /dev/null -w "%{http_code}" \
 	  -X POST "$$VAULT_ADDR/v1/central/data/aap-manifest" \
 	  -H "X-Vault-Token: $$ROOT_TOKEN" \
 	  -H "Content-Type: application/json" \
-	  -d "{\"data\":{\"manifest_b64\":\"$$MANIFEST_B64\"}}"); \
+	  --data-binary "@$$TMPFILE"); \
+	rm -f "$$TMPFILE"; \
 	if echo "$$HTTP_CODE" | grep -qE '^2'; then \
 	  printf "  $(GREEN)✓$(RESET)  AAP manifest written to Vault at central/aap-manifest\n"; \
 	else \
