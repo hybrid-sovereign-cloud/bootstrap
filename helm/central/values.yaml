@@ -306,7 +306,7 @@ vaultServices:
 # ─── Vault Services Init (separate App to avoid StatefulSet health deadlock) ─
 vaultServicesInit:
   enabled: true
-  chartVersion: "0.2.4"
+  chartVersion: "0.2.3"
   syncWave: "20"
   values:
     namespace: services-vault
@@ -1718,7 +1718,7 @@ cloudAWSOperator:
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
   enabled: true
-  chartVersion: "0.9.10"
+  chartVersion: "0.9.11"
   syncWave: "40"
   destinationNamespace: sovereign-cloud
   values:
@@ -1750,7 +1750,7 @@ sovereignDashboard:
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
   enabled: true
-  chartVersion: "1.1.4"
+  chartVersion: "1.1.5"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
   values:
