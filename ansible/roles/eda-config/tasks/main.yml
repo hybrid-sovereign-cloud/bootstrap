@@ -98,7 +98,7 @@
     controller_password: "{{ eda_admin_password }}"
     validate_certs: false
     name: "{{ event_stream_name }}-credential"
-    credential_type_name: "Token"
+    credential_type_name: "Token Event Stream"
     organization_name: "{{ eda_organization }}"
     inputs:
       token: "{{ lookup('file', '/var/run/secrets/event-stream/token') }}"
