@@ -103,7 +103,6 @@
     inputs:
       token: "{{ lookup('file', '/var/run/secrets/event-stream/token') }}"
     state: present
-  no_log: true
 
 - name: Create Event Stream
   ansible.eda.event_stream:
