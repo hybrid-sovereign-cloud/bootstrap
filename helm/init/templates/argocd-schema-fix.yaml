@@ -4,16 +4,15 @@
   ===========================================
   ArgoCD's embedded kube-openapi library fails to resolve JSON Pointer ~1-encoded $ref
   keys in the aggregated /openapi/v2 spec when MCE (multicluster-engine) is installed.
-  The ocm-proxyserver APIService serves a UserPermission schema that uses a $ref like:
-    #/definitions/github.com~1stolostron~1...~1UserPermissionStatus
-  kube-openapi looks up the tilde-encoded key literally (not URL-decoded), so it never
-  finds the definition (which is stored under the slash-decoded key).
+  The ocm-proxyserver and other MCE aggregated API servers use ~1-encoded keys in $ref
+  but kube-openapi looks them up literally (without URL-decoding ~1 → /).
 
-  This shim registers a fake APIService backed by a minimal HTTPS server that adds one
-  extra OpenAPI v2 definition entry — using the tilde-encoded key — so kube-openapi can
-  resolve the reference and ArgoCD's cluster cache sync succeeds.
+  This shim registers a fake APIService backed by a minimal HTTPS server. The server
+  dynamically discovers all missing tilde-encoded definitions from the live cluster
+  OpenAPI spec and re-serves them under their tilde-encoded keys so kube-openapi can
+  resolve the references. The cluster cache sync then succeeds.
 
-  Fixed in: this chart (permanent workaround until ArgoCD/kube-openapi is patched upstream)
+  This is a permanent workaround until ArgoCD/kube-openapi fixes upstream (~1 decoding).
 */ -}}
 ---
 apiVersion: v1
@@ -22,6 +21,40 @@ metadata:
   name: argocd-schema-fix
   labels:
     {{- include "sovereign-init.labels" . | nindent 4 }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: schema-fix-server
+  namespace: argocd-schema-fix
+  labels:
+    {{- include "sovereign-init.labels" . | nindent 4 }}
+---
+# schema-fix-server needs to GET /openapi/v2 from the cluster API server
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: schema-fix-openapi-reader
+  labels:
+    {{- include "sovereign-init.labels" . | nindent 4 }}
+rules:
+  - nonResourceURLs: ["/openapi/v2", "/openapi/v3"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: schema-fix-openapi-reader
+  labels:
+    {{- include "sovereign-init.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: schema-fix-openapi-reader
+subjects:
+  - kind: ServiceAccount
+    name: schema-fix-server
+    namespace: argocd-schema-fix
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -42,53 +75,99 @@ data:
     exec python3 /config/server.py
 
   server.py: |
-    import http.server, ssl, json, sys
+    import http.server, ssl, json, urllib.request, os, threading, time, re
 
-    # The tilde-encoded definition key is what kube-openapi looks for when resolving
-    # $ref: "#/definitions/github.com~1stolostron~1...~1UserPermissionStatus"
-    # The actual definition uses slash-separators but kube-openapi doesn't URL-decode ~1.
-    SPEC = json.dumps({
-        "swagger": "2.0",
-        "info": {"title": "ArgoCD Schema Compatibility Shim", "version": "0.1.0"},
-        "paths": {
-            "/apis/schemafix.sovereign-bootstrap.io/v1/": {
-                "get": {
-                    "operationId": "getAPIResources",
-                    "produces": ["application/json"],
-                    "responses": {"200": {"description": "OK"}}
-                }
-            }
-        },
-        "definitions": {
-            "github.com~1stolostron~1cluster-lifecycle-api~1clusterview~1v1alpha1.UserPermissionStatus": {
-                "description": "UserPermissionStatus shim — satisfies kube-openapi ~1 ref resolution",
-                "type": "object",
-                "properties": {
-                    "items": {
-                        "type": "array",
-                        "items": {"type": "object", "x-kubernetes-preserve-unknown-fields": True}
-                    }
-                }
-            }
-        }
-    }).encode()
+    KUBE_API = os.environ.get('KUBERNETES_SERVICE_HOST', 'kubernetes.default.svc')
+    KUBE_PORT = os.environ.get('KUBERNETES_SERVICE_PORT', '443')
+    TOKEN_FILE = '/var/run/secrets/kubernetes.io/serviceaccount/token'
+    CA_FILE = '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
+
+    def load_shims():
+        """Discover all tilde-encoded $ref keys missing from the cluster OpenAPI v2 spec
+        and return them as a dict mapping tilde-key -> definition (copied from slash-key)."""
+        with open(TOKEN_FILE) as f:
+            token = f.read().strip()
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        ctx.load_verify_locations(CA_FILE)
+        req = urllib.request.Request(
+            f'https://{KUBE_API}:{KUBE_PORT}/openapi/v2',
+            headers={'Authorization': f'Bearer {token}'}
+        )
+        with urllib.request.urlopen(req, context=ctx) as r:
+            spec = json.loads(r.read())
+        defs = spec.get('definitions', {})
+        spec_str = json.dumps(spec)
+        all_refs = set(re.findall(r'"#/definitions/([^"]+)"', spec_str))
+        shims = {}
+        for tilde_key in all_refs:
+            if '~1' not in tilde_key:
+                continue
+            if tilde_key in defs:
+                continue
+            slash_key = tilde_key.replace('~1', '/').replace('~0', '~')
+            shims[tilde_key] = defs.get(
+                slash_key,
+                {'type': 'object', 'x-kubernetes-preserve-unknown-fields': True}
+            )
+        return shims
+
+    SHIMS = {}
+    LOCK = threading.Lock()
+
+    def refresh_loop():
+        global SHIMS
+        while True:
+            try:
+                s = load_shims()
+                with LOCK:
+                    SHIMS = s
+                print(f'Schema shims refreshed: {len(s)} definitions', flush=True)
+            except Exception as e:
+                print(f'Shim refresh failed: {e}', flush=True)
+            time.sleep(3600)
 
     class Handler(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
-            body = SPEC if "/openapi/v2" in self.path else b'{"apiVersion":"v1","groupVersion":"schemafix.sovereign-bootstrap.io/v1","resources":[]}'
+            if '/openapi/v2' in self.path:
+                with LOCK:
+                    shims = dict(SHIMS)
+                body = json.dumps({
+                    'swagger': '2.0',
+                    'info': {'title': 'ArgoCD Schema Compatibility Shim', 'version': '0.2.0'},
+                    'paths': {
+                        '/apis/schemafix.sovereign-bootstrap.io/v1/': {'get': {
+                            'operationId': 'listSchemaFixResources',
+                            'produces': ['application/json'],
+                            'responses': {'200': {'description': 'OK'}}
+                        }}
+                    },
+                    'definitions': shims
+                }).encode()
+            else:
+                body = b'{"apiVersion":"v1","groupVersion":"schemafix.sovereign-bootstrap.io/v1","resources":[]}'
             self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(body)))
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Length', str(len(body)))
             self.end_headers()
             self.wfile.write(body)
-        def log_message(self, fmt, *args):
+
+        def log_message(self, *a):
             pass
 
-    httpd = http.server.HTTPServer(("", 6443), Handler)
-    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    ctx.load_cert_chain("/tmp/certs/server.crt", "/tmp/certs/server.key")
-    httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
-    print("Schema fix server ready on :6443", flush=True)
+    try:
+        SHIMS = load_shims()
+        print(f'Initial shims loaded: {len(SHIMS)} definitions', flush=True)
+    except Exception as e:
+        print(f'Initial shim load failed (will retry): {e}', flush=True)
+        threading.Thread(target=refresh_loop, daemon=True).start()
+    else:
+        threading.Thread(target=refresh_loop, daemon=True).start()
+
+    httpd = http.server.HTTPServer(('', 6443), Handler)
+    tls_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    tls_ctx.load_cert_chain('/tmp/certs/server.crt', '/tmp/certs/server.key')
+    httpd.socket = tls_ctx.wrap_socket(httpd.socket, server_side=True)
+    print('Schema fix server ready on :6443', flush=True)
     httpd.serve_forever()
 ---
 apiVersion: apps/v1
@@ -108,6 +187,7 @@ spec:
       labels:
         app: schema-fix-server
     spec:
+      serviceAccountName: schema-fix-server
       imagePullSecrets:
         - name: quay-pull-secret
       containers:
