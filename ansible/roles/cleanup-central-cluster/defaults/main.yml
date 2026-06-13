@@ -18,9 +18,6 @@ central_olm_subscriptions:
       - quay-operator
       - crunchy-postgres-operator
       - rhacm
-  - namespace: sovereign-cloud-helpers
-    names:
-      - helper-cloudoso-operator
 
 # RHACM MultiClusterHub to remove
 remove_multicluster_hub: true

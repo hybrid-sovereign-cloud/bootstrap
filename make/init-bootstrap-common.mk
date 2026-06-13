@@ -6,8 +6,13 @@ SOVEREIGN_INIT_BOOTSTRAP_OPERATOR := --set bootstrap.operator=true
 SOVEREIGN_INIT_BOOTSTRAP_SECRETS := $(SOVEREIGN_INIT_BOOTSTRAP_OPERATOR) --set bootstrap.secrets=true
 SOVEREIGN_INIT_BOOTSTRAP_APPSET := $(SOVEREIGN_INIT_BOOTSTRAP_SECRETS) --set bootstrap.applicationset=true
 
+# Always derive the bootstrap repo URL from the git remote — never use GITHUB_URL which
+# may point to an unrelated repository.  GITHUB_URL remains available for other purposes
+# (e.g. Gitea seeding) but must NOT be used as the ArgoCD source for this repository.
+BOOTSTRAP_REPO_URL := $(shell git -C "$(CURDIR)" remote get-url origin 2>/dev/null | sed 's|git@github.com:|https://github.com/|')
+
 SOVEREIGN_INIT_HELM_SECRETS_SETS := \
-  --set gitops.repoURL="$(GITHUB_URL)" \
+  --set gitops.repoURL="$(BOOTSTRAP_REPO_URL)" \
   --set gitops.token="$(GITHUB_TOKEN)" \
   --set clusters.services.server="$(OCP_SERVICES_SERVER)" \
   --set clusters.services.bearerToken="$$SVC_TOKEN" \
@@ -17,10 +22,6 @@ SOVEREIGN_INIT_HELM_SECRETS_SETS := \
   --set oci.robotUsername="$(OCI_ROBOT_USERNAME)" \
   --set oci.robotPassword="$(OCI_ROBOT_PASSWORD)" \
   --set gitea.adminPassword="$(GITEA_ADMIN_PASSWORD)"
-
-# The ApplicationSet repoURL must point to the bootstrap repository (not the monorepo GITHUB_URL).
-# Derive it automatically from the current git remote; fall back to GITHUB_URL if detection fails.
-BOOTSTRAP_REPO_URL := $(shell git -C "$(CURDIR)" remote get-url origin 2>/dev/null | sed 's|git@github.com:|https://github.com/|')
 
 SOVEREIGN_INIT_HELM_APPSET_SETS := \
   --set gitops.repoURL="$(BOOTSTRAP_REPO_URL)" \

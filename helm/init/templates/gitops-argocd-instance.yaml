@@ -15,6 +15,14 @@ spec:
     {{ $key }}: {{ $value | quote }}
     {{- end }}
   {{- end }}
+  # Exclude RHACM clusterview CRDs — their broken OpenAPI schema corrupts ArgoCD's cache.
+  resourceExclusions: |
+    - apiGroups:
+      - "clusterview.open-cluster-management.io"
+      kinds:
+      - "*"
+      clusters:
+      - "*"
   {{- $overrides := .Values.gitopsOperator.resourceOverrides | default dict }}
   {{- range $component := list "controller" "server" "repo" "applicationSet" "dex" "redis" }}
   {{- with index $overrides $component }}

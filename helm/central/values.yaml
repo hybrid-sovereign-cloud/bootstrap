@@ -1632,116 +1632,9 @@ platformOpenshiftOperator:
       secretName: awshelper-creator-sa
       externalSecret:
         enabled: false
-    osoCentralSA:
-      secretName: osohelper-creator-sa
-      externalSecret:
-        enabled: false
     samples:
       enabled: false  # CRs created manually on services cluster
 
-# ─── Helper CloudOSO Operator (central cluster) ──────────────────────────────
-helperCloudOSO:
-  enabled: true
-  chartVersion: "0.6.9"
-  syncWave: "36"
-  destinationNamespace: sovereign-cloud-helpers
-  values:
-    namespace: sovereign-cloud-helpers
-    image:
-      repository: quay.signal9.gg/hybrid-sovereign/helper-cloudoso
-      tag: "0.5.14"
-      pullPolicy: Always
-    imagePullSecrets:
-      - name: quay-pull-secret
-    resources:
-      limits:
-        cpu: 1000m
-        memory: 2048Mi
-      requests:
-        cpu: 10m
-        memory: 768Mi
-    openstackSecret:
-      name: atuin-cloud
-      mountPath: /etc/openstack
-      externalSecret:
-        enabled: true
-        secretStoreName: vault-backend
-        secretStoreKind: ClusterSecretStore
-        vaultPath: oso/accounts/shc_admin
-        refreshInterval: "1h"
-    crossClusterSA:
-      enabled: true
-      name: osohelper-creator-sa
-      pushSecret:
-        enabled: true
-        secretStoreName: vault-backend
-        secretStoreKind: ClusterSecretStore
-        vaultPath: osohelper-creator-sa
-    samples:
-      environmentprep:
-        enabled: false
-      clusterbuild:
-        enabled: false
-
-# ─── AWS Helper Operator ────────────────────────────────────────────────────
-# Provisions OCP clusters in AWS via AWSHelper CRs → MCE/Hive ClusterDeployments
-# Deploys mce-cluster-build Helm chart directly to the hub cluster.
-helperCloudAWS:
-  enabled: true
-  chartVersion: "0.5.16"
-  chartRegistry: "quay.signal9.gg"
-  syncWave: "40"
-  destinationNamespace: sovereign-cloud-helpers
-  values:
-    namespace: sovereign-cloud-helpers
-    image:
-      repository: quay.signal9.gg/hybrid-sovereign/helper-cloudaws-operator
-      tag: "0.3.21"
-      pullPolicy: Always
-    imagePullSecrets:
-      - name: quay-pull-secret
-    quayServicesPullSecret:
-      enabled: false
-    resources:
-      limits:
-        cpu: 500m
-        memory: 768Mi
-      requests:
-        cpu: 10m
-        memory: 256Mi
-    crossClusterSA:
-      enabled: true
-      name: awshelper-creator-sa
-      pushSecret:
-        enabled: true
-        secretStoreName: vault-backend
-        secretStoreKind: ClusterSecretStore
-        vaultPath: awshelper-creator-sa
-    samples:
-      enabled: false
-      environmentprep:
-        enabled: false
-        name: dev-project
-        awsAccountId: "390403869973"
-        vaultPath: "aws/accounts/shc_admin"
-        baseDomain: "sandbox5530.opentlc.com"
-        entity_name: "acme-corp"
-      clusterbuild:
-        enabled: false
-        name: dev-project-cluster
-        awsAccountId: "390403869973"
-        vaultPath: "aws/accounts/shc_admin"
-        baseDomain: "sandbox5530.opentlc.com"
-        slug: ""
-        clusterType: standalone
-        region: us-east-1
-        ocpImageSet: img4.21.9-x86-64-appsub
-        controlPlaneCount: 3
-        workerCount: 2
-        controllerFlavor: m5.xlarge
-        workerFlavor: m5.large
-        pullSecretVaultPath: "aws/ocp-pull-secret"
-        sshKeyVaultPath: "aws/ocp-ssh-key"
 
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
@@ -1888,7 +1781,6 @@ acmPolicies:
           - "true"
 
 # ─── ACM Policy: basechart — install ESO + GitOps on basechart:true clusters ─
-# Targets clusters labeled basechart:true by helper_CloudOSO / helper_CloudAWS.
 # Installs External Secrets Operator and OpenShift GitOps Operator via OLM.
 acmBasechart:
   enabled: false

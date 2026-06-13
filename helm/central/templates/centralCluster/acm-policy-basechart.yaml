@@ -1,7 +1,6 @@
 {{- if and (include "sovereign-central.applicationsEnabled" .) .Values.acmBasechart.enabled }}
 ---
 # ACM Policy: install ESO + OpenShift GitOps on clusters labeled basechart:true
-# Applied to clusters provisioned by helper_CloudOSO and helper_CloudAWS.
 # Placement intentionally narrow (basechart:true) to avoid installing GitOps
 # on unmanaged or manually imported clusters.
 apiVersion: policy.open-cluster-management.io/v1
