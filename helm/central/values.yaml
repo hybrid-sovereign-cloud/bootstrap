@@ -862,6 +862,10 @@ sovereignJobs:
       env:
         - name: VAULT_ADDR
           value: "http://vault.central-vault.svc:8200"
+        - name: VAULT_SECRET_NAMESPACE
+          value: "central-vault"
+        - name: VAULT_NAMESPACE
+          value: "central-vault"
     vaultKv:
       enabled: true
       playbook: vault-kv.yml
@@ -870,6 +874,8 @@ sovereignJobs:
       env:
         - name: VAULT_ADDR
           value: "http://vault.central-vault.svc:8200"
+        - name: VAULT_NAMESPACE
+          value: "central-vault"
     deliverVaultToken:
       enabled: true
       playbook: deliver-vault-token.yml

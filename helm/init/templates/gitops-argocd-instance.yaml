@@ -21,6 +21,57 @@ spec:
   extraConfig:
     resource.compareoptions: |
       serverSideDiff: true
+    # Custom health check: Vault StatefulSets are "Healthy" when pods are Running,
+    # even if not Ready. Vault pods are never Ready before initialization, so without
+    # this check ArgoCD deadlocks: vault-init (wave 23) can't run until vault is
+    # Healthy (wave 15), but vault can't be Healthy until vault-init runs.
+    resource.customizations.health.apps_StatefulSet: |
+      hs = {}
+      local isVault = false
+      if obj.metadata and obj.metadata.labels then
+        if obj.metadata.labels["app.kubernetes.io/name"] == "vault" or
+           obj.metadata.labels["app.kubernetes.io/instance"] == "vault" or
+           obj.metadata.labels["app.kubernetes.io/instance"] == "vault-services" then
+          isVault = true
+        end
+      end
+      if isVault then
+        if obj.status ~= nil then
+          if obj.status.currentReplicas ~= nil and obj.status.currentReplicas >= 1 then
+            hs.status = "Healthy"
+            hs.message = "Vault StatefulSet has running pods (initialization pending)"
+            return hs
+          end
+          if obj.status.replicas ~= nil and obj.status.replicas >= 1 then
+            hs.status = "Healthy"
+            hs.message = "Vault StatefulSet replicas provisioned"
+            return hs
+          end
+        end
+        hs.status = "Progressing"
+        hs.message = "Waiting for Vault pods to start"
+        return hs
+      end
+      if obj.status ~= nil then
+        if obj.status.updateStrategy ~= nil then
+          if obj.status.updatedReplicas ~= nil and obj.spec ~= nil then
+            if obj.status.updatedReplicas < obj.spec.replicas then
+              hs.status = "Progressing"
+              hs.message = "Waiting for StatefulSet rollout"
+              return hs
+            end
+          end
+        end
+        if obj.status.readyReplicas ~= nil and obj.spec ~= nil and obj.spec.replicas ~= nil then
+          if obj.status.readyReplicas >= obj.spec.replicas then
+            hs.status = "Healthy"
+            return hs
+          end
+        end
+      end
+      hs.status = "Progressing"
+      hs.message = "Waiting for ready replicas"
+      return hs
   # Exclude RHACM clusterview CRDs — their broken OpenAPI schema corrupts ArgoCD's cache.
   resourceExclusions: |
     - apiGroups:
