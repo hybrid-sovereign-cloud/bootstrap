@@ -661,6 +661,8 @@ giteaCentral:
         imagePullSecrets:
           - quay-pull-secret
       replicaCount: 1
+      strategy:
+        type: Recreate
       image:
         registry: quay.signal9.gg
         repository: hybrid-sovereign/gitea
