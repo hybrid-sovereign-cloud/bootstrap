@@ -37,6 +37,7 @@ spec:
       jsonPointers:
         - /metadata/labels
         - /metadata/annotations
+    {{- include "sovereign-central.esoIgnoreDifferences" . | nindent 4 }}
 
   syncPolicy:
     automated:

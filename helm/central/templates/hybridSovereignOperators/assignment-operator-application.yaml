@@ -37,6 +37,17 @@ spec:
       jsonPointers:
         - /metadata/labels
         - /metadata/annotations
+    - group: external-secrets.io
+      kind: ExternalSecret
+      jqPathExpressions:
+        - .spec.data[].remoteRef.conversionStrategy
+        - .spec.data[].remoteRef.decodingStrategy
+        - .spec.data[].remoteRef.metadataPolicy
+        - .spec.target.deletionPolicy
+        - .spec.refreshInterval
+      jsonPointers:
+        - /spec/dataFrom
+        - /metadata/annotations
 
   syncPolicy:
     automated:
