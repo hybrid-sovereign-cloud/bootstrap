@@ -1,0 +1,12 @@
+---
+acs_url: ""
+acs_admin_secret_name: "stackrox-central-services-admin-password"
+acs_admin_secret_namespace: "stackrox"
+vault_addr: ""
+vault_secret_path: "central/acs-admin"
+keycloak_url: ""
+keycloak_realm: "sovereign-central"
+keycloak_client_id: "acs"
+keycloak_admin_secret: ""
+keycloak_admin_secret_ns: "sovereign-cloud-jobs"
+ocp_services_server: ""

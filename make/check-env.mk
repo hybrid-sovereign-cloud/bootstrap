@@ -62,11 +62,27 @@ check-env: ## Verify all required environment variables are set and test logins 
 	\
 	echo "$(BOLD)Testing OpenStack credentials...$(RESET)"; \
 	if command -v openstack >/dev/null 2>&1; then \
-	  if openstack --os-cloud="$(OSO_CLOUDS)" token issue -f value -c id >/dev/null 2>&1; then \
-	    printf "  $(GREEN)✓$(RESET)  OpenStack token issued successfully (cloud: $(OSO_CLOUDS))\n"; \
-	  else \
-	    printf "  $(RED)✗$(RESET)  OpenStack auth FAILED (cloud: $(OSO_CLOUDS))\n"; \
+	  if [ ! -f "$(OSO_CLOUDS)" ]; then \
+	    printf "  $(RED)✗$(RESET)  OSO_CLOUDS file not found: $(OSO_CLOUDS)\n"; \
 	    failures=$$((failures+1)); \
+	  else \
+	    oso_result=$$(python3 -c "\
+import yaml,subprocess,os,sys; \
+c=yaml.safe_load(open('$(OSO_CLOUDS)')); \
+cn=list(c.get('clouds',{}).keys())[0]; \
+a=c['clouds'][cn].get('auth',{}); \
+env={**os.environ,'OS_AUTH_URL':a.get('auth_url',''),'OS_USERNAME':a.get('username',''),'OS_PASSWORD':a.get('password',''),'OS_USER_DOMAIN_NAME':a.get('user_domain_name','Default'),'OS_PROJECT_ID':'','OS_PROJECT_NAME':'','OS_CLOUD':''}; \
+r=subprocess.run(['openstack','token','issue','-f','value','-c','id'],env=env,capture_output=True,text=True); \
+print(cn+'|'+str(r.returncode)) \
+" 2>/dev/null); \
+	    oso_cloud_name=$$(echo "$$oso_result" | cut -d'|' -f1); \
+	    oso_rc=$$(echo "$$oso_result" | cut -d'|' -f2); \
+	    if [ "$$oso_rc" = "0" ]; then \
+	      printf "  $(GREEN)✓$(RESET)  OpenStack token issued successfully (cloud: $$oso_cloud_name, file: $(OSO_CLOUDS))\n"; \
+	    else \
+	      printf "  $(RED)✗$(RESET)  OpenStack auth FAILED (cloud: $$oso_cloud_name, file: $(OSO_CLOUDS))\n"; \
+	      failures=$$((failures+1)); \
+	    fi; \
 	  fi; \
 	else \
 	  printf "  $(BOLD)~$(RESET)  openstack CLI not found — skipping live auth check (OSO_CLOUDS=$(OSO_CLOUDS))\n"; \

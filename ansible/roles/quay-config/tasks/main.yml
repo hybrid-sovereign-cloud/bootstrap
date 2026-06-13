@@ -1,0 +1,205 @@
+---
+# ─── Step 1: Read Vault token ──────────────────────────────────────────────
+- name: Read Vault root token from Kubernetes secret
+  kubernetes.core.k8s_info:
+    kind: Secret
+    name: vault-init-secrets
+    namespace: "{{ vault_namespace | default('central-vault') }}"
+  register: _vault_init_secret
+  retries: 5
+  delay: 10
+
+- name: Set vault token fact
+  set_fact:
+    vault_root_token: "{{ _vault_init_secret.resources[0].data.root_token | b64decode }}"
+  when: _vault_init_secret.resources | length > 0
+
+# ─── Step 2: Wait for Quay to become ready ────────────────────────────────
+- name: Wait for QuayRegistry to report Healthy
+  kubernetes.core.k8s_info:
+    api_version: quay.redhat.com/v1
+    kind: QuayRegistry
+    namespace: "{{ quay_namespace | default('central-quay') }}"
+  register: _quay_registry
+  retries: 60
+  delay: 10
+  until:
+    - _quay_registry.resources | length > 0
+    - (_quay_registry.resources[0].status.conditions | default([]) | selectattr('type', 'equalto', 'Available') | selectattr('status', 'equalto', 'True') | list | length) > 0
+  ignore_errors: true
+
+- name: Wait additional time for Quay API to stabilize
+  pause:
+    seconds: 30
+  when: _quay_registry.resources | length > 0
+
+# ─── Step 3: Initialize Quay superuser ────────────────────────────────────
+- name: Generate secure admin password
+  set_fact:
+    quay_admin_password: "{{ lookup('password', '/dev/null length=24 chars=ascii_letters,digits') }}"
+
+- name: Initialize Quay superuser via API
+  uri:
+    url: "{{ quay_url }}/api/v1/user/initialize"
+    method: POST
+    validate_certs: false
+    body_format: json
+    body:
+      username: "{{ quay_admin_user }}"
+      password: "{{ quay_admin_password }}"
+      email: "admin@sovereign.local"
+      access_token: true
+    status_code: [200, 201]
+  register: _quay_init
+  retries: 10
+  delay: 15
+  until: _quay_init.status in [200, 201]
+  no_log: true
+
+- name: Set Quay access token
+  set_fact:
+    quay_access_token: "{{ _quay_init.json.access_token }}"
+  no_log: true
+
+# ─── Step 4: Store admin credentials in Vault ─────────────────────────────
+- name: Write Quay admin credentials to Vault
+  uri:
+    url: "{{ vault_addr }}/v1/{{ vault_secret_path | regex_replace('^central/', 'central/data/') }}"
+    method: POST
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      data:
+        username: "{{ quay_admin_user }}"
+        password: "{{ quay_admin_password }}"
+        token: "{{ quay_access_token }}"
+        url: "{{ quay_url }}"
+    status_code: [200, 204]
+  no_log: true
+
+# ─── Step 5: Get Keycloak client secret from Vault ────────────────────────
+- name: Read Keycloak admin credentials from secret
+  kubernetes.core.k8s_info:
+    kind: Secret
+    name: "{{ keycloak_admin_secret }}"
+    namespace: "{{ keycloak_admin_secret_ns }}"
+  register: _rhbk_secret
+  retries: 5
+  delay: 5
+
+- name: Set Keycloak admin credentials
+  set_fact:
+    keycloak_admin_username: "{{ _rhbk_secret.resources[0].data.username | b64decode }}"
+    keycloak_admin_password: "{{ _rhbk_secret.resources[0].data.password | b64decode }}"
+  no_log: true
+  when: _rhbk_secret.resources | length > 0
+
+- name: Get Keycloak admin token
+  uri:
+    url: "{{ keycloak_url }}/realms/master/protocol/openid-connect/token"
+    method: POST
+    validate_certs: false
+    body_format: form-urlencoded
+    body:
+      grant_type: password
+      client_id: admin-cli
+      username: "{{ keycloak_admin_username }}"
+      password: "{{ keycloak_admin_password }}"
+    status_code: 200
+  register: _kc_token
+  no_log: true
+  retries: 5
+  delay: 10
+
+- name: Set Keycloak admin token
+  set_fact:
+    kc_admin_token: "{{ _kc_token.json.access_token }}"
+  no_log: true
+
+- name: Get Keycloak client secret for Quay
+  uri:
+    url: "{{ keycloak_url }}/admin/realms/{{ keycloak_realm }}/clients"
+    method: GET
+    validate_certs: false
+    headers:
+      Authorization: "Bearer {{ kc_admin_token }}"
+    status_code: 200
+  register: _kc_clients
+  retries: 3
+  delay: 5
+
+- name: Find Quay client UUID
+  set_fact:
+    quay_client_uuid: "{{ (_kc_clients.json | selectattr('clientId', 'equalto', keycloak_client_id) | list | first).id }}"
+  when: _kc_clients.json | selectattr('clientId', 'equalto', keycloak_client_id) | list | length > 0
+
+- name: Get Quay client secret from Keycloak
+  uri:
+    url: "{{ keycloak_url }}/admin/realms/{{ keycloak_realm }}/clients/{{ quay_client_uuid }}/client-secret"
+    method: GET
+    validate_certs: false
+    headers:
+      Authorization: "Bearer {{ kc_admin_token }}"
+    status_code: 200
+  register: _quay_client_secret
+  no_log: true
+  when: quay_client_uuid is defined
+
+- name: Set Quay OIDC client secret
+  set_fact:
+    quay_oidc_client_secret: "{{ _quay_client_secret.json.value }}"
+  no_log: true
+  when: _quay_client_secret is not skipped and _quay_client_secret.json is defined
+
+# ─── Step 6: Configure Quay OIDC via superuser config endpoint ────────────
+- name: Get current Quay superuser config
+  uri:
+    url: "{{ quay_url }}/api/v1/superuser/config"
+    method: GET
+    validate_certs: false
+    headers:
+      Authorization: "Bearer {{ quay_access_token }}"
+    status_code: 200
+  register: _quay_config
+  retries: 3
+  delay: 5
+
+- name: Apply OIDC config to Quay
+  uri:
+    url: "{{ quay_url }}/api/v1/superuser/config"
+    method: PUT
+    validate_certs: false
+    headers:
+      Authorization: "Bearer {{ quay_access_token }}"
+    body_format: json
+    body:
+      config: "{{ _quay_config.json.config | combine({
+        'AUTHENTICATION_TYPE': 'OIDC',
+        'PREFERRED_URL_SCHEME': 'https',
+        'OIDC_LOGIN_CONFIG': {
+          'CLIENT_ID': keycloak_client_id,
+          'CLIENT_SECRET': quay_oidc_client_secret,
+          'OIDC_SERVER': keycloak_url ~ '/realms/' ~ keycloak_realm,
+          'SERVICE_NAME': 'Keycloak',
+          'VERIFIED_EMAIL_CLAIM_NAME': 'email',
+          'PREFERRED_GROUP_CLAIM_NAME': 'groups',
+          'LOGIN_SCOPES': ['openid', 'email', 'profile', 'groups']
+        },
+        'FEATURE_TEAM_SYNCING': true,
+        'TEAM_RESYNC_STALE_TIME': '60m'
+      }) }}"
+    status_code: [200, 201]
+  no_log: true
+  when: quay_oidc_client_secret is defined
+
+- name: Trigger Quay config reload
+  uri:
+    url: "{{ quay_url }}/api/v1/superuser/registrystatus"
+    method: GET
+    validate_certs: false
+    headers:
+      Authorization: "Bearer {{ quay_access_token }}"
+    status_code: [200, 404]
+  ignore_errors: true

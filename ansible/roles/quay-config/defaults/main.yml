@@ -1,0 +1,11 @@
+---
+quay_url: ""
+quay_admin_user: "sovereign_admin"
+vault_addr: ""
+vault_token: ""
+vault_secret_path: "central/quay-central-admin"
+keycloak_url: ""
+keycloak_realm: "sovereign-central"
+keycloak_client_id: "quay-central"
+keycloak_admin_secret: ""
+keycloak_admin_secret_ns: "sovereign-cloud-jobs"

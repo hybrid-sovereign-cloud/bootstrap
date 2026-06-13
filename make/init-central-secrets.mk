@@ -39,11 +39,17 @@ init-central-secrets: check-env init-services-argocd-sa ## Seed bootstrap secret
 	if oc get applicationsets.argoproj.io sovereign-bootstrap -n openshift-gitops >/dev/null 2>&1; then \
 	  APPSET_FLAG="--set bootstrap.applicationset=true"; \
 	fi && \
+	PUSH_SECRETS_FLAG="" && \
+	if ! oc get crd pushsecrets.external-secrets.io >/dev/null 2>&1; then \
+	  printf "  $(BOLD)~$(RESET)  ESO CRDs not installed yet — disabling PushSecrets for initial bootstrap\n"; \
+	  PUSH_SECRETS_FLAG="--set pushSecrets.enabled=false"; \
+	fi && \
 	helm upgrade --install sovereign-init helm/init \
 	  --namespace openshift-gitops-operator \
 	  --create-namespace \
 	  $(SOVEREIGN_INIT_BOOTSTRAP_SECRETS) \
 	  $$APPSET_FLAG \
+	  $$PUSH_SECRETS_FLAG \
 	  $(SOVEREIGN_INIT_HELM_SECRETS_SETS) \
 	  $$INSTALL_OPERATOR_FLAG \
 	  --wait --timeout=5m && \

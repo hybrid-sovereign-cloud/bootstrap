@@ -120,7 +120,6 @@ pullSecretNamespaces:
   - sovereign-cloud-helpers
   - sovereign-cloud-jobs
   - external-secrets
-  - aap
   - central-quay
 
 # ─── ArgoCD OpenAPI schema compatibility shim ────────────────────────────────

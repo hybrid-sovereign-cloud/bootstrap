@@ -1,0 +1,224 @@
+---
+# ─── Step 1: Read Vault token ──────────────────────────────────────────────
+- name: Read Vault root token from Kubernetes secret
+  kubernetes.core.k8s_info:
+    kind: Secret
+    name: vault-init-secrets
+    namespace: "{{ vault_namespace | default('central-vault') }}"
+  register: _vault_init_secret
+  retries: 5
+  delay: 10
+
+- name: Set vault token fact
+  set_fact:
+    vault_root_token: "{{ _vault_init_secret.resources[0].data.root_token | b64decode }}"
+  when: _vault_init_secret.resources | length > 0
+
+# ─── Step 2: Wait for ACS Central to be ready ─────────────────────────────
+- name: Wait for ACS Central deployment to be available
+  kubernetes.core.k8s_info:
+    api_version: platform.stackrox.io/v1alpha1
+    kind: Central
+    name: stackrox-central-services
+    namespace: stackrox
+  register: _acs_central
+  retries: 60
+  delay: 15
+  until:
+    - _acs_central.resources | length > 0
+    - (_acs_central.resources[0].status.conditions | default([]) | selectattr('type', 'equalto', 'Initialized') | selectattr('status', 'equalto', 'True') | list | length) > 0
+  ignore_errors: true
+
+- name: Wait additional time for ACS API to stabilize
+  pause:
+    seconds: 30
+
+# ─── Step 3: Get ACS admin password ────────────────────────────────────────
+- name: Read ACS admin password from OCP secret
+  kubernetes.core.k8s_info:
+    kind: Secret
+    name: "{{ acs_admin_secret_name }}"
+    namespace: "{{ acs_admin_secret_namespace }}"
+  register: _acs_admin_secret
+  retries: 10
+  delay: 15
+  until: _acs_admin_secret.resources | length > 0
+
+- name: Set ACS admin password
+  set_fact:
+    acs_admin_password: "{{ _acs_admin_secret.resources[0].data.password | b64decode }}"
+  no_log: true
+
+# ─── Step 4: Store ACS admin credentials in Vault ─────────────────────────
+- name: Write ACS admin credentials to Vault
+  uri:
+    url: "{{ vault_addr }}/v1/{{ vault_secret_path | regex_replace('^central/', 'central/data/') }}"
+    method: POST
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      data:
+        username: "admin"
+        password: "{{ acs_admin_password }}"
+        url: "{{ acs_url }}"
+    status_code: [200, 204]
+  no_log: true
+
+# ─── Step 5: Register central cluster in ACS ──────────────────────────────
+- name: Check if central cluster is already registered
+  uri:
+    url: "{{ acs_url }}/v1/clusters"
+    method: GET
+    validate_certs: false
+    url_username: admin
+    url_password: "{{ acs_admin_password }}"
+    force_basic_auth: true
+    status_code: 200
+  register: _acs_clusters
+  no_log: true
+  retries: 5
+  delay: 10
+
+- name: Register central cluster (secured cluster on central OCP)
+  uri:
+    url: "{{ acs_url }}/v1/clusters"
+    method: POST
+    validate_certs: false
+    url_username: admin
+    url_password: "{{ acs_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      name: "central"
+      type: "KUBERNETES_CLUSTER"
+      mainImage: "registry.redhat.io/advanced-cluster-security/rhacs-main-rhel8"
+      collectorImage: "registry.redhat.io/advanced-cluster-security/rhacs-collector-slim-rhel8"
+      centralApiEndpoint: "central.stackrox.svc:443"
+      runtimeSupport: false
+      admissionControllerUpdates: true
+      dynamicConfig:
+        admissionControllerConfig:
+          enabled: true
+          enforceOnUpdates: true
+          timeoutSeconds: 3
+          scanInline: true
+          disableBypass: false
+    status_code: [200, 201]
+  no_log: false
+  when: >
+    (_acs_clusters.json.clusters | default([]) | selectattr('name', 'equalto', 'central') | list | length) == 0
+
+# ─── Step 6: Register services cluster in ACS ──────────────────────────────
+- name: Register services cluster in ACS
+  uri:
+    url: "{{ acs_url }}/v1/clusters"
+    method: POST
+    validate_certs: false
+    url_username: admin
+    url_password: "{{ acs_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      name: "services"
+      type: "KUBERNETES_CLUSTER"
+      mainImage: "registry.redhat.io/advanced-cluster-security/rhacs-main-rhel8"
+      collectorImage: "registry.redhat.io/advanced-cluster-security/rhacs-collector-slim-rhel8"
+      centralApiEndpoint: "{{ acs_url | regex_replace('https://', '') }}"
+      runtimeSupport: false
+      admissionControllerUpdates: true
+      dynamicConfig:
+        admissionControllerConfig:
+          enabled: true
+          enforceOnUpdates: true
+          timeoutSeconds: 3
+          scanInline: true
+          disableBypass: false
+    status_code: [200, 201]
+  no_log: false
+  when: >
+    ocp_services_server | length > 0 and
+    (_acs_clusters.json.clusters | default([]) | selectattr('name', 'equalto', 'services') | list | length) == 0
+
+# ─── Step 7: Configure OIDC with central RHBK ─────────────────────────────
+- name: Read Keycloak admin credentials
+  kubernetes.core.k8s_info:
+    kind: Secret
+    name: "{{ keycloak_admin_secret }}"
+    namespace: "{{ keycloak_admin_secret_ns }}"
+  register: _rhbk_secret
+  retries: 5
+  delay: 5
+
+- name: Set Keycloak admin credentials
+  set_fact:
+    kc_admin_user: "{{ _rhbk_secret.resources[0].data.username | b64decode }}"
+    kc_admin_pass: "{{ _rhbk_secret.resources[0].data.password | b64decode }}"
+  no_log: true
+  when: _rhbk_secret.resources | length > 0
+
+- name: Get Keycloak admin token
+  uri:
+    url: "{{ keycloak_url }}/realms/master/protocol/openid-connect/token"
+    method: POST
+    validate_certs: false
+    body_format: form-urlencoded
+    body:
+      grant_type: password
+      client_id: admin-cli
+      username: "{{ kc_admin_user }}"
+      password: "{{ kc_admin_pass }}"
+    status_code: 200
+  register: _kc_token
+  no_log: true
+  retries: 5
+  delay: 10
+
+- name: Get ACS Keycloak client UUID
+  uri:
+    url: "{{ keycloak_url }}/admin/realms/{{ keycloak_realm }}/clients"
+    method: GET
+    validate_certs: false
+    headers:
+      Authorization: "Bearer {{ _kc_token.json.access_token }}"
+    status_code: 200
+  register: _kc_clients
+
+- name: Find ACS client UUID
+  set_fact:
+    acs_client_uuid: "{{ (_kc_clients.json | selectattr('clientId', 'equalto', keycloak_client_id) | list | first).id }}"
+  when: _kc_clients.json | selectattr('clientId', 'equalto', keycloak_client_id) | list | length > 0
+
+- name: Get ACS client secret from Keycloak
+  uri:
+    url: "{{ keycloak_url }}/admin/realms/{{ keycloak_realm }}/clients/{{ acs_client_uuid }}/client-secret"
+    method: GET
+    validate_certs: false
+    headers:
+      Authorization: "Bearer {{ _kc_token.json.access_token }}"
+    status_code: 200
+  register: _acs_client_secret
+  no_log: true
+  when: acs_client_uuid is defined
+
+- name: Configure OIDC auth provider in ACS
+  uri:
+    url: "{{ acs_url }}/v1/authProviders"
+    method: POST
+    validate_certs: false
+    url_username: admin
+    url_password: "{{ acs_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      name: "Keycloak"
+      type: "oidc"
+      config:
+        client_id: "{{ keycloak_client_id }}"
+        client_secret: "{{ _acs_client_secret.json.value }}"
+        issuer: "{{ keycloak_url }}/realms/{{ keycloak_realm }}"
+        mode: "post"
+    status_code: [200, 201]
+  no_log: true
+  when: acs_client_uuid is defined and _acs_client_secret is not skipped

@@ -392,9 +392,9 @@ aapCentral:
       storage: 10Gi
       backupStorage: 10Gi
 
-# ─── SDX Operator (services cluster) ──────────────────────────────────────
+# ─── SDX Operator (services cluster) — DISABLED: functionality consolidated into plugin_iaac ──
 pluginSdx:
-  enabled: true
+  enabled: false
   chartVersion: "0.1.7"
   syncWave: "33"
   image:
@@ -462,6 +462,16 @@ quay:
     registry:
       enabled: true
       name: sovereign-registry
+      configBundle: |
+        FEATURE_USER_INITIALIZE: true
+        FEATURE_SUPERUSERS_FULL_ACCESS: true
+        SUPER_USERS:
+          - sovereign_admin
+        FEATURE_USER_CREATION: false
+        FEATURE_TEAM_SYNCING: true
+        TEAM_RESYNC_STALE_TIME: "60m"
+        FEATURE_NONSUPERUSER_TEAM_SYNCING_SETUP: false
+      configBundleSecretName: sovereign-registry-config-bundle
       components:
         objectstorage:
           managed: true
@@ -1063,7 +1073,7 @@ sovereignJobs:
         - name: SECRETS_NAMESPACE
           value: "sovereign-cloud-jobs"
     giteaCreateRepo:
-      enabled: false  # cluster-build no longer depends on Gitea (direct Helm by operators)
+      enabled: true  # Required: plugin_iaac needs tenancy_repo to exist on central Gitea
       playbook: gitea-create-repo.yml
       activeDeadlineSeconds: 300
       syncWave: "36"
@@ -1310,7 +1320,7 @@ sovereignJobs:
               name: eda-oci-credentials
               key: password
     keycloakTestUsers:
-      enabled: false
+      enabled: true
       playbook: keycloak-test-users.yml
       activeDeadlineSeconds: 300
       syncWave: "32"
@@ -1363,11 +1373,132 @@ sovereignJobs:
     # Runs after all operators are deployed (wave 45) so their CRDs exist.
     # Disables broken chart-default samples that have incorrect field names.
     operatorSamples:
-      enabled: false
+      enabled: true
       playbook: operator-samples.yml
       activeDeadlineSeconds: 900
       syncWave: "45"
       env:
+        - name: OCP_SERVICES_SERVER
+          value: "https://api.shcservices.lab.signal9.gg:6443"
+
+    # ─── Quay Central Config: init admin + store in Vault + configure OIDC ──────
+    quayCentralConfig:
+      enabled: true
+      playbook: quay-config.yml
+      activeDeadlineSeconds: 600
+      syncWave: "37"
+      externalSecrets:
+        rhbkCentralAdmin:
+          enabled: true
+          targetSecretName: rhbk-central-admin-quay
+          data:
+            - secretKey: username
+              remoteKey: rhbk-central-admin
+              property: username
+            - secretKey: password
+              remoteKey: rhbk-central-admin
+              property: password
+      env:
+        - name: QUAY_URL
+          value: "https://sovereign-registry-quay-central-quay.apps.shc-central.lab.signal9.gg"
+        - name: QUAY_ADMIN_USER
+          value: "sovereign_admin"
+        - name: VAULT_ADDR
+          value: "http://vault.central-vault.svc:8200"
+        - name: VAULT_NAMESPACE
+          value: "central-vault"
+        - name: VAULT_SECRET_PATH
+          value: "central/quay-central-admin"
+        - name: KEYCLOAK_URL
+          value: "https://rhbk-central.apps.shc-central.lab.signal9.gg"
+        - name: KEYCLOAK_REALM
+          value: "sovereign-central"
+        - name: KEYCLOAK_CLIENT_ID
+          value: "quay-central"
+        - name: KEYCLOAK_ADMIN_SECRET
+          value: "rhbk-central-admin-quay"
+        - name: KEYCLOAK_ADMIN_SECRET_NS
+          value: "sovereign-cloud-jobs"
+
+    # ─── Quay Services Config: init admin + store in Vault + configure OIDC ─────
+    quayServicesConfig:
+      enabled: true
+      playbook: quay-config.yml
+      activeDeadlineSeconds: 600
+      syncWave: "37"
+      externalSecrets:
+        rhbkServicesAdminQuay:
+          enabled: true
+          targetSecretName: rhbk-services-admin-quay
+          data:
+            - secretKey: username
+              remoteKey: rhbk-services-admin
+              property: username
+            - secretKey: password
+              remoteKey: rhbk-services-admin
+              property: password
+      env:
+        - name: QUAY_URL
+          value: "https://svc-sovereign-registry-quay-services-quay.apps.shcservices.lab.signal9.gg"
+        - name: QUAY_ADMIN_USER
+          value: "sovereign_admin"
+        - name: VAULT_ADDR
+          value: "http://vault.central-vault.svc:8200"
+        - name: VAULT_NAMESPACE
+          value: "central-vault"
+        - name: VAULT_SECRET_PATH
+          value: "central/quay-services-admin"
+        - name: KEYCLOAK_URL
+          value: "https://rhbk-services.apps.shcservices.lab.signal9.gg"
+        - name: KEYCLOAK_REALM
+          value: "sovereign-tenants"
+        - name: KEYCLOAK_CLIENT_ID
+          value: "quay-services"
+        - name: KEYCLOAK_ADMIN_SECRET
+          value: "rhbk-services-admin-quay"
+        - name: KEYCLOAK_ADMIN_SECRET_NS
+          value: "sovereign-cloud-jobs"
+
+    # ─── ACS Config: register clusters + configure OIDC ─────────────────────────
+    acsConfig:
+      enabled: true
+      playbook: acs-config.yml
+      activeDeadlineSeconds: 600
+      syncWave: "36"
+      externalSecrets:
+        rhbkCentralAdminAcs:
+          enabled: true
+          targetSecretName: rhbk-central-admin-acs
+          data:
+            - secretKey: username
+              remoteKey: rhbk-central-admin
+              property: username
+            - secretKey: password
+              remoteKey: rhbk-central-admin
+              property: password
+      env:
+        - name: ACS_URL
+          value: "https://central-stackrox.apps.shc-central.lab.signal9.gg"
+        - name: ACS_ADMIN_SECRET_NAME
+          value: "stackrox-central-services-admin-password"
+        - name: ACS_ADMIN_SECRET_NAMESPACE
+          value: "stackrox"
+        - name: VAULT_ADDR
+          value: "http://vault.central-vault.svc:8200"
+        - name: VAULT_NAMESPACE
+          value: "central-vault"
+        - name: VAULT_SECRET_PATH
+          value: "central/acs-admin"
+        - name: KEYCLOAK_URL
+          value: "https://rhbk-central.apps.shc-central.lab.signal9.gg"
+        - name: KEYCLOAK_REALM
+          value: "sovereign-central"
+        - name: KEYCLOAK_CLIENT_ID
+          value: "acs"
+        - name: KEYCLOAK_ADMIN_SECRET
+          value: "rhbk-central-admin-acs"
+        - name: KEYCLOAK_ADMIN_SECRET_NS
+          value: "sovereign-cloud-jobs"
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
 
@@ -1694,7 +1825,7 @@ platformOpenshiftOperator:
 
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
-  enabled: false
+  enabled: true
   chartVersion: "0.5.5"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
@@ -1715,11 +1846,11 @@ cloudOSOOperator:
         vaultPath: osohelper-creator-sa
         refreshInterval: "1h"
     samples:
-      enabled: false  # CRs created manually on services cluster
+      enabled: false  # CRs created by operatorSamples job
 
 # ─── CloudAWS Operator (services cluster) ──────────────────────────────────
 cloudAWSOperator:
-  enabled: false
+  enabled: true
   chartVersion: "0.1.6"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
@@ -1740,7 +1871,7 @@ cloudAWSOperator:
         vaultPath: awshelper-creator-sa
         refreshInterval: "1h"
     samples:
-      enabled: false  # CRs created manually on services cluster
+      enabled: false  # CRs created by operatorSamples job
 
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:

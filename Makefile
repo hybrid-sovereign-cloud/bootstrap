@@ -63,7 +63,6 @@ include make/upload-entity-operator-chart.mk
 include make/upload-plugin-rbac-chart.mk
 include make/upload-plugin-vault-chart.mk
 include make/upload-plugin-aap-chart.mk
-include make/upload-plugin-sdx-chart.mk
 include make/upload-plugin-quay-chart.mk
 include make/upload-dashboard-chart.mk
 include make/upload-tenancy-dashboard-chart.mk
@@ -73,6 +72,11 @@ include make/upload-project-operator-chart.mk
 include make/upload-platformopenshift-operator-chart.mk
 include make/upload-cloudoso-operator-chart.mk
 include make/upload-ocp-base-chart.mk
+include make/upload-assignment-central-rbac-chart.mk
+include make/upload-sovereign-assignment-chart.mk
+include make/aap-load-manifest.mk
+include make/upload-oso-creds.mk
+include make/upload-aws-creds.mk
 include make/ansible-runner.mk
 include make/init-bootstrap-common.mk
 include make/init-central-argo.mk
@@ -111,7 +115,6 @@ UPLOAD_TARGETS := \
   upload-plugin-rbac-chart \
   upload-plugin-vault-chart \
   upload-plugin-aap-chart \
-  upload-plugin-sdx-chart \
   upload-plugin-quay-chart \
   upload-dashboard-chart \
   upload-tenancy-dashboard-chart \
@@ -121,7 +124,9 @@ UPLOAD_TARGETS := \
   upload-platformopenshift-operator-chart \
   upload-cloudoso-operator-chart \
   upload-ocp-base-chart \
-  upload-vault-central-namespace-chart
+  upload-vault-central-namespace-chart \
+  upload-assignment-central-rbac-chart \
+  upload-sovereign-assignment-chart
 
 .PHONY: upload-all-charts
 upload-all-charts: $(UPLOAD_TARGETS) ## Upload ALL Helm charts to OCI registry

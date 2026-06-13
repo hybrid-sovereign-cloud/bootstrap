@@ -1,0 +1,19 @@
+---
+- name: Configure ACS cluster registration and OIDC
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - acs-config
+  vars:
+    acs_url: "{{ lookup('env', 'ACS_URL') }}"
+    acs_admin_secret_name: "{{ lookup('env', 'ACS_ADMIN_SECRET_NAME') | default('stackrox-central-services-admin-password') }}"
+    acs_admin_secret_namespace: "{{ lookup('env', 'ACS_ADMIN_SECRET_NAMESPACE') | default('stackrox') }}"
+    vault_addr: "{{ lookup('env', 'VAULT_ADDR') }}"
+    vault_namespace: "{{ lookup('env', 'VAULT_NAMESPACE') }}"
+    vault_secret_path: "{{ lookup('env', 'VAULT_SECRET_PATH') }}"
+    keycloak_url: "{{ lookup('env', 'KEYCLOAK_URL') }}"
+    keycloak_realm: "{{ lookup('env', 'KEYCLOAK_REALM') }}"
+    keycloak_client_id: "{{ lookup('env', 'KEYCLOAK_CLIENT_ID') }}"
+    keycloak_admin_secret: "{{ lookup('env', 'KEYCLOAK_ADMIN_SECRET') }}"
+    keycloak_admin_secret_ns: "{{ lookup('env', 'KEYCLOAK_ADMIN_SECRET_NS') }}"
+    ocp_services_server: "{{ lookup('env', 'OCP_SERVICES_SERVER') }}"
