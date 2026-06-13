@@ -671,6 +671,12 @@ giteaCentral:
       gitea:
         admin:
           existingSecret: "gitea-admin-credentials"
+        additionalConfigFromEnvs:
+          - name: GITEA__DATABASE__PASSWD
+            valueFrom:
+              secretKeyRef:
+                name: gitea-pgcluster-pguser-gitea
+                key: password
         config:
           server:
             DOMAIN: "gitea-gitea.apps.shc-central.lab.signal9.gg"
@@ -680,11 +686,6 @@ giteaCentral:
             HOST: "gitea-pgcluster-primary.gitea.svc:5432"
             NAME: gitea
             USER: gitea
-            PASSWD:
-              valueFrom:
-                secretKeyRef:
-                  name: gitea-pgcluster-pguser-gitea
-                  key: password
             SSL_MODE: require
           session:
             PROVIDER: memory
