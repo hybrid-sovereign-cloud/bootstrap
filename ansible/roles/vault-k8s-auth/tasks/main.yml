@@ -57,7 +57,7 @@
     body:
       kubernetes_host: "https://kubernetes.default.svc"
       kubernetes_ca_cert: "{{ central_k8s_ca }}"
-      token_reviewer_jwt: "{{ central_sa_token }}"
+      disable_local_ca_jwt: true
       issuer: "https://kubernetes.default.svc"
     status_code: [200, 204]
   retries: 3
