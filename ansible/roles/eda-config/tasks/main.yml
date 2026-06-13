@@ -79,7 +79,8 @@
 - name: Register Decision Environments
   ansible.eda.decision_environment:
     controller_host: "{{ eda_controller_url }}"
-    controller_token: "{{ eda_admin_token }}"
+    controller_username: "{{ eda_admin_username }}"
+    controller_password: "{{ eda_admin_password }}"
     validate_certs: false
     name: "de-{{ item.name }}"
     image_url: "{{ item.de_image }}"
@@ -93,7 +94,8 @@
 - name: Create Event Stream credential
   ansible.eda.credential:
     controller_host: "{{ eda_controller_url }}"
-    controller_token: "{{ eda_admin_token }}"
+    controller_username: "{{ eda_admin_username }}"
+    controller_password: "{{ eda_admin_password }}"
     validate_certs: false
     name: "{{ event_stream_name }}-credential"
     credential_type_name: "Token"
@@ -106,7 +108,8 @@
 - name: Create Event Stream
   ansible.eda.event_stream:
     controller_host: "{{ eda_controller_url }}"
-    controller_token: "{{ eda_admin_token }}"
+    controller_username: "{{ eda_admin_username }}"
+    controller_password: "{{ eda_admin_password }}"
     validate_certs: false
     name: "{{ event_stream_name }}"
     credential_name: "{{ event_stream_name }}-credential"
@@ -117,7 +120,8 @@
 - name: Create EDA Project for sovereign rulebooks
   ansible.eda.project:
     controller_host: "{{ eda_controller_url }}"
-    controller_token: "{{ eda_admin_token }}"
+    controller_username: "{{ eda_admin_username }}"
+    controller_password: "{{ eda_admin_password }}"
     validate_certs: false
     name: "sovereign-eda-rulebooks"
     url: "{{ lookup('env', 'RULEBOOK_REPO_URL') }}"
@@ -128,7 +132,8 @@
 - name: Create Rulebook Activations
   ansible.eda.rulebook_activation:
     controller_host: "{{ eda_controller_url }}"
-    controller_token: "{{ eda_admin_token }}"
+    controller_username: "{{ eda_admin_username }}"
+    controller_password: "{{ eda_admin_password }}"
     validate_certs: false
     name: "{{ item.1.name }}-activation"
     project_name: "sovereign-eda-rulebooks"

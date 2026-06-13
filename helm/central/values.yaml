@@ -1263,7 +1263,7 @@ sovereignJobs:
       syncWave: "32"
       externalSecrets:
         aapAdminEda:
-          enabled: true
+          enabled: false
           targetSecretName: eda-admin-credentials
           data:
             - secretKey: token
@@ -1282,16 +1282,10 @@ sovereignJobs:
         - name: RULEBOOK_REPO_URL
           value: "https://github.com/hybrid-sovereign-cloud/eda.git"
       volumeMounts:
-        - name: aap-admin
-          mountPath: /var/run/secrets/aap-admin
-          readOnly: true
         - name: event-stream
           mountPath: /var/run/secrets/event-stream
           readOnly: true
       volumes:
-        - name: aap-admin
-          secret:
-            secretName: eda-admin-credentials
         - name: event-stream
           secret:
             secretName: event-stream-token
