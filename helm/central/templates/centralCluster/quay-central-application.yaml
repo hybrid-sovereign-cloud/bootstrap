@@ -34,10 +34,18 @@ spec:
       - CreateNamespace=true
       - ServerSideApply=true
       - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
     retry:
       limit: 10
       backoff:
         duration: 30s
         factor: 2
         maxDuration: 10m
+
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      name: {{ .Values.quay.values.registry.configBundleSecretName | default (printf "%s-config-bundle" (.Values.quay.values.registry.name | default "sovereign-registry")) }}
+      jsonPointers:
+        - /data/config.yaml
 {{- end }}

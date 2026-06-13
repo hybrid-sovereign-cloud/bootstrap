@@ -57,3 +57,6 @@ dashboardCentralReader:
   vaultAddr: "http://vault-active.central-vault.svc:8200"
   vaultPath: "central/data/dashboard-central-reader"
   apiServer: ""
+
+# Central Service Accounts: create SAs + push tokens to Vault for cross-cluster access
+centralServiceAccounts: {}
