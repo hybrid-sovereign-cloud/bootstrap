@@ -1281,14 +1281,6 @@ sovereignJobs:
           value: "https://sovereign-aap-eda-aap.apps.shc-central.lab.signal9.gg"
         - name: RULEBOOK_REPO_URL
           value: "https://github.com/hybrid-sovereign-cloud/eda.git"
-      volumeMounts:
-        - name: event-stream
-          mountPath: /var/run/secrets/event-stream
-          readOnly: true
-      volumes:
-        - name: event-stream
-          secret:
-            secretName: event-stream-token
     keycloakTestUsers:
       enabled: false
       playbook: keycloak-test-users.yml

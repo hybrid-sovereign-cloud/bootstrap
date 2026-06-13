@@ -32,5 +32,18 @@
         eda_admin_password: "{{ eda_secret_raw.resources[0].data.password | b64decode }}"
       no_log: true
 
+    - name: Read event-stream token from Kubernetes secret
+      kubernetes.core.k8s_info:
+        kind: Secret
+        namespace: sovereign-cloud-jobs
+        name: event-stream-token
+      register: event_stream_secret_raw
+      no_log: true
+
+    - name: Set event-stream token fact
+      ansible.builtin.set_fact:
+        event_stream_token: "{{ event_stream_secret_raw.resources[0].data.token | b64decode }}"
+      no_log: true
+
   roles:
     - eda-config
