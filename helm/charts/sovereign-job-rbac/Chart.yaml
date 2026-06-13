@@ -2,5 +2,5 @@ apiVersion: v2
 name: sovereign-job-rbac
 description: RBAC for sovereign Ansible jobs (ServiceAccount + ClusterRoleBinding)
 type: application
-version: 0.1.3
+version: 0.1.4
 appVersion: "1.0"
