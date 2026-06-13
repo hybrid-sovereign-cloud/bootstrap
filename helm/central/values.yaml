@@ -186,7 +186,7 @@ acsServices:
 # ─── Vault Central ───────────────────────────────────────────────────────────
 vault:
   enabled: true
-  chartVersion: "0.6.9"
+  chartVersion: "0.6.10"
   syncWave: "15"
   destinationNamespace: central-vault
   values:
@@ -239,7 +239,7 @@ vault:
 # ─── Vault Services ─────────────────────────────────────────────────────────
 vaultServices:
   enabled: true
-  chartVersion: "0.6.9"
+  chartVersion: "0.6.10"
   syncWave: "15"
   destinationNamespace: services-vault
   values:
@@ -295,6 +295,9 @@ vaultServices:
         image:
           repository: quay.signal9.gg/hybrid-sovereign/vault
           tag: "1.21.2"
+        readinessProbe:
+          enabled: true
+          path: "/v1/sys/health?standbyok=true&sealedcode=200&uninitcode=200"
       ui:
         enabled: true
       injector:
