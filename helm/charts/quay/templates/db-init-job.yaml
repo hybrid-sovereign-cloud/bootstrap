@@ -47,15 +47,66 @@ metadata:
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   backoffLimit: 5
-  activeDeadlineSeconds: 120
+  activeDeadlineSeconds: 300
   template:
     spec:
       serviceAccountName: quay-db-init
       restartPolicy: OnFailure
       imagePullSecrets:
         - name: quay-pull-secret
+      volumes:
+        - name: shared-data
+          emptyDir: {}
+      initContainers:
+        - name: extract-db-uri
+          image: {{ .Values.dbInitJob.image | default "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest" }}
+          env:
+            - name: CRUNCHY_SECRET
+              value: "{{ .Values.crunchy.name }}-pguser-quay"
+            - name: NS
+              value: "{{ .Values.namespace }}"
+          volumeMounts:
+            - name: shared-data
+              mountPath: /shared
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+              echo "Reading Crunchy postgres URI..."
+              DB_URI=$(oc get secret "$CRUNCHY_SECRET" -n "$NS" -o jsonpath='{.data.uri}' | base64 -d)
+              if [ -z "$DB_URI" ]; then
+                echo "ERROR: Could not read DB URI from $CRUNCHY_SECRET"
+                exit 1
+              fi
+              echo "$DB_URI" > /shared/db-uri.txt
+              echo "DB_URI written to shared volume"
+        - name: enable-pg-extensions
+          image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.13-2610
+          volumeMounts:
+            - name: shared-data
+              mountPath: /shared
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+              DB_URI=$(cat /shared/db-uri.txt)
+              echo "Waiting for PostgreSQL to be ready..."
+              for i in $(seq 1 30); do
+                if psql "$DB_URI" -c "SELECT 1" >/dev/null 2>&1; then
+                  echo "PostgreSQL is ready"
+                  break
+                fi
+                echo "Attempt $i: waiting..."; sleep 5
+              done
+              echo "Enabling PostgreSQL extensions..."
+              psql "$DB_URI" -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;" && \
+                echo "pg_trgm enabled"
+              psql "$DB_URI" -c "CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;" && \
+                echo "fuzzystrmatch enabled"
       containers:
-        - name: db-init
+        - name: inject-db-uri
           image: {{ .Values.dbInitJob.image | default "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest" }}
           env:
             - name: CRUNCHY_SECRET
@@ -64,39 +115,17 @@ spec:
               value: "{{ .Values.registry.configBundleSecretName | default (printf "%s-config-bundle" .Values.registry.name) }}"
             - name: NS
               value: "{{ .Values.namespace }}"
+          volumeMounts:
+            - name: shared-data
+              mountPath: /shared
           command:
             - /bin/bash
             - -c
             - |
               set -euo pipefail
-
-              echo "Reading Crunchy postgres URI..."
-              DB_URI=$(oc get secret "$CRUNCHY_SECRET" -n "$NS" -o jsonpath='{.data.uri}' | base64 -d)
-              if [ -z "$DB_URI" ]; then
-                echo "ERROR: Could not read DB URI from $CRUNCHY_SECRET"
-                exit 1
-              fi
-
-              echo "Enabling required PostgreSQL extensions (pg_trgm, fuzzystrmatch)..."
-              python3 -c "
-              import psycopg2, os, sys
-              uri = os.environ['DB_URI_FOR_PY']
-              try:
-                  conn = psycopg2.connect(uri)
-                  conn.autocommit = True
-                  cur = conn.cursor()
-                  cur.execute('CREATE EXTENSION IF NOT EXISTS pg_trgm;')
-                  cur.execute('CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;')
-                  conn.close()
-                  print('PostgreSQL extensions enabled successfully')
-              except Exception as e:
-                  print(f'Warning: Could not enable extensions: {e}', file=sys.stderr)
-              " DB_URI_FOR_PY="$DB_URI"
-
+              DB_URI=$(cat /shared/db-uri.txt)
               echo "Reading current configBundle..."
               CURRENT_CONFIG=$(oc get secret "$BUNDLE_SECRET" -n "$NS" -o jsonpath='{.data.config\.yaml}' | base64 -d)
-
-              # Only add DB_URI if not already present
               if echo "$CURRENT_CONFIG" | grep -q "^DB_URI:"; then
                 echo "DB_URI already present in configBundle, skipping injection"
               else
