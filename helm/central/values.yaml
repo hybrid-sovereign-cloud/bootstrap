@@ -821,6 +821,9 @@ vaultCentralNamespace:
       enabled: true
     vaultServicesInitSecretsCopy:
       enabled: true
+    # Services vault init PushSecret disabled: services-vault namespace is on services cluster
+    vaultServicesInitPushSecret:
+      enabled: false
 
 # ─── ArgoCD Repo Secret: cluster_builds (Gitea → Vault → ESO) ────────────────
 argocdClusterBuildsRepo:
