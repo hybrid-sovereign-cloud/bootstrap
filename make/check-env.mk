@@ -53,5 +53,29 @@ check-env: ## Verify all required environment variables are set and test logins 
 	  printf "  $(RED)✗$(RESET)  OCI registry login FAILED (host: $(OCI_HOST), user: $(OCI_ROBOT_USERNAME))\n"; \
 	  exit 1; \
 	fi
+	@echo "$(BOLD)Testing OpenStack credentials...$(RESET)"
+	@if command -v openstack >/dev/null 2>&1; then \
+	  if OSO_CLOUDS="$(OSO_CLOUDS)" openstack --os-cloud="$(OSO_CLOUDS)" token issue -f value -c id >/dev/null 2>&1; then \
+	    printf "  $(GREEN)✓$(RESET)  OpenStack token issued successfully (cloud: $(OSO_CLOUDS))\n"; \
+	  else \
+	    printf "  $(RED)✗$(RESET)  OpenStack auth FAILED (cloud: $(OSO_CLOUDS))\n"; \
+	    exit 1; \
+	  fi; \
+	else \
+	  printf "  $(BOLD)~$(RESET)  openstack CLI not found — skipping live auth check (OSO_CLOUDS=$(OSO_CLOUDS))\n"; \
+	fi
+	@echo "$(BOLD)Testing AWS credentials...$(RESET)"
+	@if command -v aws >/dev/null 2>&1; then \
+	  if AWS_ACCESS_KEY_ID="$(AWS_ACCESS_KEY_ID)" \
+	     AWS_SECRET_ACCESS_KEY="$(AWS_SECRET_ACCESS_KEY)" \
+	     aws sts get-caller-identity --output text --query 'Account' 2>/dev/null | grep -qF "$(AWS_ACCOUNT_ID)"; then \
+	    printf "  $(GREEN)✓$(RESET)  AWS credentials valid (account: $(AWS_ACCOUNT_ID))\n"; \
+	  else \
+	    printf "  $(RED)✗$(RESET)  AWS auth FAILED — sts:GetCallerIdentity returned unexpected account (expected: $(AWS_ACCOUNT_ID))\n"; \
+	    exit 1; \
+	  fi; \
+	else \
+	  printf "  $(BOLD)~$(RESET)  aws CLI not found — skipping live auth check (account: $(AWS_ACCOUNT_ID))\n"; \
+	fi
 	@echo ""
 	@echo "$(GREEN)All checks passed — environment is ready.$(RESET)"
