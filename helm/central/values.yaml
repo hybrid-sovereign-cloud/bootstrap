@@ -62,12 +62,6 @@ sovereignNamespacesServices:
         enabled: true
       - name: sovereign-cloud-plugins
         enabled: true
-      - name: services-vault
-        enabled: true
-      - name: services-rhbk
-        enabled: true
-      - name: services-quay
-        enabled: true
 
 # ─── RHBK Central (Keycloak) ─────────────────────────────────────────────────
 rhbk:
