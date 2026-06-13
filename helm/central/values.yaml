@@ -32,7 +32,7 @@ oci:
 # ─── Sovereign Namespaces (central cluster) ──────────────────────────────────
 sovereignNamespaces:
   enabled: true
-  chartVersion: "0.2.1"
+  chartVersion: "0.2.3"
   syncWave: "1"
   values:
     namespaces:
@@ -52,7 +52,7 @@ sovereignNamespaces:
 # ─── Sovereign Namespaces (services cluster) ────────────────────────────────
 sovereignNamespacesServices:
   enabled: true
-  chartVersion: "0.2.2"
+  chartVersion: "0.2.3"
   syncWave: "1"
   values:
     ociPullSecret:
@@ -71,6 +71,7 @@ sovereignNamespacesServices:
         enabled: true
       - name: services-vault
         enabled: true
+        pullSecret: false  # vault-services chart manages its own pull secret
       - name: services-rhbk
         enabled: true
       - name: services-quay
@@ -483,7 +484,7 @@ quay:
 # ─── Quay (services) ────────────────────────────────────────────────────────
 quayServices:
   enabled: true
-  chartVersion: "0.5.4"
+  chartVersion: "0.5.3"
   syncWave: "35"
   destinationNamespace: services-quay
   values:
@@ -841,7 +842,7 @@ vaultSecretStoreServices:
 # ─── Sovereign Jobs RBAC ────────────────────────────────────────────────────
 sovereignJobsRbac:
   enabled: true
-  chartVersion: "0.1.1"
+  chartVersion: "0.1.2"
   syncWave: "3"
   values:
     namespace: sovereign-cloud-jobs
@@ -1649,6 +1650,10 @@ platformOpenshiftOperator:
         refreshInterval: "1h"
     centralSA:
       secretName: awshelper-creator-sa
+      externalSecret:
+        enabled: false
+    osoCentralSA:
+      secretName: osohelper-creator-sa
       externalSecret:
         enabled: false
     samples:
