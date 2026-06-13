@@ -1,0 +1,171 @@
+{{- if .Values.bootstrap.operator }}
+{{- /*
+  ArgoCD OpenAPI v2 Schema Compatibility Shim
+  ===========================================
+  ArgoCD's embedded kube-openapi library fails to resolve JSON Pointer ~1-encoded $ref
+  keys in the aggregated /openapi/v2 spec when MCE (multicluster-engine) is installed.
+  The ocm-proxyserver APIService serves a UserPermission schema that uses a $ref like:
+    #/definitions/github.com~1stolostron~1...~1UserPermissionStatus
+  kube-openapi looks up the tilde-encoded key literally (not URL-decoded), so it never
+  finds the definition (which is stored under the slash-decoded key).
+
+  This shim registers a fake APIService backed by a minimal HTTPS server that adds one
+  extra OpenAPI v2 definition entry — using the tilde-encoded key — so kube-openapi can
+  resolve the reference and ArgoCD's cluster cache sync succeeds.
+
+  Fixed in: this chart (permanent workaround until ArgoCD/kube-openapi is patched upstream)
+*/ -}}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd-schema-fix
+  labels:
+    {{- include "sovereign-init.labels" . | nindent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: schema-fix-server
+  namespace: argocd-schema-fix
+  labels:
+    {{- include "sovereign-init.labels" . | nindent 4 }}
+data:
+  serve.sh: |
+    #!/bin/sh
+    set -e
+    mkdir -p /tmp/certs
+    openssl genrsa -out /tmp/certs/server.key 2048 2>/dev/null
+    openssl req -new -x509 -key /tmp/certs/server.key -out /tmp/certs/server.crt \
+      -days 3650 -subj "/CN=argocd-schema-fix.argocd-schema-fix.svc" 2>/dev/null
+    echo "Schema fix: TLS cert generated, starting HTTPS server on :6443"
+    exec python3 /config/server.py
+
+  server.py: |
+    import http.server, ssl, json, sys
+
+    # The tilde-encoded definition key is what kube-openapi looks for when resolving
+    # $ref: "#/definitions/github.com~1stolostron~1...~1UserPermissionStatus"
+    # The actual definition uses slash-separators but kube-openapi doesn't URL-decode ~1.
+    SPEC = json.dumps({
+        "swagger": "2.0",
+        "info": {"title": "ArgoCD Schema Compatibility Shim", "version": "0.1.0"},
+        "paths": {
+            "/apis/schemafix.sovereign-bootstrap.io/v1/": {
+                "get": {
+                    "operationId": "getAPIResources",
+                    "produces": ["application/json"],
+                    "responses": {"200": {"description": "OK"}}
+                }
+            }
+        },
+        "definitions": {
+            "github.com~1stolostron~1cluster-lifecycle-api~1clusterview~1v1alpha1.UserPermissionStatus": {
+                "description": "UserPermissionStatus shim — satisfies kube-openapi ~1 ref resolution",
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {"type": "object", "x-kubernetes-preserve-unknown-fields": True}
+                    }
+                }
+            }
+        }
+    }).encode()
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            body = SPEC if "/openapi/v2" in self.path else b'{"apiVersion":"v1","groupVersion":"schemafix.sovereign-bootstrap.io/v1","resources":[]}'
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        def log_message(self, fmt, *args):
+            pass
+
+    httpd = http.server.HTTPServer(("", 6443), Handler)
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ctx.load_cert_chain("/tmp/certs/server.crt", "/tmp/certs/server.key")
+    httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
+    print("Schema fix server ready on :6443", flush=True)
+    httpd.serve_forever()
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: schema-fix-server
+  namespace: argocd-schema-fix
+  labels:
+    {{- include "sovereign-init.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: schema-fix-server
+  template:
+    metadata:
+      labels:
+        app: schema-fix-server
+    spec:
+      imagePullSecrets:
+        - name: quay-pull-secret
+      containers:
+        - name: server
+          image: {{ .Values.argocdSchemaFix.image | default "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest" }}
+          command: ["/bin/sh", "/config/serve.sh"]
+          ports:
+            - containerPort: 6443
+              name: https
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          readinessProbe:
+            tcpSocket:
+              port: 6443
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 12
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            runAsNonRoot: true
+      volumes:
+        - name: config
+          configMap:
+            name: schema-fix-server
+            defaultMode: 0755
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-schema-fix
+  namespace: argocd-schema-fix
+  labels:
+    {{- include "sovereign-init.labels" . | nindent 4 }}
+spec:
+  ports:
+    - port: 443
+      targetPort: 6443
+      name: https
+  selector:
+    app: schema-fix-server
+---
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1.schemafix.sovereign-bootstrap.io
+  labels:
+    {{- include "sovereign-init.labels" . | nindent 4 }}
+spec:
+  group: schemafix.sovereign-bootstrap.io
+  groupPriorityMinimum: 1
+  insecureSkipTLSVerify: true
+  service:
+    name: argocd-schema-fix
+    namespace: argocd-schema-fix
+    port: 443
+  version: v1
+  versionPriority: 1
+{{- end }}

@@ -110,6 +110,7 @@ gitea:
   adminEmail: "admin@sovereign.local"
 
 pullSecretNamespaces:
+  - argocd-schema-fix
   - central-vault
   - gitea
   - central-rhbk
@@ -120,3 +121,10 @@ pullSecretNamespaces:
   - external-secrets
   - aap
   - central-quay
+
+# ─── ArgoCD OpenAPI schema compatibility shim ────────────────────────────────
+argocdSchemaFix:
+  # Deploys a minimal HTTPS server that injects the tilde-encoded UserPermissionStatus
+  # definition into the aggregated OpenAPI v2 spec, working around a kube-openapi ~1
+  # resolution bug in ArgoCD when MCE/RHACM is installed on the same cluster.
+  image: "quay.signal9.gg/hybrid-sovereign/ansible-runner:latest"
