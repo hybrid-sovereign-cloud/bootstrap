@@ -457,7 +457,7 @@ odfServices:
 # ─── Quay (central) ─────────────────────────────────────────────────────────
 quay:
   enabled: true
-  chartVersion: "0.6.1"
+  chartVersion: "0.6.2"
   syncWave: "35"
   destinationNamespace: central-quay
   values:
@@ -498,7 +498,7 @@ quay:
             resources:
               requests:
                 cpu: "500m"
-                memory: "4Gi"
+                memory: "6Gi"
               limits:
                 cpu: "2"
                 memory: "8Gi"
@@ -514,7 +514,7 @@ quay:
 # ─── Quay (services) ────────────────────────────────────────────────────────
 quayServices:
   enabled: true
-  chartVersion: "0.6.1"
+  chartVersion: "0.6.2"
   syncWave: "35"
   destinationNamespace: services-quay
   values:
