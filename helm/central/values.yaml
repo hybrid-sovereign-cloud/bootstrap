@@ -1098,6 +1098,9 @@ sovereignJobs:
       playbook: gitea-init.yml
       activeDeadlineSeconds: 600
       syncWave: "35"
+      env:
+        - name: RUN_ID
+          value: "2"
       externalSecrets:
         giteaAdminCredentials:
           enabled: true
@@ -1145,6 +1148,8 @@ sovereignJobs:
       activeDeadlineSeconds: 300
       syncWave: "36"
       env:
+        - name: RUN_ID
+          value: "2"
         - name: GITEA_URL
           value: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
         - name: GITEA_ADMIN_USER
