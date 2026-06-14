@@ -861,7 +861,7 @@ vaultCentralNamespace:
         enabled: true
         namespace: sovereign-cloud-jobs
         clusterRoleRules:
-          - apiGroups: ["hybridsovereign.redhat.com"]
+          - apiGroups: ["helper.hybridsovereign.redhat"]
             resources: ["*"]
             verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
           - apiGroups: [""]
@@ -871,7 +871,7 @@ vaultCentralNamespace:
         enabled: true
         namespace: sovereign-cloud-jobs
         clusterRoleRules:
-          - apiGroups: ["hybridsovereign.redhat.com"]
+          - apiGroups: ["helper.hybridsovereign.redhat"]
             resources: ["*"]
             verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
           - apiGroups: [""]
