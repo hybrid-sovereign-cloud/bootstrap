@@ -424,7 +424,7 @@ eventForwarder:
   syncWave: "32"
   image:
     repository: quay.signal9.gg/hybrid-sovereign/event-forwarder
-    tag: "0.3.0"
+    tag: "0.4.0"
   eventStreamUrl: "https://sovereign-aap-aap.apps.shc-central.lab.signal9.gg/eda-event-streams/api/eda/v1/external_event_stream/4392c64b-2faf-4414-a6e6-5ff1bc8d5a75/post/"
   vaultSecretPath: "central/event-forwarder"
 

@@ -119,7 +119,6 @@
     credential_type_name: "Token Event Stream"
     organization_name: "{{ eda_organization }}"
     inputs:
-      auth_type: "bearer_token"
       token: "{{ event_stream_token }}"
     state: present
   no_log: true
