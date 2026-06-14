@@ -3,75 +3,75 @@
   ansible.builtin.set_fact:
     eda_operators:
       - name: entity
-        de_image: "{{ de_registry }}/de-entity:{{ de_tag }}"
+        de_image: "{{ de_registry }}/de-entity:{{ de_tags['entity'] }}"
         rulebooks:
           - { name: "entity-create", file: "entity-create.yml" }
           - { name: "entity-delete", file: "entity-delete.yml" }
       - name: team
-        de_image: "{{ de_registry }}/de-team:{{ de_tag }}"
+        de_image: "{{ de_registry }}/de-team:{{ de_tags['team'] }}"
         rulebooks:
           - { name: "team-create", file: "team-create.yml" }
           - { name: "team-delete", file: "team-delete.yml" }
       - name: assignment
-        de_image: "{{ de_registry }}/de-assignment:{{ de_tag }}"
+        de_image: "{{ de_registry }}/de-assignment:{{ de_tags['assignment'] }}"
         rulebooks:
           - { name: "assignment-create", file: "assignment-create.yml" }
           - { name: "assignment-delete", file: "assignment-delete.yml" }
       - name: project
-        de_image: "{{ de_registry }}/de-project:{{ de_tag }}"
+        de_image: "{{ de_registry }}/de-project:{{ de_tags['project'] }}"
         rulebooks:
           - { name: "project-create", file: "project-create.yml" }
           - { name: "project-delete", file: "project-delete.yml" }
       - name: platformopenshift
-        de_image: "{{ de_registry }}/de-platformopenshift:{{ de_tag }}"
+        de_image: "{{ de_registry }}/de-platformopenshift:{{ de_tags['platformopenshift'] }}"
         rulebooks:
           - { name: "platformopenshift-create", file: "platformopenshift-create.yml" }
           - { name: "platformopenshift-delete", file: "platformopenshift-delete.yml" }
       - name: cloudoso
-        de_image: "{{ de_registry }}/de-cloudoso:{{ de_tag }}"
+        de_image: "{{ de_registry }}/de-cloudoso:{{ de_tags['cloudoso'] }}"
         rulebooks:
           - { name: "cloudoso-create", file: "cloudoso-create.yml" }
           - { name: "cloudoso-delete", file: "cloudoso-delete.yml" }
       - name: cloudaws
-        de_image: "{{ de_registry }}/de-cloudaws:{{ de_tag }}"
+        de_image: "{{ de_registry }}/de-cloudaws:{{ de_tags['cloudaws'] }}"
         rulebooks:
           - { name: "cloudaws-create", file: "cloudaws-create.yml" }
           - { name: "cloudaws-delete", file: "cloudaws-delete.yml" }
       - name: persona
-        de_image: "{{ de_registry }}/de-persona:{{ de_tag }}"
+        de_image: "{{ de_registry }}/de-persona:{{ de_tags['persona'] }}"
         rulebooks:
           - { name: "persona-create", file: "persona-create.yml" }
           - { name: "persona-delete", file: "persona-delete.yml" }
       - name: plugin-rbac
-        de_image: "{{ de_registry }}/de-plugin-rbac:{{ de_tag }}"
+        de_image: "{{ de_registry }}/de-plugin-rbac:{{ de_tags['plugin-rbac'] }}"
         rulebooks:
           - { name: "rbacconfig-create", file: "rbacconfig-create.yml" }
           - { name: "rbacconfig-delete", file: "rbacconfig-delete.yml" }
           - { name: "rbac-create", file: "rbac-create.yml" }
           - { name: "rbac-delete", file: "rbac-delete.yml" }
       - name: plugin-vault
-        de_image: "{{ de_registry }}/de-plugin-vault:{{ de_tag }}"
+        de_image: "{{ de_registry }}/de-plugin-vault:{{ de_tags['plugin-vault'] }}"
         rulebooks:
           - { name: "vault-create", file: "vault-create.yml" }
           - { name: "vault-delete", file: "vault-delete.yml" }
           - { name: "vaultkv-create", file: "vaultkv-create.yml" }
           - { name: "vaultkv-delete", file: "vaultkv-delete.yml" }
       - name: plugin-aap
-        de_image: "{{ de_registry }}/de-plugin-aap:{{ de_tag }}"
+        de_image: "{{ de_registry }}/de-plugin-aap:{{ de_tags['plugin-aap'] }}"
         rulebooks:
           - { name: "aapconfig-create", file: "aapconfig-create.yml" }
           - { name: "aapconfig-delete", file: "aapconfig-delete.yml" }
           - { name: "aaporg-create", file: "aaporg-create.yml" }
           - { name: "aaporg-delete", file: "aaporg-delete.yml" }
       - name: plugin-quay
-        de_image: "{{ de_registry }}/de-plugin-quay:{{ de_tag }}"
+        de_image: "{{ de_registry }}/de-plugin-quay:{{ de_tags['plugin-quay'] }}"
         rulebooks:
           - { name: "quayconfig-create", file: "quayconfig-create.yml" }
           - { name: "quayconfig-delete", file: "quayconfig-delete.yml" }
           - { name: "quayorg-create", file: "quayorg-create.yml" }
           - { name: "quayorg-delete", file: "quayorg-delete.yml" }
       - name: plugin-iaac
-        de_image: "{{ de_registry }}/de-plugin-iaac:{{ de_tag }}"
+        de_image: "{{ de_registry }}/de-plugin-iaac:{{ de_tags['plugin-iaac'] }}"
         rulebooks:
           - { name: "iaac-create", file: "iaac-create.yml" }
           - { name: "iaac-delete", file: "iaac-delete.yml" }

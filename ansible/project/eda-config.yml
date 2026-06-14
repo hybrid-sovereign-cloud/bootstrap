@@ -8,8 +8,22 @@
     eda_controller_url: "{{ lookup('env', 'EDA_CONTROLLER_URL') }}"
     eda_organization: "Default"
     de_registry: "quay.signal9.gg/hybrid-sovereign"
-    de_tag: "0.1.3"
     event_stream_name: "sovereign-operator-events"
+    # Per-image tags — aligned with available Quay tags
+    de_tags:
+      entity: "0.1.6"
+      team: "0.1.0"
+      assignment: "0.1.4"
+      project: "0.1.0"
+      platformopenshift: "0.1.4"
+      cloudoso: "0.1.4"
+      cloudaws: "0.1.4"
+      persona: "0.1.2"
+      plugin-rbac: "0.1.2"
+      plugin-vault: "0.1.2"
+      plugin-aap: "0.1.3"
+      plugin-quay: "0.1.2"
+      plugin-iaac: "0.1.0"
 
   pre_tasks:
     - name: Validate required variables
