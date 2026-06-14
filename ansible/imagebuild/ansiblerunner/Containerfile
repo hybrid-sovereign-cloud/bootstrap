@@ -6,19 +6,21 @@ FROM ${IMAGE_REGISTRY}/ansible-automation-platform-26/ee-supported-rhel9:2.0-177
 
 USER root
 
-# Install Ansible collections
+# Install Ansible collections to system-wide path accessible by all users
 RUN ansible-galaxy collection install \
   infra.aap_configuration \
   community.aws \
   openstack.cloud \
   community.general \
   kubernetes.core \
+  --collections-path /usr/share/ansible/collections \
   --force
 
 # Install Keycloak collection (community)
 RUN pip3 install python-keycloak && \
     ansible-galaxy collection install \
       middleware_automation.keycloak \
+      --collections-path /usr/share/ansible/collections \
       --force
 
 # Install CLI tools

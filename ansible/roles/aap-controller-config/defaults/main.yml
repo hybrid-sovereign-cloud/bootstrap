@@ -4,7 +4,7 @@ controller_username: "admin"
 controller_password: "{{ lookup('env', 'AAP_ADMIN_PASSWORD') }}"
 controller_validate_certs: false
 
-_quay_registry: "{{ lookup('env', 'OCI_REGISTRY') }}"
+_quay_registry: "{{ lookup('env', 'OCI_REGISTRY') }}/hybrid-sovereign"
 _de_entity_tag: "0.1.6"
 _de_team_tag: "0.1.0"
 _de_assignment_tag: "0.1.4"

@@ -1367,7 +1367,7 @@ sovereignJobs:
           data:
             - secretKey: password
               remoteKey: gitea-admin
-              property: admin_password
+              property: admin_token
       env:
         - name: AAP_CONTROLLER_URL
           value: "https://sovereign-aap-controller-aap.apps.shc-central.lab.signal9.gg"
