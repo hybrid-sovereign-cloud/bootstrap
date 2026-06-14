@@ -1375,9 +1375,16 @@ sovereignJobs:
             - secretKey: password
               remoteKey: gitea-admin
               property: admin_password
+        centralClusterSaToken:
+          enabled: true
+          targetSecretName: aap-controller-central-sa
+          data:
+            - secretKey: bearer_token
+              remoteKey: aap-central-cluster-sa
+              property: bearer_token
       env:
         - name: RUN_ID
-          value: "1"
+          value: "2"
         - name: AAP_CONTROLLER_URL
           value: "https://sovereign-aap-controller-aap.apps.shc-central.lab.signal9.gg"
         - name: AAP_ADMIN_PASSWORD
@@ -1407,6 +1414,13 @@ sovereignJobs:
               key: password
         - name: GITEA_EDA_REPO_URL
           value: "http://gitea-http.gitea.svc.cluster.local:3000/gitea_admin/eda.git"
+        - name: OCP_CENTRAL_SERVER
+          value: "https://api.shc-central.lab.signal9.gg:6443"
+        - name: OCP_CENTRAL_SA_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: aap-controller-central-sa
+              key: bearer_token
     edaConfig:
       enabled: true
       playbook: eda-config.yml
