@@ -3,7 +3,7 @@ apiVersion: hybridsovereign.redhat/v1alpha1
 kind: AAPOrg
 metadata:
   name: globex-automation
-  namespace: entity-globex
+  namespace: entity-globex-industries
 spec:
   aapConfig: aap-sovereign-services
   aapAdminRbac:
