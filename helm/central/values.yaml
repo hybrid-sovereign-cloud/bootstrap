@@ -457,7 +457,7 @@ odfServices:
 # ─── Quay (central) ─────────────────────────────────────────────────────────
 quay:
   enabled: true
-  chartVersion: "0.5.9"
+  chartVersion: "0.6.0"
   syncWave: "35"
   destinationNamespace: central-quay
   values:
@@ -466,6 +466,7 @@ quay:
       enabled: true
       name: sovereign-registry
       configBundle: |
+        SERVER_HOSTNAME: quay.signal9.gg
         FEATURE_USER_INITIALIZE: true
         FEATURE_SUPERUSERS_FULL_ACCESS: true
         SUPER_USERS:
@@ -496,13 +497,16 @@ quay:
           overrides:
             resources:
               requests:
-                cpu: "250m"
-                memory: "1Gi"
+                cpu: "500m"
+                memory: "4Gi"
               limits:
                 cpu: "2"
                 memory: "8Gi"
         horizontalpodautoscaler:
           managed: true
+          overrides:
+            minReplicas: 2
+            maxReplicas: 3
     crunchy:
       enabled: true
       name: quay-pgcluster
@@ -513,7 +517,7 @@ quay:
 # ─── Quay (services) ────────────────────────────────────────────────────────
 quayServices:
   enabled: true
-  chartVersion: "0.5.9"
+  chartVersion: "0.6.0"
   syncWave: "35"
   destinationNamespace: services-quay
   values:
@@ -524,6 +528,7 @@ quayServices:
       enabled: true
       name: svc-sovereign-registry
       configBundle: |
+        SERVER_HOSTNAME: svc-sovereign-registry-quay-services-quay.apps.shcservices.lab.signal9.gg
         FEATURE_USER_INITIALIZE: true
         FEATURE_SUPERUSERS_FULL_ACCESS: true
         SUPER_USERS:
@@ -547,7 +552,10 @@ quayServices:
         monitoring:
           managed: false
         horizontalpodautoscaler:
-          managed: false
+          managed: true
+          overrides:
+            minReplicas: 1
+            maxReplicas: 2
         clairpostgres:
           managed: false
         route:
@@ -556,7 +564,13 @@ quayServices:
           managed: true
         quay:
           overrides:
-            replicas: 1
+            resources:
+              requests:
+                cpu: "250m"
+                memory: "4Gi"
+              limits:
+                cpu: "2"
+                memory: "8Gi"
     crunchy:
       enabled: true
       name: svc-quay-pgcluster

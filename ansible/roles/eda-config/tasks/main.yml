@@ -135,6 +135,31 @@
     state: present
   no_log: true
 
+- name: Disable test_mode on Event Stream so events are delivered to activations
+  ansible.builtin.uri:
+    url: "{{ eda_controller_url }}/api/eda/v1/event-streams/?name={{ event_stream_name | urlencode }}"
+    method: GET
+    validate_certs: false
+    url_username: "{{ eda_admin_username }}"
+    url_password: "{{ eda_admin_password }}"
+    force_basic_auth: true
+    status_code: [200]
+  register: event_stream_lookup
+
+- name: Patch test_mode to false
+  ansible.builtin.uri:
+    url: "{{ eda_controller_url }}/api/eda/v1/event-streams/{{ event_stream_lookup.json.results[0].id }}/"
+    method: PATCH
+    validate_certs: false
+    url_username: "{{ eda_admin_username }}"
+    url_password: "{{ eda_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      test_mode: false
+    status_code: [200]
+  when: event_stream_lookup.json.results | length > 0 and event_stream_lookup.json.results[0].test_mode | default(false) | bool
+
 - name: Delete existing EDA project if in failed import state
   ansible.builtin.uri:
     url: "{{ eda_controller_url }}/api/eda/v1/projects/?name=sovereign-eda-rulebooks"
