@@ -457,7 +457,7 @@ odfServices:
 # ─── Quay (central) ─────────────────────────────────────────────────────────
 quay:
   enabled: true
-  chartVersion: "0.6.2"
+  chartVersion: "0.6.3"
   syncWave: "35"
   destinationNamespace: central-quay
   values:
@@ -514,7 +514,7 @@ quay:
 # ─── Quay (services) ────────────────────────────────────────────────────────
 quayServices:
   enabled: true
-  chartVersion: "0.6.2"
+  chartVersion: "0.6.3"
   syncWave: "35"
   destinationNamespace: services-quay
   values:

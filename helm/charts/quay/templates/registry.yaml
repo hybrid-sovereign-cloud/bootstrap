@@ -38,7 +38,17 @@ spec:
       {{- end }}
       {{- end }}
     - kind: horizontalpodautoscaler
-      managed: {{ .Values.registry.components.horizontalpodautoscaler.managed | default true }}
+      {{- $hpaManaged := .Values.registry.components.horizontalpodautoscaler.managed }}
+      {{- if (kindIs "invalid" $hpaManaged) }}
+      managed: true
+      {{- else }}
+      managed: {{ $hpaManaged }}
+      {{- end }}
     - kind: clairpostgres
-      managed: {{ .Values.registry.components.clairpostgres.managed | default true }}
+      {{- $cpManaged := .Values.registry.components.clairpostgres.managed }}
+      {{- if (kindIs "invalid" $cpManaged) }}
+      managed: true
+      {{- else }}
+      managed: {{ $cpManaged }}
+      {{- end }}
 {{- end }}
