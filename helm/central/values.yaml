@@ -1916,14 +1916,14 @@ cloudOSOOperator:
 # ─── CloudAWS Operator (services cluster) ──────────────────────────────────
 cloudAWSOperator:
   enabled: true
-  chartVersion: "0.1.7"
+  chartVersion: "0.1.8"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/cloudaws-operator
-      tag: "0.1.1"
+      tag: "0.1.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
