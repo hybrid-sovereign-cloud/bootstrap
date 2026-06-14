@@ -1097,6 +1097,7 @@ sovereignJobs:
       enabled: true  # enables Gitea init + token write to Vault
       playbook: gitea-init.yml
       activeDeadlineSeconds: 600
+      # RUN_ID bump forces re-run after Gitea DB reset (fresh deployment)
       syncWave: "35"
       externalSecrets:
         giteaAdminCredentials:
@@ -1125,7 +1126,7 @@ sovereignJobs:
               property: admin_token
       env:
         - name: RUN_ID
-          value: "2"
+          value: "3"
         - name: GITEA_URL
           value: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
         - name: GITEA_ADMIN_USER
@@ -1148,7 +1149,7 @@ sovereignJobs:
       syncWave: "36"
       env:
         - name: RUN_ID
-          value: "2"
+          value: "3"
         - name: GITEA_URL
           value: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
         - name: GITEA_ADMIN_USER
