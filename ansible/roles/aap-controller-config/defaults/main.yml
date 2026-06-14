@@ -1,0 +1,348 @@
+---
+controller_hostname: "{{ lookup('env', 'AAP_CONTROLLER_URL') }}"
+controller_username: "admin"
+controller_password: "{{ lookup('env', 'AAP_ADMIN_PASSWORD') }}"
+controller_validate_certs: false
+
+_quay_registry: "{{ lookup('env', 'OCI_REGISTRY') }}"
+_de_entity_tag: "0.1.6"
+_de_team_tag: "0.1.0"
+_de_assignment_tag: "0.1.4"
+_de_project_tag: "0.1.0"
+_de_platformopenshift_tag: "0.1.4"
+_de_cloudoso_tag: "0.1.4"
+_de_cloudaws_tag: "0.1.4"
+_de_persona_tag: "0.1.2"
+_de_plugin_rbac_tag: "0.1.2"
+_de_plugin_vault_tag: "0.1.2"
+_de_plugin_aap_tag: "0.1.3"
+_de_plugin_quay_tag: "0.1.2"
+
+controller_organizations:
+  - name: sovereign
+
+controller_credentials:
+  - name: quay-robot-credential
+    organization: sovereign
+    credential_type: Container Registry
+    inputs:
+      host: "{{ _quay_registry }}"
+      username: "{{ lookup('env', 'OCI_ROBOT_USERNAME') }}"
+      password: "{{ lookup('env', 'OCI_ROBOT_PASSWORD') }}"
+  - name: sovereign-gitea-credential
+    organization: sovereign
+    credential_type: Source Control
+    inputs:
+      username: "gitea_admin"
+      password: "{{ lookup('env', 'GITEA_ADMIN_TOKEN') }}"
+
+controller_execution_environments:
+  - name: de-entity
+    organization: sovereign
+    image: "{{ _quay_registry }}/de-entity:{{ _de_entity_tag }}"
+    pull: missing
+    credential: quay-robot-credential
+  - name: de-team
+    organization: sovereign
+    image: "{{ _quay_registry }}/de-team:{{ _de_team_tag }}"
+    pull: missing
+    credential: quay-robot-credential
+  - name: de-assignment
+    organization: sovereign
+    image: "{{ _quay_registry }}/de-assignment:{{ _de_assignment_tag }}"
+    pull: missing
+    credential: quay-robot-credential
+  - name: de-project
+    organization: sovereign
+    image: "{{ _quay_registry }}/de-project:{{ _de_project_tag }}"
+    pull: missing
+    credential: quay-robot-credential
+  - name: de-platformopenshift
+    organization: sovereign
+    image: "{{ _quay_registry }}/de-platformopenshift:{{ _de_platformopenshift_tag }}"
+    pull: missing
+    credential: quay-robot-credential
+  - name: de-cloudoso
+    organization: sovereign
+    image: "{{ _quay_registry }}/de-cloudoso:{{ _de_cloudoso_tag }}"
+    pull: missing
+    credential: quay-robot-credential
+  - name: de-cloudaws
+    organization: sovereign
+    image: "{{ _quay_registry }}/de-cloudaws:{{ _de_cloudaws_tag }}"
+    pull: missing
+    credential: quay-robot-credential
+  - name: de-persona
+    organization: sovereign
+    image: "{{ _quay_registry }}/de-persona:{{ _de_persona_tag }}"
+    pull: missing
+    credential: quay-robot-credential
+  - name: de-plugin-rbac
+    organization: sovereign
+    image: "{{ _quay_registry }}/de-plugin-rbac:{{ _de_plugin_rbac_tag }}"
+    pull: missing
+    credential: quay-robot-credential
+  - name: de-plugin-vault
+    organization: sovereign
+    image: "{{ _quay_registry }}/de-plugin-vault:{{ _de_plugin_vault_tag }}"
+    pull: missing
+    credential: quay-robot-credential
+  - name: de-plugin-aap
+    organization: sovereign
+    image: "{{ _quay_registry }}/de-plugin-aap:{{ _de_plugin_aap_tag }}"
+    pull: missing
+    credential: quay-robot-credential
+  - name: de-plugin-quay
+    organization: sovereign
+    image: "{{ _quay_registry }}/de-plugin-quay:{{ _de_plugin_quay_tag }}"
+    pull: missing
+    credential: quay-robot-credential
+
+controller_projects:
+  - name: sovereign-eda-project
+    organization: sovereign
+    scm_type: git
+    scm_url: "{{ lookup('env', 'GITEA_EDA_REPO_URL') }}"
+    credential: sovereign-gitea-credential
+    scm_clean: true
+    scm_delete_on_update: false
+    scm_update_on_launch: true
+    scm_branch: main
+    wait: true
+
+controller_inventories:
+  - name: sovereign-localhost
+    organization: sovereign
+
+controller_hosts:
+  - name: localhost
+    inventory: sovereign-localhost
+    variables:
+      ansible_connection: local
+      ansible_python_interpreter: "{{ '{{' }} ansible_playbook_python {{ '}}' }}"
+
+controller_templates:
+  - name: entity-provision
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/entity-provision-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-entity
+    ask_variables_on_launch: true
+  - name: entity-teardown
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/entity-teardown-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-entity
+    ask_variables_on_launch: true
+  - name: team-provision
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/team-provision-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-team
+    ask_variables_on_launch: true
+  - name: team-teardown
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/team-teardown-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-team
+    ask_variables_on_launch: true
+  - name: project-provision
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/project-provision-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-project
+    ask_variables_on_launch: true
+  - name: project-teardown
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/project-teardown-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-project
+    ask_variables_on_launch: true
+  - name: persona-provision
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/persona-provision-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-persona
+    ask_variables_on_launch: true
+  - name: persona-teardown
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/persona-teardown-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-persona
+    ask_variables_on_launch: true
+  - name: assignment-provision
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/assignment-provision-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-assignment
+    ask_variables_on_launch: true
+  - name: assignment-teardown
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/assignment-teardown-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-assignment
+    ask_variables_on_launch: true
+  - name: cloudaws-provision
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/cloudaws-provision-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-cloudaws
+    ask_variables_on_launch: true
+  - name: cloudaws-teardown
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/cloudaws-teardown-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-cloudaws
+    ask_variables_on_launch: true
+  - name: cloudoso-provision
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/cloudoso-provision-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-cloudoso
+    ask_variables_on_launch: true
+  - name: cloudoso-teardown
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/cloudoso-teardown-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-cloudoso
+    ask_variables_on_launch: true
+  - name: platformopenshift-provision
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/platformopenshift-provision-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-platformopenshift
+    ask_variables_on_launch: true
+  - name: platformopenshift-teardown
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/platformopenshift-teardown-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-platformopenshift
+    ask_variables_on_launch: true
+  - name: rbacconfig-provision
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/rbacconfig-provision-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-plugin-rbac
+    ask_variables_on_launch: true
+  - name: rbacconfig-teardown
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/rbacconfig-teardown-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-plugin-rbac
+    ask_variables_on_launch: true
+  - name: rbac-provision
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/rbac-provision-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-plugin-rbac
+    ask_variables_on_launch: true
+  - name: rbac-teardown
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/rbac-teardown-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-plugin-rbac
+    ask_variables_on_launch: true
+  - name: vault-provision
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/vault-provision-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-plugin-vault
+    ask_variables_on_launch: true
+  - name: vault-teardown
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/vault-teardown-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-plugin-vault
+    ask_variables_on_launch: true
+  - name: vaultkv-provision
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/vaultkv-provision-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-plugin-vault
+    ask_variables_on_launch: true
+  - name: vaultkv-teardown
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/vaultkv-teardown-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-plugin-vault
+    ask_variables_on_launch: true
+  - name: aapconfig-provision
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/aapconfig-provision-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-plugin-aap
+    ask_variables_on_launch: true
+  - name: aapconfig-teardown
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/aapconfig-teardown-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-plugin-aap
+    ask_variables_on_launch: true
+  - name: aaporg-provision
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/aaporg-provision-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-plugin-aap
+    ask_variables_on_launch: true
+  - name: aaporg-teardown
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/aaporg-teardown-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-plugin-aap
+    ask_variables_on_launch: true
+  - name: quayconfig-provision
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/quayconfig-provision-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-plugin-quay
+    ask_variables_on_launch: true
+  - name: quayconfig-teardown
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/quayconfig-teardown-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-plugin-quay
+    ask_variables_on_launch: true
+  - name: quayorg-provision
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/quayorg-provision-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-plugin-quay
+    ask_variables_on_launch: true
+  - name: quayorg-teardown
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/quayorg-teardown-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-plugin-quay
+    ask_variables_on_launch: true

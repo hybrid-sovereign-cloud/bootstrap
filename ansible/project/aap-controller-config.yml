@@ -1,0 +1,6 @@
+---
+- name: Configure AAP Controller with sovereign job templates
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - aap-controller-config

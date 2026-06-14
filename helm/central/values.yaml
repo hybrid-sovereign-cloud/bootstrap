@@ -1335,6 +1335,69 @@ sovereignJobs:
         - name: aap-admin
           secret:
             secretName: aap-admin-credentials-central
+    aapControllerConfig:
+      enabled: true
+      playbook: aap-controller-config.yml
+      activeDeadlineSeconds: 1200
+      syncWave: "33"
+      externalSecrets:
+        aapAdminCentral:
+          enabled: true
+          targetSecretName: aap-controller-admin-config
+          data:
+            - secretKey: password
+              remoteKey: aap-admin-central
+              property: password
+        ociCredentials:
+          enabled: true
+          targetSecretName: aap-controller-oci-credentials
+          data:
+            - secretKey: username
+              remoteKey: oci-credentials
+              property: username
+            - secretKey: password
+              remoteKey: oci-credentials
+              property: password
+            - secretKey: registry
+              remoteKey: oci-credentials
+              property: registry
+        giteaAdminToken:
+          enabled: true
+          targetSecretName: aap-controller-gitea-token
+          data:
+            - secretKey: password
+              remoteKey: gitea-admin
+              property: admin_password
+      env:
+        - name: AAP_CONTROLLER_URL
+          value: "https://sovereign-aap-controller-aap.apps.shc-central.lab.signal9.gg"
+        - name: AAP_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aap-controller-admin-config
+              key: password
+        - name: OCI_REGISTRY
+          valueFrom:
+            secretKeyRef:
+              name: aap-controller-oci-credentials
+              key: registry
+        - name: OCI_ROBOT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: aap-controller-oci-credentials
+              key: username
+        - name: OCI_ROBOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: aap-controller-oci-credentials
+              key: password
+        - name: GITEA_ADMIN_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: aap-controller-gitea-token
+              key: password
+        - name: GITEA_EDA_REPO_URL
+          value: "https://gitea-gitea.apps.shc-central.lab.signal9.gg/gitea_admin/eda.git"
     edaConfig:
       enabled: true
       playbook: eda-config.yml
@@ -1342,11 +1405,11 @@ sovereignJobs:
       syncWave: "32"
       externalSecrets:
         aapAdminEda:
-          enabled: false
+          enabled: true
           targetSecretName: eda-admin-credentials
           data:
             - secretKey: token
-              remoteKey: aap-admin
+              remoteKey: aap-admin-central
               property: token
         eventStreamToken:
           enabled: true
@@ -1371,6 +1434,13 @@ sovereignJobs:
       env:
         - name: EDA_CONTROLLER_URL
           value: "https://sovereign-aap-eda-aap.apps.shc-central.lab.signal9.gg"
+        - name: AAP_CONTROLLER_URL
+          value: "https://sovereign-aap-aap.apps.shc-central.lab.signal9.gg"
+        - name: AAP_RESOURCE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: eda-admin-credentials
+              key: token
         - name: RULEBOOK_REPO_URL
           value: "https://gitea-gitea.apps.shc-central.lab.signal9.gg/gitea_admin/eda.git"
         - name: OCI_REGISTRY
@@ -1955,7 +2025,7 @@ sovereignDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/sovereign-cloud-dashboard
-      tag: "1.6.0"
+      tag: "1.7.0"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -1987,7 +2057,7 @@ tenancyDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/tenancy-dashboard
-      tag: "3.8.0"
+      tag: "3.9.0"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret

@@ -93,6 +93,23 @@
     state: present
   no_log: true
 
+- name: Create AAP Controller credential for EDA
+  ansible.eda.credential:
+    controller_host: "{{ eda_controller_url }}"
+    controller_username: "{{ eda_admin_username }}"
+    controller_password: "{{ eda_admin_password }}"
+    validate_certs: false
+    name: "sovereign-aap-controller-credential"
+    credential_type_name: "Red Hat Ansible Automation Platform"
+    organization_name: "{{ eda_organization }}"
+    inputs:
+      host: "{{ lookup('env', 'AAP_CONTROLLER_URL') }}/api/controller/"
+      oauth_token: "{{ lookup('env', 'AAP_RESOURCE_TOKEN') }}"
+      verify_ssl: false
+    state: present
+  no_log: true
+  when: lookup('env', 'AAP_RESOURCE_TOKEN') | length > 0
+
 - name: Register Decision Environments
   ansible.eda.decision_environment:
     controller_host: "{{ eda_controller_url }}"
@@ -228,9 +245,10 @@
     event_streams:
       - event_stream: "{{ event_stream_name }}"
         source_index: 0
+    eda_credentials:
+      - sovereign-aap-controller-credential
     state: present
   loop: "{{ eda_operators | subelements('rulebooks') }}"
   loop_control:
     label: "{{ item.1.name }}-activation"
-  no_log: true
   no_log: true
