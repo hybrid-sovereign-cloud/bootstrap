@@ -12,3 +12,6 @@ namespace: openshift-storage
 noobaa:
   enabled: true
   name: noobaa
+
+edaLogsObc:
+  enabled: false

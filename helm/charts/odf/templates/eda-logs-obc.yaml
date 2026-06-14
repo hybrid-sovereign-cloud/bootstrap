@@ -1,0 +1,46 @@
+{{- if .Values.edaLogsObc.enabled }}
+---
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: eda-job-logs
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "15"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  bucketName: eda-job-logs
+  storageClassName: openshift-storage.noobaa.io
+---
+apiVersion: external-secrets.io/v1alpha1
+kind: PushSecret
+metadata:
+  name: push-eda-s3-logs-creds
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "17"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  deletionPolicy: None
+  refreshInterval: 1h
+  secretStoreRefs:
+    - name: vault-backend
+      kind: ClusterSecretStore
+  selector:
+    secret:
+      name: eda-job-logs
+  data:
+    - match:
+        secretKey: AWS_ACCESS_KEY_ID
+        remoteRef:
+          remoteKey: eda-s3-logs
+          property: access_key
+      conversionStrategy: None
+    - match:
+        secretKey: AWS_SECRET_ACCESS_KEY
+        remoteRef:
+          remoteKey: eda-s3-logs
+          property: secret_key
+      conversionStrategy: None
+  updatePolicy: Replace
+{{- end }}

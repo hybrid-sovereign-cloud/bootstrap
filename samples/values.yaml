@@ -14,7 +14,7 @@ samples:
       enabled: true
   assignment:
     assignment_frontend:
-      enabled: true
+      enabled: false
     assignment_ses10_platform_eng:
       enabled: true
     assignment_ses10_platform_ops:
@@ -28,35 +28,35 @@ samples:
     assignment_ses4_platform_ops:
       enabled: true
     assignment_ses5_frontend:
-      enabled: true
+      enabled: false
     assignment_ses5_plat_eng:
-      enabled: true
+      enabled: false
     assignment_ses5_platform_eng:
-      enabled: true
+      enabled: false
     assignment_ses5_platform_ops:
-      enabled: true
+      enabled: false
   cloudaws:
     cloudaws_dev:
-      enabled: true
+      enabled: false
     ses10_env:
       enabled: true
     ses7_env:
-      enabled: true
+      enabled: false
   cloudoso:
     cloudoso_dev:
-      enabled: true
+      enabled: false
     ses11_env:
-      enabled: true
+      enabled: false
     ses12_env:
-      enabled: true
+      enabled: false
     ses4_env:
       enabled: true
     ses5_env:
-      enabled: true
+      enabled: false
     ses8_env:
-      enabled: true
+      enabled: false
     ses9_env:
-      enabled: true
+      enabled: false
   entity:
     entity_acme_corp:
       enabled: true
@@ -82,23 +82,23 @@ samples:
       enabled: true
   platformopenshift:
     ocp_prod:
-      enabled: true
+      enabled: false
     ocp_ses10:
       enabled: true
     ocp_ses11:
-      enabled: true
+      enabled: false
     ocp_ses12:
-      enabled: true
+      enabled: false
     ocp_ses4:
       enabled: true
     ocp_ses5:
-      enabled: true
+      enabled: false
     ocp_ses7:
-      enabled: true
+      enabled: false
     ocp_ses8:
-      enabled: true
+      enabled: false
     ocp_ses9:
-      enabled: true
+      enabled: false
   project:
     project_api_services:
       enabled: true

@@ -431,7 +431,7 @@ eventForwarder:
 # ─── ODF / Noobaa (central) ─────────────────────────────────────────────────
 odf:
   enabled: true
-  chartVersion: "0.5.0"
+  chartVersion: "0.6.0"
   syncWave: "12"
   destinationNamespace: openshift-storage
   values:
@@ -443,7 +443,7 @@ odf:
 # ─── ODF / Noobaa (services) ────────────────────────────────────────────────
 odfServices:
   enabled: true
-  chartVersion: "0.5.0"
+  chartVersion: "0.6.0"
   syncWave: "12"
   destinationNamespace: openshift-storage
   values:
@@ -453,6 +453,8 @@ odfServices:
     noobaa:
       enabled: true
       name: noobaa
+    edaLogsObc:
+      enabled: true
 
 # ─── Quay (central) ─────────────────────────────────────────────────────────
 quay:
@@ -831,7 +833,7 @@ externalSecretsServices:
 # ─── Vault Central Namespace (backup copies of init secrets) ─────────────────
 vaultCentralNamespace:
   enabled: true
-  chartVersion: "0.1.6"
+  chartVersion: "0.1.7"
   syncWave: "27"
   argocdChartsRepo: false
   values:
@@ -856,6 +858,10 @@ vaultCentralNamespace:
       vaultAddr: "http://vault-active.central-vault.svc:8200"
       vaultPath: "central/data/dashboard-central-reader"
       apiServer: "https://api.shc-central.lab.signal9.gg:6443"
+    edaS3Creds:
+      enabled: true
+      bucketName: "eda-job-logs"
+      endpoint: "https://s3-openshift-storage.apps.shcservices.lab.signal9.gg"
     centralServiceAccounts:
       awshelper-creator-sa:
         enabled: true

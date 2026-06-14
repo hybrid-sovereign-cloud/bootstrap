@@ -60,3 +60,10 @@ dashboardCentralReader:
 
 # Central Service Accounts: create SAs + push tokens to Vault for cross-cluster access
 centralServiceAccounts: {}
+
+# EDA S3 credentials: ExternalSecret that creates eda-s3-creds in openshift-gitops
+# for EDA playbooks to upload job logs to NooBaa S3
+edaS3Creds:
+  enabled: false
+  bucketName: "eda-job-logs"
+  endpoint: "https://s3-openshift-storage.apps.shcservices.lab.signal9.gg"
