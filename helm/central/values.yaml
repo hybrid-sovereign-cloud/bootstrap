@@ -498,12 +498,12 @@ quay:
             resources:
               requests:
                 cpu: "500m"
-                memory: "6Gi"
+                memory: "4Gi"
               limits:
                 cpu: "2"
                 memory: "8Gi"
         horizontalpodautoscaler:
-          managed: true
+          managed: false
     crunchy:
       enabled: true
       name: quay-pgcluster
