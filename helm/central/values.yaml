@@ -1374,8 +1374,10 @@ sovereignJobs:
           data:
             - secretKey: password
               remoteKey: gitea-admin
-              property: admin_token
+              property: admin_password
       env:
+        - name: RUN_ID
+          value: "1"
         - name: AAP_CONTROLLER_URL
           value: "https://sovereign-aap-controller-aap.apps.shc-central.lab.signal9.gg"
         - name: AAP_ADMIN_PASSWORD
@@ -1404,7 +1406,7 @@ sovereignJobs:
               name: aap-controller-gitea-token
               key: password
         - name: GITEA_EDA_REPO_URL
-          value: "https://gitea-gitea.apps.shc-central.lab.signal9.gg/gitea_admin/eda.git"
+          value: "http://gitea-http.gitea.svc.cluster.local:3000/gitea_admin/eda.git"
     edaConfig:
       enabled: true
       playbook: eda-config.yml
