@@ -215,6 +215,23 @@
     state: present
   no_log: true
 
+- name: Force sync EDA project to pick up latest rulebook changes
+  ansible.builtin.uri:
+    url: "{{ eda_controller_url }}/api/eda/v1/projects/{{ project_status_pre.json.results[0].id }}/sync/"
+    method: POST
+    validate_certs: false
+    url_username: "{{ eda_admin_username }}"
+    url_password: "{{ eda_admin_password }}"
+    force_basic_auth: true
+    status_code: [200, 201, 202]
+    body_format: json
+    body: {}
+  when: project_status_pre.json.results | length > 0
+  register: sync_result
+  ignore_errors: true
+  vars:
+    project_status_pre: "{{ existing_project }}"
+
 - name: Wait for EDA project to be imported (up to 5 min)
   ansible.builtin.uri:
     url: "{{ eda_controller_url }}/api/eda/v1/projects/?name=sovereign-eda-rulebooks"
