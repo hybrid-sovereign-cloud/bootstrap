@@ -8,7 +8,7 @@
     eda_controller_url: "{{ lookup('env', 'EDA_CONTROLLER_URL') }}"
     eda_organization: "Default"
     de_registry: "quay.signal9.gg/hybrid-sovereign"
-    de_tag: "0.1.0"
+    de_tag: "0.1.2"
     event_stream_name: "sovereign-operator-events"
 
   pre_tasks:

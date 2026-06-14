@@ -1443,6 +1443,8 @@ sovereignJobs:
       env:
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
+        - name: RUN_ID
+          value: "2"
 
     # ─── Quay Central Config: init admin + store in Vault + configure OIDC ──────
     quayCentralConfig:
