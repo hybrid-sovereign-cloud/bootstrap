@@ -172,6 +172,8 @@ samples:
       enabled: true
     rbac_globex_admins:
       enabled: true
+    rbac_globex_auditors:
+      enabled: true
     rbac_globex_engineers:
       enabled: true
     rbac_globex_ops_team:
