@@ -48,4 +48,10 @@ spec:
       name: {{ .Values.quay.values.registry.configBundleSecretName | default (printf "%s-config-bundle" (.Values.quay.values.registry.name | default "sovereign-registry")) }}
       jsonPointers:
         - /data/config.yaml
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
+      name: {{ printf "%s-quay-app" (.Values.quay.values.registry.name | default "sovereign-registry") }}
+      jqPathExpressions:
+        - .spec.maxReplicas
+        - .spec.minReplicas
 {{- end }}
