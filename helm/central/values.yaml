@@ -1916,7 +1916,7 @@ cloudOSOOperator:
 # ─── CloudAWS Operator (services cluster) ──────────────────────────────────
 cloudAWSOperator:
   enabled: true
-  chartVersion: "0.1.6"
+  chartVersion: "0.1.7"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
