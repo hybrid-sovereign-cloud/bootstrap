@@ -40,6 +40,8 @@ sovereignNamespaces:
         enabled: true
       - name: sovereign-cloud-helpers
         enabled: true
+      - name: gitea
+        enabled: true
       # central-vault, central-rhbk, central-quay, and aap are created by their
       # respective charts. Do NOT add them here to avoid ArgoCD ownership conflicts.
 
