@@ -1441,6 +1441,8 @@ sovereignJobs:
               remoteKey: oci-credentials
               property: registry
       env:
+        - name: RUN_ID
+          value: "2"
         - name: EDA_CONTROLLER_URL
           value: "https://sovereign-aap-eda-aap.apps.shc-central.lab.signal9.gg"
         - name: AAP_CONTROLLER_URL
