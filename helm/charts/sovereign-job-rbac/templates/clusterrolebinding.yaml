@@ -10,3 +10,20 @@ subjects:
   - kind: ServiceAccount
     name: {{ .Values.serviceAccount }}
     namespace: {{ .Values.namespace }}
+---
+# Grant cluster-admin to AAP controller SA so it can run helm for Hive/ACM cluster provisioning
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: sovereign-aap-controller-cluster-admin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: sovereign-aap-controller
+    namespace: aap
+  - kind: ServiceAccount
+    name: default
+    namespace: aap
