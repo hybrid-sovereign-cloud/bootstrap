@@ -19,6 +19,13 @@ controller_credentials:
     inputs:
       username: "gitea_admin"
       password: "{{ lookup('env', 'GITEA_ADMIN_TOKEN') }}"
+  - name: sovereign-central-cluster-credential
+    organization: sovereign
+    credential_type: OpenShift or Kubernetes API Bearer Token
+    inputs:
+      host: "{{ lookup('env', 'OCP_CENTRAL_SERVER') }}"
+      verify_ssl: false
+      bearer_token: "{{ lookup('env', 'OCP_CENTRAL_SA_TOKEN') }}"
 
 controller_execution_environments:
   - name: de-entity
@@ -113,6 +120,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-entity
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: entity-teardown
     organization: sovereign
     project: sovereign-eda-project
@@ -120,6 +129,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-entity
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: team-provision
     organization: sovereign
     project: sovereign-eda-project
@@ -127,6 +138,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-team
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: team-teardown
     organization: sovereign
     project: sovereign-eda-project
@@ -134,6 +147,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-team
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: project-provision
     organization: sovereign
     project: sovereign-eda-project
@@ -141,6 +156,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-project
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: project-teardown
     organization: sovereign
     project: sovereign-eda-project
@@ -148,6 +165,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-project
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: persona-provision
     organization: sovereign
     project: sovereign-eda-project
@@ -155,6 +174,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-persona
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: persona-teardown
     organization: sovereign
     project: sovereign-eda-project
@@ -162,6 +183,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-persona
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: assignment-provision
     organization: sovereign
     project: sovereign-eda-project
@@ -169,6 +192,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-assignment
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: assignment-teardown
     organization: sovereign
     project: sovereign-eda-project
@@ -176,6 +201,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-assignment
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: cloudaws-provision
     organization: sovereign
     project: sovereign-eda-project
@@ -183,6 +210,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-cloudaws
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: cloudaws-teardown
     organization: sovereign
     project: sovereign-eda-project
@@ -190,6 +219,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-cloudaws
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: cloudoso-provision
     organization: sovereign
     project: sovereign-eda-project
@@ -197,6 +228,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-cloudoso
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: cloudoso-teardown
     organization: sovereign
     project: sovereign-eda-project
@@ -204,6 +237,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-cloudoso
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: platformopenshift-provision
     organization: sovereign
     project: sovereign-eda-project
@@ -211,6 +246,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-platformopenshift
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: platformopenshift-teardown
     organization: sovereign
     project: sovereign-eda-project
@@ -218,6 +255,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-platformopenshift
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: rbacconfig-provision
     organization: sovereign
     project: sovereign-eda-project
@@ -225,6 +264,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-plugin-rbac
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: rbacconfig-teardown
     organization: sovereign
     project: sovereign-eda-project
@@ -232,6 +273,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-plugin-rbac
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: rbac-provision
     organization: sovereign
     project: sovereign-eda-project
@@ -239,6 +282,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-plugin-rbac
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: rbac-teardown
     organization: sovereign
     project: sovereign-eda-project
@@ -246,6 +291,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-plugin-rbac
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: vault-provision
     organization: sovereign
     project: sovereign-eda-project
@@ -253,6 +300,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-plugin-vault
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: vault-teardown
     organization: sovereign
     project: sovereign-eda-project
@@ -260,6 +309,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-plugin-vault
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: vaultkv-provision
     organization: sovereign
     project: sovereign-eda-project
@@ -267,6 +318,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-plugin-vault
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: vaultkv-teardown
     organization: sovereign
     project: sovereign-eda-project
@@ -274,6 +327,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-plugin-vault
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: aapconfig-provision
     organization: sovereign
     project: sovereign-eda-project
@@ -281,6 +336,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-plugin-aap
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: aapconfig-teardown
     organization: sovereign
     project: sovereign-eda-project
@@ -288,6 +345,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-plugin-aap
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: aaporg-provision
     organization: sovereign
     project: sovereign-eda-project
@@ -295,6 +354,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-plugin-aap
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: aaporg-teardown
     organization: sovereign
     project: sovereign-eda-project
@@ -302,6 +363,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-plugin-aap
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: quayconfig-provision
     organization: sovereign
     project: sovereign-eda-project
@@ -309,6 +372,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-plugin-quay
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: quayconfig-teardown
     organization: sovereign
     project: sovereign-eda-project
@@ -316,6 +381,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-plugin-quay
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: quayorg-provision
     organization: sovereign
     project: sovereign-eda-project
@@ -323,6 +390,8 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-plugin-quay
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
   - name: quayorg-teardown
     organization: sovereign
     project: sovereign-eda-project
@@ -330,3 +399,5 @@ controller_templates:
     inventory: sovereign-localhost
     execution_environment: de-plugin-quay
     ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
