@@ -32,7 +32,7 @@ oci:
 # ─── Sovereign Namespaces (central cluster) ──────────────────────────────────
 sovereignNamespaces:
   enabled: true
-  chartVersion: "0.2.6"
+  chartVersion: "0.2.7"
   syncWave: "1"
   values:
     namespaces:
@@ -44,11 +44,18 @@ sovereignNamespaces:
         enabled: true
       # central-vault, central-rhbk, central-quay, and aap are created by their
       # respective charts. Do NOT add them here to avoid ArgoCD ownership conflicts.
+    oauth:
+      enabled: true
+      identityProviderName: "sovereign-central"
+      clientId: "openshift-central"
+      clientSecretName: "sovereign-central-oauth-secret"
+      issuer: "https://rhbk-central.apps.shc-central.lab.signal9.gg/realms/sovereign-central"
+      caConfigMap: "keycloak-central-ca"
 
 # ─── Sovereign Namespaces (services cluster) ────────────────────────────────
 sovereignNamespacesServices:
   enabled: true
-  chartVersion: "0.2.6"
+  chartVersion: "0.2.7"
   syncWave: "1"
   values:
     ociPullSecret:
@@ -72,6 +79,13 @@ sovereignNamespacesServices:
       # aap and services-vault namespaces are created by their respective charts
       # (aap/templates/operator.yaml and vault/templates/namespace.yaml).
       # Do NOT add them here to avoid ArgoCD ownership conflicts.
+    oauth:
+      enabled: true
+      identityProviderName: "sovereign-services"
+      clientId: "openshift-services"
+      clientSecretName: "sovereign-services-oauth-secret"
+      issuer: "https://rhbk-services.apps.shcservices.lab.signal9.gg/realms/sovereign-tenants"
+      caConfigMap: "keycloak-services-ca"
 
 # ─── RHBK Central (Keycloak) ─────────────────────────────────────────────────
 rhbk:

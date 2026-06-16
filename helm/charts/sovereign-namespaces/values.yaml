@@ -12,3 +12,11 @@ ociPullSecret:
 
 networkPolicies:
   enabled: false  # Set to true after validating operator connectivity
+
+oauth:
+  enabled: false
+  identityProviderName: ""
+  clientId: ""
+  clientSecretName: ""
+  issuer: ""
+  caConfigMap: ""

@@ -1,0 +1,31 @@
+{{- if .Values.oauth.enabled }}
+apiVersion: config.openshift.io/v1
+kind: OAuth
+metadata:
+  name: cluster
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  identityProviders:
+    - name: {{ .Values.oauth.identityProviderName }}
+      type: OpenID
+      mappingMethod: claim
+      openID:
+        clientID: {{ .Values.oauth.clientId }}
+        clientSecret:
+          name: {{ .Values.oauth.clientSecretName }}
+        {{- if .Values.oauth.caConfigMap }}
+        ca:
+          name: {{ .Values.oauth.caConfigMap }}
+        {{- end }}
+        issuer: {{ .Values.oauth.issuer }}
+        claims:
+          preferredUsername:
+            - preferred_username
+          name:
+            - name
+          email:
+            - email
+          groups:
+            - groups
+{{- end }}
