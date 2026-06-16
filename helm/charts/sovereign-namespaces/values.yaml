@@ -9,3 +9,6 @@ ociPullSecret:
   vaultPath: "oci-credentials"
   secretStoreName: "vault-backend"
   secretStoreKind: "ClusterSecretStore"
+
+networkPolicies:
+  enabled: false  # Set to true after validating operator connectivity

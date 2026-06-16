@@ -32,7 +32,7 @@ oci:
 # ─── Sovereign Namespaces (central cluster) ──────────────────────────────────
 sovereignNamespaces:
   enabled: true
-  chartVersion: "0.2.5"
+  chartVersion: "0.2.6"
   syncWave: "1"
   values:
     namespaces:
@@ -48,7 +48,7 @@ sovereignNamespaces:
 # ─── Sovereign Namespaces (services cluster) ────────────────────────────────
 sovereignNamespacesServices:
   enabled: true
-  chartVersion: "0.2.5"
+  chartVersion: "0.2.6"
   syncWave: "1"
   values:
     ociPullSecret:
@@ -422,7 +422,7 @@ pluginSdx:
 # ─── Event Forwarder (services cluster) ─────────────────────────────────────
 eventForwarder:
   enabled: true
-  chartVersion: "0.5.0"
+  chartVersion: "0.5.1"
   syncWave: "32"
   image:
     repository: quay.signal9.gg/hybrid-sovereign/event-forwarder

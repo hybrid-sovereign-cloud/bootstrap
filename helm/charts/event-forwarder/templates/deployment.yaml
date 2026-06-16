@@ -52,5 +52,12 @@ spec:
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop: ["ALL"]
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
