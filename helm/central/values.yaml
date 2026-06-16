@@ -1077,6 +1077,8 @@ sovereignJobs:
       activeDeadlineSeconds: 600
       syncWave: "27"
       env:
+        - name: RUN_ID
+          value: "2026-06-16-fix-oauth"
         - name: KEYCLOAK_CENTRAL_URL
           value: "https://rhbk-central.apps.shc-central.lab.signal9.gg"
         - name: KEYCLOAK_SERVICES_URL
