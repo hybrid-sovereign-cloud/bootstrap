@@ -2116,6 +2116,47 @@ tenancyDashboard:
       enabled: true
     env:
       NODE_ENV: production
+
+# ─── Sovereign Admin Console Plugin (services cluster) ───────────────────────
+sovereignAdminPlugin:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "42"
+  destinationNamespace: sovereign-cloud
+  values:
+    namespace: sovereign-cloud
+    image:
+      repository: quay.signal9.gg/hybrid-sovereign/sovereign-admin-plugin
+      tag: "1.0.0"
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: quay-pull-secret
+    plugin:
+      name: sovereign-admin-plugin
+      displayName: "Sovereign Admin"
+    service:
+      port: 9001
+
+# ─── Sovereign Tenant Console Plugin (services cluster) ──────────────────────
+sovereignTenantPlugin:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "42"
+  destinationNamespace: sovereign-cloud
+  values:
+    namespace: sovereign-cloud
+    image:
+      repository: quay.signal9.gg/hybrid-sovereign/sovereign-tenant-plugin
+      tag: "1.0.0"
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: quay-pull-secret
+    plugin:
+      name: sovereign-tenant-plugin
+      displayName: "Sovereign Tenant"
+    service:
+      port: 9001
+
 # ─── Cluster Builds ApplicationSet ───────────────────────────────────────────
 # Monitors cluster_builds Gitea repo for Application definitions in aws/*.yaml.
 # The giteaClusterBuildsRepo sovereign job (wave 37) creates the repo and the

@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.plugin.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.plugin.name }}
+    app.kubernetes.io/part-of: sovereign-cloud
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.plugin.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.plugin.name }}
+        app.kubernetes.io/part-of: sovereign-cloud
+    spec:
+      serviceAccountName: {{ .Values.plugin.name }}
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: {{ .Values.plugin.name }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          volumeMounts:
+            - name: serving-cert
+              mountPath: /etc/tls/private
+              readOnly: true
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: false
+          livenessProbe:
+            httpGet:
+              path: /plugin-manifest.json
+              port: {{ .Values.service.port }}
+              scheme: HTTPS
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /plugin-manifest.json
+              port: {{ .Values.service.port }}
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: serving-cert
+          secret:
+            secretName: {{ .Values.plugin.name }}-serving-cert
+            defaultMode: 420

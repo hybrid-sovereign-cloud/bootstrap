@@ -1,0 +1,55 @@
+{{- if and (include "sovereign-central.applicationsEnabled" .) .Values.sovereignAdminPlugin.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sovereign-admin-plugin
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: console-plugin
+    sovereign-cloud/target: services
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.sovereignAdminPlugin.syncWave | quote }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: services
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/sovereign-admin-plugin" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: sovereign-admin-plugin
+    targetRevision: {{ .Values.sovereignAdminPlugin.chartVersion | quote }}
+    helm:
+      releaseName: sovereign-admin-plugin
+      values: |
+        {{- toYaml .Values.sovereignAdminPlugin.values | nindent 8 }}
+
+  destination:
+    server: {{ .Values.servicesCluster.server | quote }}
+    namespace: {{ .Values.sovereignAdminPlugin.destinationNamespace }}
+
+  ignoreDifferences:
+    {{- include "sovereign-central.esoIgnoreDifferences" . | nindent 4 }}
+    - kind: ServiceAccount
+      jsonPointers:
+        - /metadata/annotations/openshift.io~1internal-registry-pull-secret-ref
+        - /imagePullSecrets
+        - /secrets
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
+{{- end }}
