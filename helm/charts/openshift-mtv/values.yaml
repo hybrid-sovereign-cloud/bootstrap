@@ -1,0 +1,35 @@
+namespace: openshift-mtv
+
+subscription:
+  channel: release-v2.7
+  installPlanApproval: Automatic
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+
+forkliftController:
+  enabled: true
+  name: forklift-controller
+  controller:
+    replicas: 2
+  ui:
+    replicas: 2
+
+vmwareProvider:
+  enabled: true
+  name: vmware-vcenter
+  type: vsphere
+  credentialsSecretName: vmware-vcenter-secret
+
+externalSecret:
+  enabled: true
+  name: vmware-vcenter-es
+  secretStoreName: vault-backend
+  secretStoreKind: ClusterSecretStore
+  vaultPath: vmware-credentials
+  refreshInterval: "1h"
+  targetSecretName: vmware-vcenter-secret
+
+pdb:
+  mtvController:
+    enabled: true
+    minAvailable: 1

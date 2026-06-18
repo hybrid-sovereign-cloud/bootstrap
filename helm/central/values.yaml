@@ -444,6 +444,75 @@ eventForwarder:
   eventStreamUrl: "https://sovereign-aap-aap.apps.shc-central.lab.signal9.gg/eda-event-streams/api/eda/v1/external_event_stream/4392c64b-2faf-4414-a6e6-5ff1bc8d5a75/post/"
   vaultSecretPath: "central/event-forwarder"
 
+# ─── OpenShift Virtualization (CNV) — central cluster ───────────────────────
+cnv:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "12"
+  destinationNamespace: openshift-cnv
+  values:
+    namespace: openshift-cnv
+    subscription:
+      channel: stable
+      installPlanApproval: Automatic
+      source: redhat-operators
+      sourceNamespace: openshift-marketplace
+    hyperconverged:
+      enabled: true
+      name: kubevirt-hyperconverged
+      featureGates:
+        deployKubeSecondaryDNS: false
+        enableCommonBootImageImport: false
+      infra:
+        nodePlacement: {}
+      workloads:
+        nodePlacement: {}
+    pdb:
+      virtApi:
+        enabled: true
+        minAvailable: 1
+      virtController:
+        enabled: true
+        minAvailable: 1
+
+# ─── Migration Toolkit for Virtualization (MTV) — central cluster ────────────
+mtv:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "28"
+  destinationNamespace: openshift-mtv
+  values:
+    namespace: openshift-mtv
+    subscription:
+      channel: release-v2.7
+      installPlanApproval: Automatic
+      source: redhat-operators
+      sourceNamespace: openshift-marketplace
+    forkliftController:
+      enabled: true
+      name: forklift-controller
+      controller:
+        replicas: 2
+      ui:
+        replicas: 2
+    vmwareProvider:
+      enabled: true
+      name: vmware-vcenter
+      type: vsphere
+      credentialsSecretName: vmware-vcenter-secret
+    externalSecret:
+      enabled: true
+      name: vmware-vcenter-es
+      secretStoreName: vault-backend
+      secretStoreKind: ClusterSecretStore
+      vaultPath: vmware-credentials
+      refreshInterval: "1h"
+      targetSecretName: vmware-vcenter-secret
+    pdb:
+      mtvController:
+        enabled: true
+        minAvailable: 1
+
 # ─── ODF / Noobaa (central) ─────────────────────────────────────────────────
 odf:
   enabled: true
@@ -879,8 +948,12 @@ vaultCentralNamespace:
       bucketName: "eda-job-logs"
       endpoint: "https://s3-openshift-storage.apps.shcservices.lab.signal9.gg"
     centralServiceAccounts:
+      # DEVIATION: awshelper-creator-sa disabled — HELPERAWS operator is obsolete (feature 009).
+      # WHY: User confirmed no active tenants; helper_CloudAWS operator will not be re-deployed.
+      # WHERE: vaultCentralNamespace.centralServiceAccounts.awshelper-creator-sa
+      # REMEDIATION: If CloudAWS helper is reintroduced, create a dedicated operator chart.
       awshelper-creator-sa:
-        enabled: true
+        enabled: false
         namespace: sovereign-cloud-jobs
         clusterRoleRules:
           - apiGroups: ["helper.hybridsovereign.redhat"]
@@ -889,8 +962,12 @@ vaultCentralNamespace:
           - apiGroups: [""]
             resources: ["namespaces", "secrets", "configmaps"]
             verbs: ["get", "list", "watch", "create", "update", "patch"]
+      # DEVIATION: osohelper-creator-sa disabled — HELPEROSO operator is obsolete (feature 009).
+      # WHY: User confirmed no active tenants; helper_CloudOSO operator will not be re-deployed.
+      # WHERE: vaultCentralNamespace.centralServiceAccounts.osohelper-creator-sa
+      # REMEDIATION: If CloudOSO helper is reintroduced, create a dedicated operator chart.
       osohelper-creator-sa:
-        enabled: true
+        enabled: false
         namespace: sovereign-cloud-jobs
         clusterRoleRules:
           - apiGroups: ["helper.hybridsovereign.redhat"]
@@ -982,6 +1059,24 @@ sovereignJobs:
           value: "http://vault.central-vault.svc:8200"
         - name: VAULT_NAMESPACE
           value: "central-vault"
+    vmwareInit:
+      enabled: true
+      playbook: vmware-init.yml
+      activeDeadlineSeconds: 300
+      syncWave: "24"
+      env:
+        - name: VAULT_ADDR
+          value: "http://vault.central-vault.svc:8200"
+        - name: VAULT_NAMESPACE
+          value: "central-vault"
+      volumeMounts:
+        - name: vmware-creds
+          mountPath: /var/run/secrets/vmware
+          readOnly: true
+      volumes:
+        - name: vmware-creds
+          secret:
+            secretName: vmware-bootstrap-credentials
     deliverVaultToken:
       enabled: true
       playbook: deliver-vault-token.yml
@@ -1505,6 +1600,8 @@ sovereignJobs:
       activeDeadlineSeconds: 300
       syncWave: "32"
       env:
+        - name: RUN_ID
+          value: "2026-06-18-virtualization-users"
         - name: KEYCLOAK_CENTRAL_URL
           value: "https://rhbk-central.apps.shc-central.lab.signal9.gg"
         - name: KEYCLOAK_SERVICES_URL

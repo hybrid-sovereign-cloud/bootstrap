@@ -1,0 +1,16 @@
+{{- if .Values.forkliftController.enabled }}
+---
+apiVersion: forklift.konveyor.io/v1beta1
+kind: ForkliftController
+metadata:
+  name: {{ .Values.forkliftController.name }}
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  feature_ui: true
+  feature_validation: true
+  controller_replicas: {{ .Values.forkliftController.controller.replicas }}
+  ui_replicas: {{ .Values.forkliftController.ui.replicas }}
+{{- end }}

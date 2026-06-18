@@ -122,6 +122,19 @@ pullSecretNamespaces:
   - external-secrets
   - central-quay
 
+# ─── VMware bootstrap credentials ────────────────────────────────────────────
+# Provided via --set during 'make init-central-secrets'.
+# NEVER hardcode values here. Pass via env: VMWARE_HOST, VMWARE_USERNAME, VMWARE_PASSWORD.
+# The init chart creates vmware-bootstrap-credentials Secret in sovereign-cloud-jobs.
+# The vmwareInit sovereignJob (wave 24) reads this Secret and writes to Vault.
+vmware:
+  host: ""
+  username: ""
+  password: ""
+  # Optional: PEM-encoded CA certificate for self-signed vCenter TLS.
+  # If empty, insecure connection is used (acceptable in lab; document deviation in prod).
+  cacert: ""
+
 # ─── ArgoCD OpenAPI schema compatibility shim ────────────────────────────────
 argocdSchemaFix:
   # Deploys a minimal HTTPS server that injects the tilde-encoded UserPermissionStatus

@@ -91,6 +91,8 @@ include make/init-central-gitea-secret.mk
 include make/install-rbac-samples.mk
 include make/help.mk
 include make/eda-sync.mk
+include make/upload-cnv-chart.mk
+include make/upload-mtv-chart.mk
 
 ##@ Convenience
 
@@ -127,7 +129,9 @@ UPLOAD_TARGETS := \
   upload-ocp-base-chart \
   upload-vault-central-namespace-chart \
   upload-assignment-central-rbac-chart \
-  upload-sovereign-assignment-chart
+  upload-sovereign-assignment-chart \
+  upload-cnv-chart \
+  upload-mtv-chart
 
 .PHONY: upload-all-charts
 upload-all-charts: $(UPLOAD_TARGETS) ## Upload ALL Helm charts to OCI registry

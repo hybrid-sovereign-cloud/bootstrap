@@ -1,0 +1,6 @@
+---
+vault_addr: "http://vault.central-vault.svc:8200"
+vault_namespace: "central-vault"
+vault_kv_path: "central"
+vault_secret_name: "vault-init-secrets"
+vmware_vault_key: "vmware-credentials"

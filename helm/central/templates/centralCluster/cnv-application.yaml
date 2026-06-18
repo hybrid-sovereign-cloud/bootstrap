@@ -1,0 +1,43 @@
+{{- if and (include "sovereign-central.applicationsEnabled" .) .Values.cnv.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cnv
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: virtualization
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.cnv.syncWave | quote }}
+spec:
+  project: central
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/openshift-cnv" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: openshift-cnv
+    targetRevision: {{ .Values.cnv.chartVersion | quote }}
+    helm:
+      releaseName: cnv
+      values: |
+        {{- toYaml .Values.cnv.values | nindent 8 }}
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.cnv.destinationNamespace }}
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
+{{- end }}

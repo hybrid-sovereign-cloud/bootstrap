@@ -1,0 +1,12 @@
+---
+- name: Seed VMware vCenter credentials to central Vault
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    vault_addr: "{{ lookup('env', 'VAULT_ADDR') | default('http://vault.central-vault.svc:8200', true) }}"
+    vault_namespace: "{{ lookup('env', 'VAULT_NAMESPACE') | default('central-vault', true) }}"
+
+  roles:
+    - vmware-init

@@ -1,0 +1,25 @@
+{{- if .Values.hyperconverged.enabled }}
+---
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: {{ .Values.hyperconverged.name }}
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  featureGates:
+    deployKubeSecondaryDNS: {{ .Values.hyperconverged.featureGates.deployKubeSecondaryDNS }}
+    enableCommonBootImageImport: {{ .Values.hyperconverged.featureGates.enableCommonBootImageImport }}
+  {{- if .Values.hyperconverged.infra.nodePlacement }}
+  infra:
+    nodePlacement:
+      {{- toYaml .Values.hyperconverged.infra.nodePlacement | nindent 6 }}
+  {{- end }}
+  {{- if .Values.hyperconverged.workloads.nodePlacement }}
+  workloads:
+    nodePlacement:
+      {{- toYaml .Values.hyperconverged.workloads.nodePlacement | nindent 6 }}
+  {{- end }}
+{{- end }}

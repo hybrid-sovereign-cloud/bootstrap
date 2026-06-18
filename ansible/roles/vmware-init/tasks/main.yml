@@ -1,0 +1,58 @@
+---
+- name: Read VMware credentials from bootstrap Secret
+  kubernetes.core.k8s_info:
+    kind: Secret
+    name: vmware-bootstrap-credentials
+    namespace: sovereign-cloud-jobs
+  register: vmware_secret
+  retries: 10
+  delay: 10
+  until: vmware_secret.resources | length > 0
+  no_log: true
+
+- name: Decode VMware credential fields
+  ansible.builtin.set_fact:
+    vmware_host: "{{ vmware_secret.resources[0].data.host | b64decode }}"
+    vmware_username: "{{ vmware_secret.resources[0].data.username | b64decode }}"
+    vmware_password: "{{ vmware_secret.resources[0].data.password | b64decode }}"
+    vmware_cacert: "{{ vmware_secret.resources[0].data.cacert | default('') | b64decode }}"
+  no_log: true
+
+- name: Retrieve Vault root token from Secret
+  kubernetes.core.k8s_info:
+    kind: Secret
+    name: "{{ vault_secret_name }}"
+    namespace: "{{ vault_namespace }}"
+  register: vault_init_secret
+  retries: 10
+  delay: 10
+  until: vault_init_secret.resources | length > 0
+  no_log: true
+
+- name: Set Vault root token fact
+  ansible.builtin.set_fact:
+    vault_root_token: "{{ vault_init_secret.resources[0].data.root_token | b64decode }}"
+  no_log: true
+
+- name: Write VMware credentials to Vault KV
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/{{ vault_kv_path }}/data/{{ vmware_vault_key }}"
+    method: POST
+    validate_certs: false
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      data:
+        url: "https://{{ vmware_host }}"
+        username: "{{ vmware_username }}"
+        password: "{{ vmware_password }}"
+        cacert: "{{ vmware_cacert }}"
+    status_code: [200, 204]
+  retries: 5
+  delay: 10
+  no_log: true
+
+- name: Confirm VMware credentials written to Vault
+  ansible.builtin.debug:
+    msg: "VMware credentials written to Vault at {{ vault_kv_path }}/data/{{ vmware_vault_key }}"

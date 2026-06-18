@@ -120,3 +120,22 @@ keycloak_test_users:
     password: "AssignmentTest123!"
     groups:
       - "acme-corp-devops"
+  # Virtualization feature test users (feature 009)
+  - realm: "sovereign-central"
+    keycloak_url_key: central
+    username: "test-virtualization-viewer"
+    email: "test-virtualization-viewer@example.com"
+    firstName: "Test"
+    lastName: "VirtualizationViewer"
+    password: "VirtTest123!"
+    groups:
+      - "sovereign-admin"
+  - realm: "sovereign-central"
+    keycloak_url_key: central
+    username: "test-vmware-ops"
+    email: "test-vmware-ops@example.com"
+    firstName: "Test"
+    lastName: "VmwareOps"
+    password: "VirtTest123!"
+    groups:
+      - "sovereign-admin"

@@ -1,0 +1,43 @@
+{{- if and (include "sovereign-central.applicationsEnabled" .) .Values.mtv.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mtv
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migration
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.mtv.syncWave | quote }}
+spec:
+  project: central
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/openshift-mtv" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: openshift-mtv
+    targetRevision: {{ .Values.mtv.chartVersion | quote }}
+    helm:
+      releaseName: mtv
+      values: |
+        {{- toYaml .Values.mtv.values | nindent 8 }}
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.mtv.destinationNamespace }}
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
+{{- end }}

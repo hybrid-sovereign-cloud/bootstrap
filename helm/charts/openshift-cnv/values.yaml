@@ -1,0 +1,27 @@
+namespace: openshift-cnv
+
+subscription:
+  channel: stable
+  installPlanApproval: Automatic
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+
+hyperconverged:
+  enabled: true
+  name: kubevirt-hyperconverged
+  featureGates:
+    deployKubeSecondaryDNS: false
+    enableCommonBootImageImport: false
+  # infra node placement tolerations — empty means schedule on any available node
+  infra:
+    nodePlacement: {}
+  workloads:
+    nodePlacement: {}
+
+pdb:
+  virtApi:
+    enabled: true
+    minAvailable: 1
+  virtController:
+    enabled: true
+    minAvailable: 1

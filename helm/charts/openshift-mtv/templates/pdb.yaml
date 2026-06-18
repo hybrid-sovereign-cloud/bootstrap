@@ -1,0 +1,16 @@
+{{- if .Values.pdb.mtvController.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mtv-controller-pdb
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "7"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  minAvailable: {{ .Values.pdb.mtvController.minAvailable }}
+  selector:
+    matchLabels:
+      app: forklift-controller
+{{- end }}

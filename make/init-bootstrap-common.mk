@@ -21,7 +21,10 @@ SOVEREIGN_INIT_HELM_SECRETS_SETS := \
   --set oci.namespace="$(OCI_NAMESPACE)" \
   --set oci.robotUsername="$(OCI_ROBOT_USERNAME)" \
   --set oci.robotPassword="$(OCI_ROBOT_PASSWORD)" \
-  --set gitea.adminPassword="$(GITEA_ADMIN_PASSWORD)"
+  --set gitea.adminPassword="$(GITEA_ADMIN_PASSWORD)" \
+  --set vmware.host="$(VMWARE_HOST)" \
+  --set vmware.username="$(VMWARE_USERNAME)" \
+  --set vmware.password="$(VMWARE_PASSWORD)"
 
 SOVEREIGN_INIT_HELM_APPSET_SETS := \
   --set gitops.repoURL="$(BOOTSTRAP_REPO_URL)" \

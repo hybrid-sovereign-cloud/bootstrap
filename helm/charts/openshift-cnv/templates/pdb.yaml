@@ -1,0 +1,32 @@
+{{- if .Values.pdb.virtApi.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: virt-api-pdb
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  minAvailable: {{ .Values.pdb.virtApi.minAvailable }}
+  selector:
+    matchLabels:
+      kubevirt.io: virt-api
+{{- end }}
+{{- if .Values.pdb.virtController.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: virt-controller-pdb
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  minAvailable: {{ .Values.pdb.virtController.minAvailable }}
+  selector:
+    matchLabels:
+      kubevirt.io: virt-controller
+{{- end }}
