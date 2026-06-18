@@ -9,8 +9,8 @@ metadata:
     argocd.argoproj.io/sync-wave: "5"
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
-  feature_ui: true
-  feature_validation: true
+  feature_ui: "true"
+  feature_validation: "true"
   controller_replicas: {{ .Values.forkliftController.controller.replicas }}
   ui_replicas: {{ .Values.forkliftController.ui.replicas }}
 {{- end }}
