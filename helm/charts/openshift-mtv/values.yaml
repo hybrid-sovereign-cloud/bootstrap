@@ -1,7 +1,7 @@
 namespace: openshift-mtv
 
 subscription:
-  channel: release-v2.7
+  channel: release-v2.12
   installPlanApproval: Automatic
   source: redhat-operators
   sourceNamespace: openshift-marketplace

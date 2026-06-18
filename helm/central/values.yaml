@@ -478,13 +478,13 @@ cnv:
 # ─── Migration Toolkit for Virtualization (MTV) — central cluster ────────────
 mtv:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.1.1"
   syncWave: "28"
   destinationNamespace: openshift-mtv
   values:
     namespace: openshift-mtv
     subscription:
-      channel: release-v2.7
+      channel: release-v2.12
       installPlanApproval: Automatic
       source: redhat-operators
       sourceNamespace: openshift-marketplace
