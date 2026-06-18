@@ -24,7 +24,8 @@ SOVEREIGN_INIT_HELM_SECRETS_SETS := \
   --set gitea.adminPassword="$(GITEA_ADMIN_PASSWORD)" \
   --set vmware.host="$(VMWARE_HOST)" \
   --set vmware.username="$(VMWARE_USERNAME)" \
-  --set vmware.password="$(VMWARE_PASSWORD)"
+  --set vmware.password="$(VMWARE_PASSWORD)" \
+  --set vmware.thumbprint="$(VMWARE_THUMBPRINT)"
 
 SOVEREIGN_INIT_HELM_APPSET_SETS := \
   --set gitops.repoURL="$(BOOTSTRAP_REPO_URL)" \

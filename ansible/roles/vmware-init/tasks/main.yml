@@ -15,7 +15,7 @@
     vmware_host: "{{ vmware_secret.resources[0].data.host | b64decode }}"
     vmware_username: "{{ vmware_secret.resources[0].data.username | b64decode }}"
     vmware_password: "{{ vmware_secret.resources[0].data.password | b64decode }}"
-    vmware_cacert: "{{ vmware_secret.resources[0].data.cacert | default('') | b64decode }}"
+    vmware_thumbprint: "{{ vmware_secret.resources[0].data.thumbprint | default('') | b64decode }}"
   no_log: true
 
 - name: Retrieve Vault root token from Secret
@@ -44,10 +44,9 @@
     body_format: json
     body:
       data:
-        url: "https://{{ vmware_host }}"
-        username: "{{ vmware_username }}"
+        user: "{{ vmware_username }}"
         password: "{{ vmware_password }}"
-        cacert: "{{ vmware_cacert }}"
+        thumbprint: "{{ vmware_thumbprint }}"
     status_code: [200, 204]
   retries: 5
   delay: 10

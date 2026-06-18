@@ -131,6 +131,7 @@ vmware:
   host: ""
   username: ""
   password: ""
+  thumbprint: ""
   # Optional: PEM-encoded CA certificate for self-signed vCenter TLS.
   # If empty, insecure connection is used (acceptable in lab; document deviation in prod).
   cacert: ""

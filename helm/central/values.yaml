@@ -478,7 +478,7 @@ cnv:
 # ─── Migration Toolkit for Virtualization (MTV) — central cluster ────────────
 mtv:
   enabled: true
-  chartVersion: "0.1.5"
+  chartVersion: "0.1.6"
   syncWave: "28"
   destinationNamespace: openshift-mtv
   values:
@@ -499,7 +499,7 @@ mtv:
       enabled: true
       name: vmware-vcenter
       type: vsphere
-      url: "https://xna-vcenter-8.lab.signal9.gg/sdk"
+      url: "https://172.18.0.77/sdk"
       credentialsSecretName: vmware-vcenter-secret
     externalSecret:
       enabled: true
