@@ -478,7 +478,7 @@ cnv:
 # ─── Migration Toolkit for Virtualization (MTV) — central cluster ────────────
 mtv:
   enabled: true
-  chartVersion: "0.1.7"
+  chartVersion: "0.1.8"
   syncWave: "28"
   destinationNamespace: openshift-mtv
   values:
