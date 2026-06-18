@@ -10,7 +10,7 @@ metadata:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   type: {{ .Values.vmwareProvider.type }}
-  url: ""
+  url: {{ .Values.vmwareProvider.url | quote }}
   secret:
     name: {{ .Values.vmwareProvider.credentialsSecretName }}
     namespace: {{ .Values.namespace }}

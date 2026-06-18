@@ -18,6 +18,7 @@ vmwareProvider:
   enabled: true
   name: vmware-vcenter
   type: vsphere
+  url: ""
   credentialsSecretName: vmware-vcenter-secret
 
 externalSecret:
