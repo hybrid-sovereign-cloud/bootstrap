@@ -1,0 +1,16 @@
+apiVersion: v2
+name: dns-forwarder
+description: >
+  Configures the OpenShift DNS operator with custom forwarders so pods can
+  resolve internal lab hostnames (lab.signal9.gg) via the lab DNS servers
+  at 172.18.42.10 / 172.18.42.11.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - dns
+  - coredns
+  - forwarder
+home: https://github.com/hybrid-sovereign/bootstrap
+maintainers:
+  - name: platform-team

@@ -1,0 +1,55 @@
+{{- if and (include "sovereign-central.applicationsEnabled" .) .Values.dnsForwarderServices.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dns-forwarder-services
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    {{- include "sovereign-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: dns
+    sovereign-cloud/target: services
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .Values.dnsForwarderServices.syncWave | default "2" | quote }}
+spec:
+  project: services
+
+  source:
+    repoURL: {{ printf "oci://%s/%s/dns-forwarder" .Values.oci.registry .Values.oci.repositoryBase | quote }}
+    chart: dns-forwarder
+    targetRevision: {{ .Values.dnsForwarderServices.chartVersion | quote }}
+    helm:
+      releaseName: dns-forwarder-services
+      valuesObject:
+        {{- toYaml .Values.dnsForwarderServices.values | nindent 8 }}
+
+  destination:
+    server: {{ .Values.servicesCluster.server | quote }}
+    # DNS/default is cluster-scoped; namespace is required by ArgoCD but not used
+    namespace: openshift-dns
+
+  ignoreDifferences:
+    - group: operator.openshift.io
+      kind: DNS
+      jsonPointers:
+        - /spec/cache
+        - /spec/logLevel
+        - /spec/nodePlacement
+        - /spec/operatorLogLevel
+        - /spec/upstreamResolvers
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
+{{- end }}

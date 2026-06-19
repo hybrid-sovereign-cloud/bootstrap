@@ -93,6 +93,7 @@ include make/help.mk
 include make/eda-sync.mk
 include make/upload-cnv-chart.mk
 include make/upload-mtv-chart.mk
+include make/upload-dns-forwarder-chart.mk
 
 ##@ Convenience
 
@@ -131,7 +132,8 @@ UPLOAD_TARGETS := \
   upload-assignment-central-rbac-chart \
   upload-sovereign-assignment-chart \
   upload-cnv-chart \
-  upload-mtv-chart
+  upload-mtv-chart \
+  upload-dns-forwarder-chart
 
 .PHONY: upload-all-charts
 upload-all-charts: $(UPLOAD_TARGETS) ## Upload ALL Helm charts to OCI registry

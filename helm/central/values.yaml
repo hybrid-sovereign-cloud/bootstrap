@@ -903,6 +903,24 @@ externalSecrets:
       sourceNamespace: openshift-marketplace
     namespace: external-secrets
 
+# ─── DNS Forwarder (services) ────────────────────────────────────────────────
+# Adds lab.signal9.gg → 172.18.42.10/172.18.42.11 forwarder to the services
+# cluster CoreDNS so pods can resolve internal lab hostnames (vCenter, ESXi, etc.)
+# without falling through to public DNS which has no knowledge of private hosts.
+dnsForwarderServices:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "2"
+  values:
+    servers:
+      - name: lab-signal9-forwarder
+        zones:
+          - lab.signal9.gg
+        policy: Sequential
+        upstreams:
+          - 172.18.42.10
+          - 172.18.42.11
+
 # ─── External Secrets Operator (services) ───────────────────────────────────
 externalSecretsServices:
   enabled: true

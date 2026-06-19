@@ -1,0 +1,24 @@
+---
+# Patch the singleton DNS operator object on this cluster so CoreDNS forwards
+# private lab zones to the internal lab DNS servers instead of public resolvers.
+apiVersion: operator.openshift.io/v1
+kind: DNS
+metadata:
+  name: default
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  servers:
+    {{- range .Values.servers }}
+    - name: {{ .name }}
+      zones:
+        {{- range .zones }}
+        - {{ . }}
+        {{- end }}
+      forwardPlugin:
+        policy: {{ .policy | default "Sequential" }}
+        upstreams:
+          {{- range .upstreams }}
+          - {{ . }}
+          {{- end }}
+    {{- end }}

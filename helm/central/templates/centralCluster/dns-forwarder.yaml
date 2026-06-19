@@ -57,11 +57,25 @@ spec:
         upstreams:
           - 8.8.8.8
           - 8.8.4.4
+    # Forward lab.signal9.gg to internal lab DNS servers.
+    # lab.signal9.gg hosts private infrastructure (vCenter, ESXi, etc.) that only
+    # internal DNS at 172.18.42.10/172.18.42.11 can resolve.  Without this entry
+    # CoreDNS falls through to the signal9-forwarder (8.8.8.8) which has no knowledge
+    # of internal hosts — pods curl/reach them but nodes succeed via /etc/resolv.conf.
+    # More-specific than signal9.gg, so this wins for all lab.signal9.gg subdomains.
+    - name: lab-signal9-forwarder
+      zones:
+        - lab.signal9.gg
+      forwardPlugin:
+        policy: Sequential
+        upstreams:
+          - 172.18.42.10
+          - 172.18.42.11
     # Forward a4fce.lab.signal9.gg directly to the Route53 zone NS.
     # The lab.signal9.gg Route53 zone (Z04944392VFMLMB3L46MM) holds a4fce.* records
     # but the parent signal9.gg domain delegates lab.signal9.gg to stale NS servers
     # (old zone in a different account) that don't have a4fce records.
-    # More-specific zone wins in CoreDNS, so this overrides the signal9-forwarder above.
+    # More-specific zone wins in CoreDNS, so this overrides both forwarders above.
     - name: ses4-a4fce-forwarder
       zones:
         - a4fce.lab.signal9.gg
