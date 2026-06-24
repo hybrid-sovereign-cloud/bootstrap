@@ -1586,7 +1586,7 @@ sovereignJobs:
               property: registry
       env:
         - name: RUN_ID
-          value: "5"
+          value: "6"
         - name: EDA_CONTROLLER_URL
           value: "https://sovereign-aap-eda-aap.apps.shc-central.lab.signal9.gg"
         - name: AAP_CONTROLLER_URL
@@ -1677,7 +1677,7 @@ sovereignJobs:
         - name: OCP_SERVICES_SERVER
           value: "https://api.shcservices.lab.signal9.gg:6443"
         - name: RUN_ID
-          value: "2"
+          value: "3"
 
     # ─── Quay Central Config: init admin + store in Vault + configure OIDC ──────
     quayCentralConfig:
