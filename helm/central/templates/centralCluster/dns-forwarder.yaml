@@ -47,10 +47,11 @@ spec:
       forwardPlugin:
         policy: Sequential
         upstreams:
-          - ns-1520.awsdns-62.org
-          - ns-221.awsdns-27.com
-          - ns-859.awsdns-43.net
-          - ns-1537.awsdns-00.co.uk
+          # CoreDNS forwardPlugin requires IP addresses, not hostnames.
+          - 205.251.197.240
+          - 205.251.192.221
+          - 205.251.195.91
+          - 205.251.198.1
     - name: opentlc-forwarder
       zones:
         - opentlc.com
@@ -97,11 +98,13 @@ spec:
           - 205.251.197.184
           - 205.251.198.181
     # Forward shc.signal9.gg for OpenStack Designate DNS (internet-facing OCP clusters).
+    # Use internal lab DNS first (Designate), then public fallback.
     - name: shc-signal9-forwarder
       zones:
         - shc.signal9.gg
       forwardPlugin:
         policy: Sequential
         upstreams:
+          - 172.18.42.10
+          - 172.18.42.11
           - 8.8.8.8
-          - 8.8.4.4
