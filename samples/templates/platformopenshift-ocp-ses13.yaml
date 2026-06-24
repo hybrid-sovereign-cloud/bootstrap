@@ -13,7 +13,22 @@ spec:
     environment: "ses13-env"
     controlPlaneCount: 3
     workerCount: 2
-    controlPlaneFlavor: "b1.xlarge"
-    workerFlavor: "b1.large"
+    controlPlaneFlavor: "b1.3xlarge"
+    workerFlavor: "s1.3xlarge"
     externalNetwork: "internet"
+  toolRbac:
+    clusterAdminRbac:
+      - acme-ses13-cluster-admins
+    clusterOperatorRbac:
+      - acme-ses13-cluster-operators
+    clusterDeveloperRbac:
+      - acme-ses13-cluster-developers
+    clusterViewerRbac:
+      - acme-ses13-cluster-viewers
+  clusterViewerRbac:
+    - acme-platform-viewers
+    - acme-ses13-cluster-admins
+    - acme-ses13-cluster-operators
+    - acme-ses13-cluster-developers
+    - acme-ses13-cluster-viewers
 {{- end }}

@@ -13,5 +13,6 @@ spec:
   externalNetwork: "internet"
   landingzone: "default"
   designateZoneId: "895a1406-9ad2-4372-80f9-4e23fe1fd9ef"
-  designateProjectId: "4cdae8e2b49c4f1fa4b4a69be8ea43e7"
+  designateProjectId: "aaf08e3b0b774c7e919379af9e947cba"
+  designateDnsProject: "lab-project"
 {{- end }}

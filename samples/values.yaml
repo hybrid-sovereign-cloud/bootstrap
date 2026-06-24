@@ -16,17 +16,25 @@ samples:
     assignment_frontend:
       enabled: false
     assignment_ses10_platform_eng:
-      enabled: true
+      enabled: false
     assignment_ses10_platform_ops:
+      enabled: false
+    assignment_ses12_platform_eng:
+      enabled: true
+    assignment_ses12_platform_ops:
+      enabled: true
+    assignment_ses13_platform_eng:
+      enabled: true
+    assignment_ses13_platform_ops:
       enabled: true
     assignment_ses4_data:
-      enabled: true
+      enabled: false
     assignment_ses4_plat_ops:
-      enabled: true
+      enabled: false
     assignment_ses4_platform_eng:
-      enabled: true
+      enabled: false
     assignment_ses4_platform_ops:
-      enabled: true
+      enabled: false
     assignment_ses5_frontend:
       enabled: false
     assignment_ses5_plat_eng:
@@ -157,12 +165,28 @@ samples:
     rbac_acme_security_auditors:
       enabled: true
     rbac_acme_ses10_cluster_admins:
-      enabled: true
+      enabled: false
     rbac_acme_ses10_cluster_developers:
-      enabled: true
+      enabled: false
     rbac_acme_ses10_cluster_operators:
-      enabled: true
+      enabled: false
     rbac_acme_ses10_cluster_viewers:
+      enabled: false
+    rbac_acme_ses12_cluster_admins:
+      enabled: true
+    rbac_acme_ses12_cluster_developers:
+      enabled: true
+    rbac_acme_ses12_cluster_operators:
+      enabled: true
+    rbac_acme_ses12_cluster_viewers:
+      enabled: true
+    rbac_acme_ses13_cluster_admins:
+      enabled: true
+    rbac_acme_ses13_cluster_developers:
+      enabled: true
+    rbac_acme_ses13_cluster_operators:
+      enabled: true
+    rbac_acme_ses13_cluster_viewers:
       enabled: true
     rbac_acme_team_admins:
       enabled: true
