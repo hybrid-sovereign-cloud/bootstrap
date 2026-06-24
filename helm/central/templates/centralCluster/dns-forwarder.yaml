@@ -86,3 +86,12 @@ spec:
           - 205.251.195.171
           - 205.251.197.184
           - 205.251.198.181
+    # Forward shc.signal9.gg for OpenStack Designate DNS (internet-facing OCP clusters).
+    - name: shc-signal9-forwarder
+      zones:
+        - shc.signal9.gg
+      forwardPlugin:
+        policy: Sequential
+        upstreams:
+          - 8.8.8.8
+          - 8.8.4.4

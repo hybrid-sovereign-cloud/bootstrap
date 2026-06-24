@@ -39,6 +39,8 @@ samples:
     cloudaws_dev:
       enabled: false
     ses10_env:
+      enabled: false
+    ses12_env:
       enabled: true
     ses7_env:
       enabled: false
@@ -47,10 +49,10 @@ samples:
       enabled: false
     ses11_env:
       enabled: false
-    ses12_env:
-      enabled: false
-    ses4_env:
+    ses13_env:
       enabled: true
+    ses4_env:
+      enabled: false
     ses5_env:
       enabled: false
     ses8_env:
@@ -84,13 +86,15 @@ samples:
     ocp_prod:
       enabled: false
     ocp_ses10:
-      enabled: true
+      enabled: false
     ocp_ses11:
       enabled: false
     ocp_ses12:
-      enabled: false
-    ocp_ses4:
       enabled: true
+    ocp_ses13:
+      enabled: true
+    ocp_ses4:
+      enabled: false
     ocp_ses5:
       enabled: false
     ocp_ses7:

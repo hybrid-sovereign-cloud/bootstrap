@@ -1206,7 +1206,7 @@ sovereignJobs:
       syncWave: "27"
       env:
         - name: RUN_ID
-          value: "2026-06-16-fix-oauth"
+          value: "2026-06-24-fix-oauth"
         - name: KEYCLOAK_CENTRAL_URL
           value: "https://rhbk-central.apps.shc-central.lab.signal9.gg"
         - name: KEYCLOAK_SERVICES_URL
@@ -1317,7 +1317,7 @@ sovereignJobs:
         - name: REALM_NAME
           value: "sovereign-tenants"
         - name: FORCE_RERUN
-          value: "2026-05-22"
+          value: "2026-06-24-services-rhbk"
     keycloakServicesGroups:
       enabled: true
       playbook: keycloak-groups.yml
@@ -1620,7 +1620,7 @@ sovereignJobs:
       syncWave: "32"
       env:
         - name: RUN_ID
-          value: "2026-06-18-virtualization-users"
+          value: "2026-06-24-fix-keycloak-test-users"
         - name: KEYCLOAK_CENTRAL_URL
           value: "https://rhbk-central.apps.shc-central.lab.signal9.gg"
         - name: KEYCLOAK_SERVICES_URL
@@ -1632,7 +1632,7 @@ sovereignJobs:
         - name: KEYCLOAK_CENTRAL_ADMIN_SECRET
           value: "rhbk-central-initial-admin"
         - name: KEYCLOAK_CENTRAL_ADMIN_SECRET_NS
-          value: "rhbk"
+          value: "central-rhbk"
         - name: KEYCLOAK_SERVICES_ADMIN_SECRET
           value: "rhbk-services-admin"
         - name: KEYCLOAK_SERVICES_ADMIN_SECRET_NS
@@ -1858,7 +1858,7 @@ pluginVault:
       repository: quay.signal9.gg/hybrid-sovereign/vault
       tag: "1.21.2"
     keycloak:
-      internalUrl: "http://rhbk-services-service.rhbk.svc:8080"
+      internalUrl: "http://rhbk-services-service.services-rhbk.svc:8080"
       realm: sovereign-tenants
       adminSecret: rhbk-services-admin
     externalSecret:
@@ -1892,7 +1892,7 @@ pluginAap:
       gatewayUrl: "https://sovereign-aap-aap.apps.shcservices.lab.signal9.gg"
       gatewayInternalUrl: "http://sovereign-aap.aap.svc:80"
     keycloak:
-      internalUrl: "http://rhbk-services-service.rhbk.svc:8080"
+      internalUrl: "http://rhbk-services-service.services-rhbk.svc:8080"
       realm: sovereign-tenants
     externalSecret:
       enabled: true
@@ -1930,7 +1930,7 @@ pluginQuay:
       url: "https://svc-sovereign-registry-quay-quay-enterprise.apps.shcservices.lab.signal9.gg"
       internalUrl: "http://svc-sovereign-registry-quay-app.quay-enterprise.svc:443"
     keycloak:
-      internalUrl: "http://rhbk-services-service.rhbk.svc:8080"
+      internalUrl: "http://rhbk-services-service.services-rhbk.svc:8080"
       realm: sovereign-tenants
     externalSecret:
       enabled: true
@@ -2099,7 +2099,7 @@ platformOpenshiftOperator:
     imagePullSecrets:
       - name: quay-pull-secret
     keycloak:
-      internalUrl: "http://rhbk-services-service.rhbk.svc:8080"
+      internalUrl: "http://rhbk-services-service.services-rhbk.svc:8080"
       externalUrl: "https://rhbk-services.apps.shcservices.lab.signal9.gg"
       realm: "sovereign-tenants"
       adminSecretName: "rhbk-admin-credentials"
@@ -2124,7 +2124,7 @@ platformOpenshiftOperator:
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
   enabled: true
-  chartVersion: "0.5.5"
+  chartVersion: "0.5.6"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -2149,7 +2149,7 @@ cloudOSOOperator:
 # ─── CloudAWS Operator (services cluster) ──────────────────────────────────
 cloudAWSOperator:
   enabled: true
-  chartVersion: "0.1.9"
+  chartVersion: "0.1.10"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
@@ -2214,7 +2214,7 @@ tenancyDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/tenancy-dashboard
-      tag: "3.9.0"
+      tag: "3.9.1"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
