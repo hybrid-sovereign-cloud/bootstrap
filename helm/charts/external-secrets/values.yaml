@@ -1,4 +1,5 @@
 operator:
+  name: external-secrets-operator
   channel: stable
   installPlanApproval: Automatic
   source: community-operators
