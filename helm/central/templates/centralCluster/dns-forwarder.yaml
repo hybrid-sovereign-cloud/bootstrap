@@ -41,6 +41,16 @@ spec:
         upstreams:
           - 205.251.195.52
           - 205.251.199.130
+    - name: sandbox3512-04be0-forwarder
+      zones:
+        - 04be0.sandbox3512.opentlc.com
+      forwardPlugin:
+        policy: Sequential
+        upstreams:
+          - ns-1520.awsdns-62.org
+          - ns-221.awsdns-27.com
+          - ns-859.awsdns-43.net
+          - ns-1537.awsdns-00.co.uk
     - name: opentlc-forwarder
       zones:
         - opentlc.com
