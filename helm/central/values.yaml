@@ -1103,7 +1103,7 @@ sovereignJobs:
       syncWave: "35"
       env:
         - name: RUN_ID
-          value: "1"
+          value: "2"
         - name: OCP_CENTRAL_SERVER
           value: "https://api.shc-central.lab.signal9.gg:6443"
     deliverVaultToken:
@@ -2159,7 +2159,7 @@ cloudOSOOperator:
 # ─── OpenStackMigration Operator (services cluster) ─────────────────────────
 openstackMigrationOperator:
   enabled: true
-  chartVersion: "0.1.0"
+  chartVersion: "0.1.1"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
