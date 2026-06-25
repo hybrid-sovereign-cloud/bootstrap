@@ -1,0 +1,7 @@
+---
+- name: Sync MTV Provider and VM catalog to services cluster ConfigMap
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - mtv_catalog_sync

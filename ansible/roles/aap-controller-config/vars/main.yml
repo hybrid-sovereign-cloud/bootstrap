@@ -58,6 +58,11 @@ controller_execution_environments:
     image: "{{ _quay_registry }}/de-cloudoso:{{ _de_cloudoso_tag }}"
     pull: missing
     credential: quay-robot-credential
+  - name: de-openstack-migration
+    organization: sovereign
+    image: "{{ _quay_registry }}/de-openstack-migration:{{ _de_openstack_migration_tag }}"
+    pull: missing
+    credential: quay-robot-credential
   - name: de-cloudaws
     organization: sovereign
     image: "{{ _quay_registry }}/de-cloudaws:{{ _de_cloudaws_tag }}"
@@ -398,6 +403,15 @@ controller_templates:
     playbook: rulebooks/quayorg-teardown-playbook.yml
     inventory: sovereign-localhost
     execution_environment: de-plugin-quay
+    ask_variables_on_launch: true
+    credentials:
+      - sovereign-central-cluster-credential
+  - name: openstack-migration-dummy
+    organization: sovereign
+    project: sovereign-eda-project
+    playbook: rulebooks/openstack-migration-dummy-playbook.yml
+    inventory: sovereign-localhost
+    execution_environment: de-openstack-migration
     ask_variables_on_launch: true
     credentials:
       - sovereign-central-cluster-credential

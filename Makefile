@@ -71,6 +71,7 @@ include make/upload-assignment-operator-chart.mk
 include make/upload-project-operator-chart.mk
 include make/upload-platformopenshift-operator-chart.mk
 include make/upload-cloudoso-operator-chart.mk
+include make/upload-openstackmigration-operator-chart.mk
 include make/upload-ocp-base-chart.mk
 include make/upload-assignment-central-rbac-chart.mk
 include make/upload-sovereign-assignment-chart.mk

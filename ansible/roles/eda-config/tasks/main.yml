@@ -32,6 +32,10 @@
         rulebooks:
           - { name: "cloudoso-create", file: "cloudoso-create.yml" }
           - { name: "cloudoso-delete", file: "cloudoso-delete.yml" }
+      - name: openstack-migration
+        de_image: "{{ de_registry }}/de-openstack-migration:{{ de_tags['openstack-migration'] }}"
+        rulebooks:
+          - { name: "openstack-migration-create", file: "openstack-migration-create.yml" }
       - name: cloudaws
         de_image: "{{ de_registry }}/de-cloudaws:{{ de_tags['cloudaws'] }}"
         rulebooks:

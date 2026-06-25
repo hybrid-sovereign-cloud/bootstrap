@@ -1096,6 +1096,16 @@ sovereignJobs:
         - name: vmware-creds
           secret:
             secretName: vmware-bootstrap-credentials
+    mtvCatalogSync:
+      enabled: true
+      playbook: mtv-catalog-sync.yml
+      activeDeadlineSeconds: 600
+      syncWave: "35"
+      env:
+        - name: RUN_ID
+          value: "1"
+        - name: OCP_CENTRAL_SERVER
+          value: "https://api.shc-central.lab.signal9.gg:6443"
     deliverVaultToken:
       enabled: true
       playbook: deliver-vault-token.yml
@@ -1514,7 +1524,7 @@ sovereignJobs:
               property: bearer_token
       env:
         - name: RUN_ID
-          value: "3"
+          value: "4"
         - name: AAP_CONTROLLER_URL
           value: "https://sovereign-aap-controller-aap.apps.shc-central.lab.signal9.gg"
         - name: AAP_ADMIN_PASSWORD
@@ -1586,7 +1596,7 @@ sovereignJobs:
               property: registry
       env:
         - name: RUN_ID
-          value: "6"
+          value: "7"
         - name: EDA_CONTROLLER_URL
           value: "https://sovereign-aap-eda-aap.apps.shc-central.lab.signal9.gg"
         - name: AAP_CONTROLLER_URL
@@ -2124,7 +2134,7 @@ platformOpenshiftOperator:
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
   enabled: true
-  chartVersion: "0.5.6"
+  chartVersion: "0.5.7"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -2145,6 +2155,24 @@ cloudOSOOperator:
         refreshInterval: "1h"
     samples:
       enabled: false  # CRs created by operatorSamples job
+
+# ─── OpenStackMigration Operator (services cluster) ─────────────────────────
+openstackMigrationOperator:
+  enabled: true
+  chartVersion: "0.1.0"
+  syncWave: "38"
+  destinationNamespace: sovereign-cloud
+  values:
+    namespace: sovereign-cloud
+    image:
+      repository: quay.signal9.gg/hybrid-sovereign/openstackmigration-operator
+      tag: "0.1.0"
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: quay-pull-secret
+    replicas: 2
+    samples:
+      enabled: false
 
 # ─── CloudAWS Operator (services cluster) ──────────────────────────────────
 cloudAWSOperator:
@@ -2214,7 +2242,7 @@ tenancyDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/tenancy-dashboard
-      tag: "3.9.1"
+      tag: "3.9.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -2263,7 +2291,7 @@ sovereignTenantPlugin:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/sovereign-tenant-plugin
-      tag: "1.0.5"
+      tag: "1.0.6"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
