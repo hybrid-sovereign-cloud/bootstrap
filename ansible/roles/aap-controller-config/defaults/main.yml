@@ -10,7 +10,7 @@ aap_validate_certs: false
 _quay_registry: "{{ lookup('env', 'OCI_REGISTRY') }}/hybrid-sovereign"
 _de_entity_tag: "0.1.6"
 _de_team_tag: "0.1.2"
-_de_assignment_tag: "0.1.6"
+_de_assignment_tag: "0.1.5"
 _de_project_tag: "0.1.0"
 _de_platformopenshift_tag: "0.1.5"
 _de_cloudoso_tag: "0.1.6"

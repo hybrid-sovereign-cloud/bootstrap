@@ -1103,7 +1103,7 @@ sovereignJobs:
       syncWave: "35"
       env:
         - name: RUN_ID
-          value: "2"
+          value: "3"
         - name: OCP_CENTRAL_SERVER
           value: "https://api.shc-central.lab.signal9.gg:6443"
     deliverVaultToken:
@@ -1524,7 +1524,7 @@ sovereignJobs:
               property: bearer_token
       env:
         - name: RUN_ID
-          value: "5"
+          value: "6"
         - name: AAP_CONTROLLER_URL
           value: "https://sovereign-aap-controller-aap.apps.shc-central.lab.signal9.gg"
         - name: AAP_ADMIN_PASSWORD
@@ -1596,7 +1596,7 @@ sovereignJobs:
               property: registry
       env:
         - name: RUN_ID
-          value: "8"
+          value: "9"
         - name: EDA_CONTROLLER_URL
           value: "https://sovereign-aap-eda-aap.apps.shc-central.lab.signal9.gg"
         - name: AAP_CONTROLLER_URL
@@ -2242,7 +2242,7 @@ tenancyDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/tenancy-dashboard
-      tag: "3.9.2"
+      tag: "3.9.3"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -2291,7 +2291,7 @@ sovereignTenantPlugin:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/sovereign-tenant-plugin
-      tag: "1.0.6"
+      tag: "1.0.8"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
