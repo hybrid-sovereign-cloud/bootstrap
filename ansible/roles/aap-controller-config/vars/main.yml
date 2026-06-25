@@ -10,7 +10,7 @@ controller_credentials:
     organization: sovereign
     credential_type: Container Registry
     inputs:
-      host: "{{ _quay_registry }}"
+      host: "{{ _quay_registry_host }}"
       username: "{{ lookup('env', 'OCI_ROBOT_USERNAME') }}"
       password: "{{ lookup('env', 'OCI_ROBOT_PASSWORD') }}"
   - name: sovereign-gitea-credential
