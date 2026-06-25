@@ -102,26 +102,6 @@
     update_secrets: true
   no_log: true
   register: eda_quay_credential_result
-  failed_when: false
-
-- name: Confirm Quay registry credential exists in EDA
-  ansible.builtin.uri:
-    url: "{{ eda_controller_url }}/api/eda/v1/credentials/?name=quay-registry-credential&organization__name={{ eda_organization | urlencode }}"
-    method: GET
-    validate_certs: false
-    url_username: "{{ eda_admin_username }}"
-    url_password: "{{ eda_admin_password }}"
-    force_basic_auth: true
-    status_code: [200]
-  register: eda_quay_credential_lookup
-  no_log: true
-
-- name: Fail when Quay registry credential is missing after create attempt
-  ansible.builtin.fail:
-    msg: >-
-      quay-registry-credential is not present in EDA organization {{ eda_organization }}.
-      Module result: {{ eda_quay_credential_result.msg | default('unknown') }}
-  when: eda_quay_credential_lookup.json.count | default(0) == 0
 
 - name: Create AAP Controller credential for EDA
   ansible.eda.credential:
