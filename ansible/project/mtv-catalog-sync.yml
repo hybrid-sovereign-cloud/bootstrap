@@ -4,4 +4,4 @@
   connection: local
   gather_facts: false
   roles:
-    - mtv_catalog_sync
+    - mtv-catalog-sync
