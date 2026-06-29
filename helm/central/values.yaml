@@ -414,7 +414,7 @@ aapCentral:
 # ─── Plugin IaaC Operator (services cluster) — Go direct Gitea sync ─────────
 pluginIaac:
   enabled: true
-  chartVersion: "0.2.0"
+  chartVersion: "0.2.1"
   syncWave: "40"
   destinationNamespace: sovereign-cloud-plugins
   values:
@@ -425,7 +425,7 @@ pluginIaac:
     metricsPort: 8443
     image:
       repository: quay.signal9.gg/hybrid-sovereign/plugin-iaac
-      tag: "0.2.0"
+      tag: "v0.2.0"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
