@@ -32,6 +32,13 @@
           - eda_controller_url | length > 0
         fail_msg: "EDA_CONTROLLER_URL environment variable is required"
 
+    - name: Set EDA admin credentials from environment (local iteration)
+      ansible.builtin.set_fact:
+        eda_admin_username: "admin"
+        eda_admin_password: "{{ lookup('env', 'EDA_ADMIN_PASSWORD') }}"
+      no_log: true
+      when: lookup('env', 'EDA_ADMIN_PASSWORD') | length > 0
+
     - name: Read AAP gateway admin password for EDA API auth
       kubernetes.core.k8s_info:
         kind: Secret
@@ -39,12 +46,20 @@
         name: sovereign-aap-admin-password
       register: eda_secret_raw
       no_log: true
+      when: lookup('env', 'EDA_ADMIN_PASSWORD') | length == 0
 
-    - name: Set EDA admin credentials
+    - name: Set EDA admin credentials from cluster secret
       ansible.builtin.set_fact:
         eda_admin_username: "admin"
         eda_admin_password: "{{ eda_secret_raw.resources[0].data.password | b64decode }}"
       no_log: true
+      when: lookup('env', 'EDA_ADMIN_PASSWORD') | length == 0
+
+    - name: Set event-stream token from environment (local iteration)
+      ansible.builtin.set_fact:
+        event_stream_token: "{{ lookup('env', 'EVENT_STREAM_TOKEN') }}"
+      no_log: true
+      when: lookup('env', 'EVENT_STREAM_TOKEN') | length > 0
 
     - name: Read event-stream token from Kubernetes secret
       kubernetes.core.k8s_info:
@@ -53,11 +68,13 @@
         name: event-stream-token
       register: event_stream_secret_raw
       no_log: true
+      when: lookup('env', 'EVENT_STREAM_TOKEN') | length == 0
 
-    - name: Set event-stream token fact
+    - name: Set event-stream token fact from cluster secret
       ansible.builtin.set_fact:
         event_stream_token: "{{ event_stream_secret_raw.resources[0].data.token | b64decode }}"
       no_log: true
+      when: lookup('env', 'EVENT_STREAM_TOKEN') | length == 0
 
     - name: Set GitHub PAT for rulebook repo clone
       ansible.builtin.set_fact:

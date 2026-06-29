@@ -80,6 +80,7 @@ include make/aap-store-admin.mk
 include make/upload-oso-creds.mk
 include make/upload-aws-creds.mk
 include make/ansible-runner.mk
+include make/run-eda-config-local.mk
 include make/init-bootstrap-common.mk
 include make/init-central-argo.mk
 include make/init-central-secrets.mk

@@ -9,6 +9,7 @@ USER root
 # Install Ansible collections to system-wide path accessible by all users
 RUN ansible-galaxy collection install \
   infra.aap_configuration \
+  ansible.eda \
   community.aws \
   openstack.cloud \
   community.general \
