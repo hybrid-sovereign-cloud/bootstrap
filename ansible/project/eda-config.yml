@@ -32,11 +32,11 @@
           - eda_controller_url | length > 0
         fail_msg: "EDA_CONTROLLER_URL environment variable is required"
 
-    - name: Read EDA admin password from Kubernetes secret
+    - name: Read AAP gateway admin password for EDA API auth
       kubernetes.core.k8s_info:
         kind: Secret
         namespace: aap
-        name: sovereign-aap-eda-admin-password
+        name: sovereign-aap-admin-password
       register: eda_secret_raw
       no_log: true
 

@@ -1572,6 +1572,14 @@ sovereignJobs:
             secretKeyRef:
               name: aap-controller-central-sa
               key: bearer_token
+    aapPostgresGuard:
+      enabled: true
+      playbook: aap-postgres-guard.yml
+      activeDeadlineSeconds: 600
+      syncWave: "31"
+      env:
+        - name: RUN_ID
+          value: "1"
     edaConfig:
       enabled: true
       playbook: eda-config.yml
@@ -1614,9 +1622,9 @@ sovereignJobs:
               property: token
       env:
         - name: RUN_ID
-          value: "13"
+          value: "14"
         - name: EDA_CONTROLLER_URL
-          value: "https://sovereign-aap-eda-aap.apps.shc-central.lab.signal9.gg"
+          value: "https://sovereign-aap-aap.apps.shc-central.lab.signal9.gg"
         - name: AAP_CONTROLLER_URL
           value: "https://sovereign-aap-aap.apps.shc-central.lab.signal9.gg"
         - name: AAP_RESOURCE_TOKEN

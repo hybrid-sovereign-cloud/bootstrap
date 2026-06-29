@@ -1,0 +1,161 @@
+---
+# Idempotent guard for AAP gateway postgres PVC ownership drift.
+# The RHEL9 postgresql-15 image runs as UID 26; OpenShift anyuid can leave data
+# owned by an arbitrary UID after unclean shutdown, causing chmod failures on restart.
+- name: Repair AAP gateway postgres PVC ownership when pod is unhealthy
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    aap_namespace: aap
+    postgres_sts: sovereign-aap-postgres-15
+    postgres_pvc: postgres-15-sovereign-aap-postgres-15-0
+    postgres_uid: "26"
+    postgres_gid: "26"
+
+  tasks:
+    - name: Read gateway postgres StatefulSet
+      kubernetes.core.k8s_info:
+        kind: StatefulSet
+        namespace: "{{ aap_namespace }}"
+        name: "{{ postgres_sts }}"
+      register: pg_sts
+
+    - name: Skip when StatefulSet is absent
+      ansible.builtin.meta: end_play
+      when: pg_sts.resources | length == 0
+
+    - name: Read gateway postgres pod
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: "{{ aap_namespace }}"
+        label_selector: >-
+          app.kubernetes.io/name=postgres-15,
+          app.kubernetes.io/instance=postgres-15-sovereign-aap
+      register: pg_pods
+
+    - name: Determine whether postgres needs repair
+      ansible.builtin.set_fact:
+        pg_pod_name: "{{ pg_pods.resources[0].metadata.name }}"
+        pg_needs_repair: >-
+          {{
+            (pg_pods.resources | length == 0)
+            or (
+              pg_pods.resources[0].status.containerStatuses | default([])
+              | selectattr('state.waiting.reason', 'defined')
+              | selectattr('state.waiting.reason', 'in', ['CrashLoopBackOff', 'Error'])
+              | list | length > 0
+            )
+          }}
+
+    - name: Skip when postgres is healthy
+      ansible.builtin.meta: end_play
+      when: not pg_needs_repair | bool
+
+    - name: Scale gateway postgres down for offline repair
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: apps/v1
+          kind: StatefulSet
+          metadata:
+            name: "{{ postgres_sts }}"
+            namespace: "{{ aap_namespace }}"
+          spec:
+            replicas: 0
+        merge_type: merge
+
+    - name: Wait for postgres pod termination
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: "{{ aap_namespace }}"
+        name: "{{ pg_pod_name }}"
+      register: pg_pod_gone
+      until: pg_pod_gone.resources | length == 0
+      retries: 30
+      delay: 5
+
+    - name: Repair PVC ownership and remove stale postmaster.pid
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: aap-postgres-pvc-guard
+            namespace: "{{ aap_namespace }}"
+          spec:
+            restartPolicy: Never
+            securityContext:
+              runAsUser: 0
+            containers:
+              - name: repair
+                image: registry.redhat.io/ubi9/ubi:latest
+                command:
+                  - sh
+                  - -c
+                  - |
+                    set -eux
+                    rm -f /mnt/data/userdata/postmaster.pid
+                    chown -R {{ postgres_uid }}:{{ postgres_gid }} /mnt/data
+                    chmod 700 /mnt/data/userdata
+                    find /mnt/data/userdata -type d -exec chmod 700 {} +
+                    find /mnt/data/userdata -type f -exec chmod 600 {} +
+                volumeMounts:
+                  - name: data
+                    mountPath: /mnt
+            volumes:
+              - name: data
+                persistentVolumeClaim:
+                  claimName: "{{ postgres_pvc }}"
+
+    - name: Wait for PVC repair pod completion
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: "{{ aap_namespace }}"
+        name: aap-postgres-pvc-guard
+      register: repair_pod
+      until: >-
+        repair_pod.resources | length > 0
+        and repair_pod.resources[0].status.phase in ['Succeeded', 'Failed']
+      retries: 60
+      delay: 5
+
+    - name: Delete PVC repair pod
+      kubernetes.core.k8s:
+        state: absent
+        kind: Pod
+        namespace: "{{ aap_namespace }}"
+        name: aap-postgres-pvc-guard
+
+    - name: Scale gateway postgres back up
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: apps/v1
+          kind: StatefulSet
+          metadata:
+            name: "{{ postgres_sts }}"
+            namespace: "{{ aap_namespace }}"
+          spec:
+            replicas: 1
+        merge_type: merge
+
+    - name: Wait for postgres pod to become ready
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: "{{ aap_namespace }}"
+        label_selector: >-
+          app.kubernetes.io/name=postgres-15,
+          app.kubernetes.io/instance=postgres-15-sovereign-aap
+      register: pg_ready
+      until: >-
+        pg_ready.resources | length > 0
+        and (
+          pg_ready.resources[0].status.containerStatuses | default([])
+          | selectattr('ready', 'equalto', true)
+          | list | length > 0
+        )
+      retries: 30
+      delay: 10
