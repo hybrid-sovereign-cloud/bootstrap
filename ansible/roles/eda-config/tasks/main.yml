@@ -279,10 +279,21 @@
   register: existing_activations
   no_log: true
 
-- name: Disable unhealthy activations so ansible.eda can reconcile them
+- name: Build managed activation name list
+  ansible.builtin.set_fact:
+    managed_activation_names: >-
+      {{
+        eda_operators | subelements('rulebooks')
+        | map('last')
+        | map(attribute='name')
+        | map('regex_replace', '^(.*)$', '\1-activation')
+        | list
+      }}
+
+- name: Remove orphaned EDA activations no longer managed by sovereign
   ansible.builtin.uri:
-    url: "{{ eda_controller_url }}/api/eda/v1/activations/{{ item.id }}/disable/"
-    method: POST
+    url: "{{ eda_controller_url }}/api/eda/v1/activations/{{ item.id }}/"
+    method: DELETE
     validate_certs: false
     url_username: "{{ eda_admin_username }}"
     url_password: "{{ eda_admin_password }}"
@@ -291,7 +302,21 @@
   loop: "{{ existing_activations.json.results | default([]) }}"
   when:
     - item.name.endswith('-activation')
-    - item.status in ['error', 'failed', 'stopped']
+    - item.name not in managed_activation_names
+  no_log: true
+
+- name: Disable managed activations before reconcile (EDA requires disabled state to update)
+  ansible.builtin.uri:
+    url: "{{ eda_controller_url }}/api/eda/v1/activations/{{ item.id }}/disable/"
+    method: POST
+    validate_certs: false
+    url_username: "{{ eda_admin_username }}"
+    url_password: "{{ eda_admin_password }}"
+    force_basic_auth: true
+    status_code: [204, 404, 400]
+  loop: "{{ existing_activations.json.results | default([]) }}"
+  when:
+    - item.name in managed_activation_names
   no_log: true
 
 - name: Create Rulebook Activations
@@ -315,4 +340,14 @@
   loop: "{{ eda_operators | subelements('rulebooks') }}"
   loop_control:
     label: "{{ item.1.name }}-activation"
-  no_log: true
+  register: rulebook_activation_results
+
+- name: Report rulebook activation failures
+  ansible.builtin.fail:
+    msg: >-
+      Rulebook activation {{ item.item.1.name }}-activation failed:
+      {{ item.msg | default(item | to_nice_json) }}
+  loop: "{{ rulebook_activation_results.results | default([]) }}"
+  when: item.failed | default(false) | bool
+  loop_control:
+    label: "{{ item.item.1.name }}-activation"
