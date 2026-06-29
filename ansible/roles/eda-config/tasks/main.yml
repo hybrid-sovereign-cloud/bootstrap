@@ -218,10 +218,23 @@
     organization_name: "{{ eda_organization }}"
     state: present
   no_log: true
+  register: eda_project_result
+
+- name: Refresh EDA project record after create/update
+  ansible.builtin.uri:
+    url: "{{ eda_controller_url }}/api/eda/v1/projects/?name=sovereign-eda-rulebooks"
+    method: GET
+    validate_certs: false
+    url_username: "{{ eda_admin_username }}"
+    url_password: "{{ eda_admin_password }}"
+    force_basic_auth: true
+    status_code: [200]
+  register: eda_project_current
+  no_log: true
 
 - name: Force sync EDA project to pick up latest rulebook changes
   ansible.builtin.uri:
-    url: "{{ eda_controller_url }}/api/eda/v1/projects/{{ project_status_pre.json.results[0].id }}/sync/"
+    url: "{{ eda_controller_url }}/api/eda/v1/projects/{{ eda_project_current.json.results[0].id }}/sync/"
     method: POST
     validate_certs: false
     url_username: "{{ eda_admin_username }}"
@@ -230,11 +243,12 @@
     status_code: [200, 201, 202]
     body_format: json
     body: {}
-  when: project_status_pre.json.results | length > 0
+  when:
+    - eda_project_current.json.results | length > 0
+    - eda_project_current.json.results[0].import_state not in ['completed']
   register: sync_result
   ignore_errors: true
-  vars:
-    project_status_pre: "{{ existing_project }}"
+  no_log: true
 
 - name: Wait for EDA project to be imported (up to 5 min)
   ansible.builtin.uri:
@@ -248,8 +262,10 @@
   register: project_status
   retries: 30
   delay: 10
-  until: project_status.json.results[0].import_state == 'completed'
-  no_log: false
+  until: >-
+    project_status.json.results | length > 0
+    and project_status.json.results[0].import_state == 'completed'
+  no_log: true
 
 - name: Create Rulebook Activations
   ansible.eda.rulebook_activation:
