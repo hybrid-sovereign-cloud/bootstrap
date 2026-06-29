@@ -411,36 +411,47 @@ aapCentral:
       storage: 10Gi
       backupStorage: 10Gi
 
-# ─── SDX Operator (services cluster) — DISABLED: functionality consolidated into plugin_iaac ──
-pluginSdx:
-  enabled: false
-  chartVersion: "0.1.7"
-  syncWave: "33"
-  image:
-    repository: quay.signal9.gg/hybrid-sovereign/plugin-sdx
-    tag: "v0.1.1"
+# ─── Plugin IaaC Operator (services cluster) — Go direct Gitea sync ─────────
+pluginIaac:
+  enabled: true
+  chartVersion: "0.2.0"
+  syncWave: "40"
+  destinationNamespace: sovereign-cloud-plugins
   values:
+    namespace: sovereign-cloud-plugins
+    createNamespace: false
+    replicas: 2
+    leaderElection: true
+    metricsPort: 8443
+    image:
+      repository: quay.signal9.gg/hybrid-sovereign/plugin-iaac
+      tag: "0.2.0"
+      pullPolicy: Always
+    imagePullSecrets:
+      - name: quay-pull-secret
     gitea:
       url: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
-      repoOwner: gitea_admin
-      repoName: tenancy_repo
-      secretName: gitea-admin-token
-      secretNamespace: sovereign-cloud-plugins
-      tokenSecretKey: admin_token
+      repoOwner: "gitea_admin"
+      repoName: "tenancy_repo"
+      secretName: "gitea-admin-token"
+      tokenSecretKey: "admin_token"
       externalSecret:
         enabled: true
         secretStoreName: vault-backend
         secretStoreKind: ClusterSecretStore
         vaultPath: gitea-admin
+    defaultIaac:
+      enabled: true
+      name: iaac
 
 # ─── Event Forwarder (services cluster) ─────────────────────────────────────
 eventForwarder:
   enabled: true
-  chartVersion: "0.5.1"
+  chartVersion: "0.5.2"
   syncWave: "32"
   image:
     repository: quay.signal9.gg/hybrid-sovereign/event-forwarder
-    tag: "0.2.1"
+    tag: "0.2.2"
   eventStreamUrl: "https://sovereign-aap-aap.apps.shc-central.lab.signal9.gg/eda-event-streams/api/eda/v1/external_event_stream/4392c64b-2faf-4414-a6e6-5ff1bc8d5a75/post/"
   vaultSecretPath: "central/event-forwarder"
 
@@ -1596,7 +1607,7 @@ sovereignJobs:
               property: registry
       env:
         - name: RUN_ID
-          value: "11"
+          value: "12"
         - name: EDA_CONTROLLER_URL
           value: "https://sovereign-aap-eda-aap.apps.shc-central.lab.signal9.gg"
         - name: AAP_CONTROLLER_URL
@@ -1959,30 +1970,6 @@ pluginQuay:
       # spec.quayConfig. QuayOrg CRs are created by the operator-samples job.
       enabled: false
 
-# ─── Plugin IaaC Operator (services cluster) ────────────────────────────────
-pluginIaac:
-  enabled: true
-  chartVersion: "0.1.9"
-  syncWave: "40"
-  destinationNamespace: sovereign-cloud-plugins
-  values:
-    namespace: sovereign-cloud-plugins
-    createNamespace: false
-    image:
-      repository: quay.signal9.gg/hybrid-sovereign/plugin-iaac
-      tag: "0.0.3"
-      pullPolicy: Always
-    imagePullSecrets:
-      - name: quay-pull-secret
-    gitea:
-      url: "https://gitea-gitea.apps.shc-central.lab.signal9.gg"
-      repoOwner: "gitea_admin"
-      repoName: "tenancy_repo"
-      secretName: "gitea-admin-token"
-    defaultIaac:
-      enabled: true
-      name: iaac
-
 # ─── Entity Operator (services cluster) ─────────────────────────────────────
 entityOperator:
   enabled: true
@@ -2202,7 +2189,7 @@ cloudAWSOperator:
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
   enabled: true
-  chartVersion: "0.9.12"
+  chartVersion: "0.9.13"
   syncWave: "40"
   destinationNamespace: sovereign-cloud
   values:
@@ -2229,12 +2216,12 @@ sovereignDashboard:
     env:
       ENTITY_NAMESPACE: sovereign-cloud
       NODE_ENV: production
-      OAUTH_SYNC_VERSION: "1"
+      OAUTH_SYNC_VERSION: "2"
 
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
   enabled: true
-  chartVersion: "1.1.6"
+  chartVersion: "1.1.7"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
   values:
@@ -2260,6 +2247,7 @@ tenancyDashboard:
       enabled: true
     env:
       NODE_ENV: production
+      OAUTH_SYNC_VERSION: "2"
 
 # ─── Sovereign Admin Console Plugin (services cluster) ───────────────────────
 sovereignAdminPlugin:

@@ -1,8 +1,0 @@
-{{- if .Values.samples.sdx.iaac.enabled }}
-apiVersion: hybridsovereign.redhat/v1alpha1
-kind: Iaac
-metadata:
-  name: sdx-sync
-  namespace: sovereign-cloud-plugins
-spec: {}
-{{- end }}

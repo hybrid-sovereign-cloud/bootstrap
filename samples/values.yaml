@@ -210,9 +210,6 @@ samples:
       enabled: true
     rbacconfig_keycloak:
       enabled: true
-  sdx:
-    iaac:
-      enabled: true
   team:
     team_alpha:
       enabled: true

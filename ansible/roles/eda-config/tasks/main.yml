@@ -74,11 +74,6 @@
           - { name: "quayconfig-delete", file: "quayconfig-delete.yml" }
           - { name: "quayorg-create", file: "quayorg-create.yml" }
           - { name: "quayorg-delete", file: "quayorg-delete.yml" }
-      - name: plugin-iaac
-        de_image: "{{ de_registry }}/de-plugin-iaac:{{ de_tags['plugin-iaac'] }}"
-        rulebooks:
-          - { name: "iaac-create", file: "iaac-create.yml" }
-          - { name: "iaac-delete", file: "iaac-delete.yml" }
 
 - name: Normalize Quay registry host for credential inputs
   ansible.builtin.set_fact:
@@ -99,7 +94,6 @@
       password: "{{ lookup('env', 'OCI_ROBOT_PASSWORD') }}"
       verify_ssl: false
     state: present
-    update_secrets: true
   no_log: true
   register: eda_quay_credential_result
 
