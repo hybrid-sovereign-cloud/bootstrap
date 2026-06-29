@@ -1583,7 +1583,7 @@ sovereignJobs:
     edaConfig:
       enabled: true
       playbook: eda-config.yml
-      activeDeadlineSeconds: 900
+      activeDeadlineSeconds: 2400
       syncWave: "32"
       externalSecrets:
         aapAdminEda:
@@ -1622,7 +1622,7 @@ sovereignJobs:
               property: token
       env:
         - name: RUN_ID
-          value: "16"
+          value: "17"
         - name: EDA_CONTROLLER_URL
           value: "https://sovereign-aap-aap.apps.shc-central.lab.signal9.gg"
         - name: AAP_CONTROLLER_URL
