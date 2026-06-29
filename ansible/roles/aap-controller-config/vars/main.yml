@@ -13,12 +13,12 @@ controller_credentials:
       host: "{{ _quay_registry_host }}"
       username: "{{ lookup('env', 'OCI_ROBOT_USERNAME') }}"
       password: "{{ lookup('env', 'OCI_ROBOT_PASSWORD') }}"
-  - name: sovereign-gitea-credential
+  - name: sovereign-github-credential
     organization: sovereign
     credential_type: Source Control
     inputs:
-      username: "gitea_admin"
-      password: "{{ lookup('env', 'GITEA_ADMIN_TOKEN') }}"
+      username: "x-access-token"
+      password: "{{ lookup('env', 'GITHUB_TOKEN') }}"
   - name: sovereign-central-cluster-credential
     organization: sovereign
     credential_type: OpenShift or Kubernetes API Bearer Token
@@ -98,8 +98,8 @@ controller_projects:
   - name: sovereign-eda-project
     organization: sovereign
     scm_type: git
-    scm_url: "{{ lookup('env', 'GITEA_EDA_REPO_URL') }}"
-    credential: sovereign-gitea-credential
+    scm_url: "{{ lookup('env', 'EDA_REPO_URL') }}"
+    credential: sovereign-github-credential
     scm_clean: true
     scm_delete_on_update: false
     scm_update_on_launch: true

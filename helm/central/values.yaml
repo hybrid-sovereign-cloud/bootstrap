@@ -1519,13 +1519,13 @@ sovereignJobs:
             - secretKey: registry
               remoteKey: oci-credentials
               property: registry
-        giteaTokenControllerConfig:
+        githubTokenControllerConfig:
           enabled: true
-          targetSecretName: aap-controller-gitea-token
+          targetSecretName: aap-controller-github-token
           data:
-            - secretKey: password
-              remoteKey: gitea-admin
-              property: admin_password
+            - secretKey: token
+              remoteKey: github-charts-token
+              property: token
         centralClusterSaToken:
           enabled: true
           targetSecretName: aap-controller-central-sa
@@ -1535,7 +1535,7 @@ sovereignJobs:
               property: bearer_token
       env:
         - name: RUN_ID
-          value: "7"
+          value: "8"
         - name: AAP_CONTROLLER_URL
           value: "https://sovereign-aap-controller-aap.apps.shc-central.lab.signal9.gg"
         - name: AAP_ADMIN_PASSWORD
@@ -1558,13 +1558,13 @@ sovereignJobs:
             secretKeyRef:
               name: aap-controller-oci-credentials
               key: password
-        - name: GITEA_ADMIN_TOKEN
+        - name: GITHUB_TOKEN
           valueFrom:
             secretKeyRef:
-              name: aap-controller-gitea-token
-              key: password
-        - name: GITEA_EDA_REPO_URL
-          value: "http://gitea-http.gitea.svc.cluster.local:3000/gitea_admin/eda.git"
+              name: aap-controller-github-token
+              key: token
+        - name: EDA_REPO_URL
+          value: "https://github.com/hybrid-sovereign-cloud/eda.git"
         - name: OCP_CENTRAL_SERVER
           value: "https://api.shc-central.lab.signal9.gg:6443"
         - name: OCP_CENTRAL_SA_TOKEN
@@ -1605,9 +1605,16 @@ sovereignJobs:
             - secretKey: registry
               remoteKey: oci-credentials
               property: registry
+        githubTokenEdaConfig:
+          enabled: true
+          targetSecretName: eda-github-token
+          data:
+            - secretKey: token
+              remoteKey: github-charts-token
+              property: token
       env:
         - name: RUN_ID
-          value: "12"
+          value: "13"
         - name: EDA_CONTROLLER_URL
           value: "https://sovereign-aap-eda-aap.apps.shc-central.lab.signal9.gg"
         - name: AAP_CONTROLLER_URL
@@ -1618,7 +1625,12 @@ sovereignJobs:
               name: eda-admin-credentials
               key: token
         - name: RULEBOOK_REPO_URL
-          value: "https://gitea-gitea.apps.shc-central.lab.signal9.gg/gitea_admin/eda.git"
+          value: "https://github.com/hybrid-sovereign-cloud/eda.git"
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: eda-github-token
+              key: token
         - name: OCI_REGISTRY
           valueFrom:
             secretKeyRef:

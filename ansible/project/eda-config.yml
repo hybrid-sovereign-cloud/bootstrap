@@ -59,20 +59,11 @@
         event_stream_token: "{{ event_stream_secret_raw.resources[0].data.token | b64decode }}"
       no_log: true
 
-    - name: Read Gitea admin credentials for rulebook repo access
-      kubernetes.core.k8s_info:
-        kind: Secret
-        namespace: gitea
-        name: gitea-admin-credentials
-      register: gitea_secret_raw
-      no_log: true
-
-    - name: Set git token fact (Gitea admin username:password for authenticated clone)
+    - name: Set GitHub PAT for rulebook repo clone
       ansible.builtin.set_fact:
-        github_token: >-
-          {{ (gitea_secret_raw.resources[0].data.username | b64decode) }}:{{
-             (gitea_secret_raw.resources[0].data.password | b64decode) }}
+        github_token: "x-access-token:{{ lookup('env', 'GITHUB_TOKEN') }}"
       no_log: true
+      when: lookup('env', 'GITHUB_TOKEN') | length > 0
 
   roles:
     - eda-config
