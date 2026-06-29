@@ -1,6 +1,6 @@
 ##@ Build Artifacts
 
-ASSIGNMENT_CENTRAL_RBAC_CHART_REPO ?= ../assignment-central-rbac
+ASSIGNMENT_CENTRAL_RBAC_CHART_REPO ?= ../Assignment/charts/assignment-central-rbac
 
 .PHONY: upload-assignment-central-rbac-chart
 upload-assignment-central-rbac-chart: check-env ## Package and push assignment-central-rbac chart to OCI registry

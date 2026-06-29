@@ -2029,7 +2029,7 @@ teamOperator:
 # Must deploy BEFORE assignmentOperator so the ExternalSecret has a Vault path to pull from.
 assignmentCentralRbac:
   enabled: true
-  chartVersion: "0.1.2"
+  chartVersion: "0.1.3"
   syncWave: "38"
   destinationNamespace: sovereign-cloud-helpers
   values:
@@ -2049,7 +2049,7 @@ assignmentCentralRbac:
 # ─── Assignment Operator (services cluster) ────────────────────────────────
 assignmentOperator:
   enabled: true
-  chartVersion: "0.5.13"
+  chartVersion: "0.5.14"
   syncWave: "39"
   destinationNamespace: sovereign-cloud
   values:
