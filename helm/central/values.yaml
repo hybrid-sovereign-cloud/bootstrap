@@ -1089,6 +1089,32 @@ sovereignJobs:
           value: "http://vault.central-vault.svc:8200"
         - name: VAULT_NAMESPACE
           value: "central-vault"
+    openshiftVaultSeed:
+      enabled: true
+      playbook: openshift-vault-seed.yml
+      activeDeadlineSeconds: 300
+      syncWave: "24"
+      env:
+        - name: VAULT_ADDR
+          value: "http://vault-active.central-vault.svc:8200"
+        - name: VAULT_NAMESPACE
+          value: "central-vault"
+        - name: OCP_CENTRAL_SERVER
+          value: "https://api.shc-central.lab.signal9.gg:6443"
+        - name: OCP_SERVICES_SERVER
+          value: "https://api.shcservices.lab.signal9.gg:6443"
+        - name: OCP_CENTRAL_KUBEADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: openshift-kubeadmin-passwords
+              key: central_password
+              optional: true
+        - name: OCP_SERVICES_KUBEADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: openshift-kubeadmin-passwords
+              key: services_password
+              optional: true
     vmwareInit:
       enabled: true
       playbook: vmware-init.yml

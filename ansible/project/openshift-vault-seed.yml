@@ -1,0 +1,7 @@
+---
+- name: Seed OpenShift and ArgoCD secrets into Vault for EDA jobs
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - openshift-vault-seed

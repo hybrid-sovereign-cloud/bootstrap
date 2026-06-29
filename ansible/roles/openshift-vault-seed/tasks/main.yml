@@ -1,0 +1,67 @@
+---
+- name: Retrieve Vault root token from init secret
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ vault_init_secret_name }}"
+    namespace: "{{ vault_init_secret_namespace }}"
+  register: vault_init_secret
+  retries: 10
+  delay: 10
+  until: vault_init_secret.resources | length > 0
+  no_log: true
+
+- name: Set Vault root token fact
+  ansible.builtin.set_fact:
+    vault_root_token: "{{ vault_init_secret.resources[0].data.root_token | b64decode }}"
+  no_log: true
+
+- name: Validate central kubeadmin password env is set
+  ansible.builtin.assert:
+    that:
+      - lookup('env', 'OCP_CENTRAL_KUBEADMIN_PASSWORD') | length > 0
+      - not (lookup('env', 'OCP_CENTRAL_KUBEADMIN_PASSWORD') is search('^\$2[aby]\$'))
+    fail_msg: >-
+      Set OCP_CENTRAL_KUBEADMIN_PASSWORD to the plaintext kubeadmin password
+      (not the bcrypt hash from kube-system/kubeadmin).
+
+- name: Validate services kubeadmin password env is set
+  ansible.builtin.assert:
+    that:
+      - lookup('env', 'OCP_SERVICES_KUBEADMIN_PASSWORD') | length > 0
+      - not (lookup('env', 'OCP_SERVICES_KUBEADMIN_PASSWORD') is search('^\$2[aby]\$'))
+    fail_msg: >-
+      Set OCP_SERVICES_KUBEADMIN_PASSWORD to the plaintext kubeadmin password
+      (not the bcrypt hash from kube-system/kubeadmin).
+
+- name: Write central kubeadmin credentials to Vault
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/{{ vault_kv_mount }}/data/openshift-central-kubeadmin"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      data:
+        username: kubeadmin
+        password: "{{ lookup('env', 'OCP_CENTRAL_KUBEADMIN_PASSWORD') }}"
+        api_host: "{{ lookup('env', 'OCP_CENTRAL_SERVER') | default('https://api.shc-central.lab.signal9.gg:6443', true) }}"
+    validate_certs: false
+    status_code: [200, 204]
+  no_log: true
+
+- name: Write services kubeadmin credentials to Vault
+  ansible.builtin.uri:
+    url: "{{ vault_addr }}/v1/{{ vault_kv_mount }}/data/openshift-services-kubeadmin"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body_format: json
+    body:
+      data:
+        username: kubeadmin
+        password: "{{ lookup('env', 'OCP_SERVICES_KUBEADMIN_PASSWORD') }}"
+        api_host: "{{ lookup('env', 'OCP_SERVICES_SERVER') | default('https://api.shcservices.lab.signal9.gg:6443', true) }}"
+    validate_certs: false
+    status_code: [200, 204]
+  no_log: true

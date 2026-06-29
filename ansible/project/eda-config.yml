@@ -20,7 +20,7 @@
       openstack-migration: "0.1.0"
       cloudaws: "0.1.5"
       persona: "0.1.2"
-      plugin-rbac: "0.1.2"
+      plugin-rbac: "0.1.3"
       plugin-vault: "0.1.2"
       plugin-aap: "0.1.3"
       plugin-quay: "0.1.2"

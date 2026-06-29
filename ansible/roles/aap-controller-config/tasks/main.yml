@@ -3,6 +3,10 @@
   ansible.builtin.import_role:
     name: infra.aap_configuration.controller_organizations
 
+- name: Configure AAP credential types
+  ansible.builtin.import_role:
+    name: infra.aap_configuration.controller_credential_types
+
 - name: Configure AAP credentials
   ansible.builtin.import_role:
     name: infra.aap_configuration.controller_credentials

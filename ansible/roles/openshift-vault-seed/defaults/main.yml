@@ -1,0 +1,5 @@
+---
+vault_addr: "{{ lookup('env', 'VAULT_ADDR') | default('http://vault-active.central-vault.svc:8200', true) }}"
+vault_kv_mount: central
+vault_init_secret_name: vault-init-secrets
+vault_init_secret_namespace: central-vault

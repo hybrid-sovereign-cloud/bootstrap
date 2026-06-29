@@ -5,6 +5,80 @@
 aap_organizations:
   - name: sovereign
 
+controller_credential_types:
+  - name: Sovereign Vault Admin Token
+    description: Vault admin token for EDA EE jobs to read central/* KV secrets
+    kind: cloud
+    inputs:
+      fields:
+        - id: vault_addr
+          type: string
+          label: Vault URL
+        - id: vault_token
+          type: string
+          label: Vault Token
+          secret: true
+    injectors:
+      env:
+        VAULT_ADDR: "{{ vault_addr }}"
+        VAULT_TOKEN: "{{ vault_token }}"
+  - name: Sovereign Services OpenShift Login
+    description: Services cluster kubeadmin login for EDA jobs
+    kind: cloud
+    inputs:
+      fields:
+        - id: ocp_server
+          type: string
+          label: OpenShift API URL
+        - id: ocp_username
+          type: string
+          label: Username
+        - id: ocp_password
+          type: string
+          label: Password
+          secret: true
+    injectors:
+      env:
+        OCP_SERVICES_SERVER: "{{ ocp_server }}"
+        OCP_SERVICES_USERNAME: "{{ ocp_username }}"
+        OCP_SERVICES_PASSWORD: "{{ ocp_password }}"
+  - name: Sovereign Central OpenShift Login
+    description: Central cluster kubeadmin login for EDA jobs
+    kind: cloud
+    inputs:
+      fields:
+        - id: ocp_server
+          type: string
+          label: OpenShift API URL
+        - id: ocp_username
+          type: string
+          label: Username
+        - id: ocp_password
+          type: string
+          label: Password
+          secret: true
+    injectors:
+      env:
+        OCP_CENTRAL_SERVER: "{{ ocp_server }}"
+        OCP_CENTRAL_USERNAME: "{{ ocp_username }}"
+        OCP_CENTRAL_PASSWORD: "{{ ocp_password }}"
+  - name: Sovereign Keycloak Admin
+    description: Keycloak master-realm admin for EDA rbac jobs
+    kind: cloud
+    inputs:
+      fields:
+        - id: username
+          type: string
+          label: Username
+        - id: password
+          type: string
+          label: Password
+          secret: true
+    injectors:
+      env:
+        KEYCLOAK_ADMIN_USER: "{{ username }}"
+        KEYCLOAK_ADMIN_PASSWORD: "{{ password }}"
+
 controller_credentials:
   - name: quay-robot-credential
     organization: sovereign
@@ -26,6 +100,32 @@ controller_credentials:
       host: "{{ lookup('env', 'OCP_CENTRAL_SERVER') }}"
       verify_ssl: false
       bearer_token: "{{ lookup('env', 'OCP_CENTRAL_SA_TOKEN') }}"
+  - name: sovereign-services-openshift-credential
+    organization: sovereign
+    credential_type: Sovereign Services OpenShift Login
+    inputs:
+      ocp_server: "{{ lookup('env', 'OCP_SERVICES_SERVER') }}"
+      ocp_username: "{{ lookup('env', 'OCP_SERVICES_USERNAME') }}"
+      ocp_password: "{{ lookup('env', 'OCP_SERVICES_PASSWORD') }}"
+  - name: sovereign-central-openshift-credential
+    organization: sovereign
+    credential_type: Sovereign Central OpenShift Login
+    inputs:
+      ocp_server: "{{ lookup('env', 'OCP_CENTRAL_SERVER') }}"
+      ocp_username: "{{ lookup('env', 'OCP_CENTRAL_USERNAME') }}"
+      ocp_password: "{{ lookup('env', 'OCP_CENTRAL_PASSWORD') }}"
+  - name: sovereign-keycloak-admin-credential
+    organization: sovereign
+    credential_type: Sovereign Keycloak Admin
+    inputs:
+      username: "{{ lookup('env', 'KEYCLOAK_ADMIN_USER') | default('admin', true) }}"
+      password: "{{ lookup('env', 'KEYCLOAK_ADMIN_PASSWORD') }}"
+  - name: sovereign-vault-admin-credential
+    organization: sovereign
+    credential_type: Sovereign Vault Admin Token
+    inputs:
+      vault_addr: "{{ lookup('env', 'VAULT_ADDR') | default('http://vault-active.central-vault.svc:8200', true) }}"
+      vault_token: "{{ lookup('env', 'VAULT_ROOT_TOKEN') }}"
 
 controller_execution_environments:
   - name: de-entity
@@ -270,7 +370,7 @@ controller_templates:
     execution_environment: de-plugin-rbac
     ask_variables_on_launch: true
     credentials:
-      - sovereign-central-cluster-credential
+      - sovereign-vault-admin-credential
   - name: rbacconfig-teardown
     organization: sovereign
     project: sovereign-eda-project
@@ -279,7 +379,7 @@ controller_templates:
     execution_environment: de-plugin-rbac
     ask_variables_on_launch: true
     credentials:
-      - sovereign-central-cluster-credential
+      - sovereign-vault-admin-credential
   - name: rbac-provision
     organization: sovereign
     project: sovereign-eda-project
@@ -288,7 +388,7 @@ controller_templates:
     execution_environment: de-plugin-rbac
     ask_variables_on_launch: true
     credentials:
-      - sovereign-central-cluster-credential
+      - sovereign-vault-admin-credential
   - name: rbac-teardown
     organization: sovereign
     project: sovereign-eda-project
@@ -297,7 +397,7 @@ controller_templates:
     execution_environment: de-plugin-rbac
     ask_variables_on_launch: true
     credentials:
-      - sovereign-central-cluster-credential
+      - sovereign-vault-admin-credential
   - name: vault-provision
     organization: sovereign
     project: sovereign-eda-project
