@@ -267,6 +267,33 @@
     and project_status.json.results[0].import_state == 'completed'
   no_log: true
 
+- name: List managed rulebook activations before reconcile
+  ansible.builtin.uri:
+    url: "{{ eda_controller_url }}/api/eda/v1/activations/?page_size=200"
+    method: GET
+    validate_certs: false
+    url_username: "{{ eda_admin_username }}"
+    url_password: "{{ eda_admin_password }}"
+    force_basic_auth: true
+    status_code: [200]
+  register: existing_activations
+  no_log: true
+
+- name: Disable unhealthy activations so ansible.eda can reconcile them
+  ansible.builtin.uri:
+    url: "{{ eda_controller_url }}/api/eda/v1/activations/{{ item.id }}/disable/"
+    method: POST
+    validate_certs: false
+    url_username: "{{ eda_admin_username }}"
+    url_password: "{{ eda_admin_password }}"
+    force_basic_auth: true
+    status_code: [204, 404]
+  loop: "{{ existing_activations.json.results | default([]) }}"
+  when:
+    - item.name.endswith('-activation')
+    - item.status in ['error', 'failed', 'stopped']
+  no_log: true
+
 - name: Create Rulebook Activations
   ansible.eda.rulebook_activation:
     controller_host: "{{ eda_controller_url }}"
