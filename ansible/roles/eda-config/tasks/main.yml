@@ -319,6 +319,27 @@
     - item.name in managed_activation_names
   no_log: true
 
+- name: Wait for managed activations to reach disabled stopped state
+  ansible.builtin.uri:
+    url: "{{ eda_controller_url }}/api/eda/v1/activations/?name={{ item | urlencode }}"
+    method: GET
+    validate_certs: false
+    url_username: "{{ eda_admin_username }}"
+    url_password: "{{ eda_admin_password }}"
+    force_basic_auth: true
+    status_code: [200]
+  loop: "{{ managed_activation_names }}"
+  register: activation_ready
+  until: >-
+    activation_ready.json.results | length == 0
+    or (
+      not activation_ready.json.results[0].is_enabled
+      and activation_ready.json.results[0].status == 'stopped'
+    )
+  retries: 20
+  delay: 3
+  no_log: true
+
 - name: Create Rulebook Activations
   ansible.eda.rulebook_activation:
     controller_host: "{{ eda_controller_url }}"
