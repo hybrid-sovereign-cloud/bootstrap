@@ -2267,7 +2267,7 @@ sovereignDashboard:
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
   enabled: true
-  chartVersion: "1.1.10"
+  chartVersion: "1.1.11"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
   values:
@@ -2275,7 +2275,7 @@ tenancyDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/tenancy-dashboard
-      tag: "4.1.1"
+      tag: "4.1.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
