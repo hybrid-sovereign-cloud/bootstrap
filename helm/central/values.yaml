@@ -2298,14 +2298,14 @@ tenancyDashboard:
 # ─── Sovereign Admin Console Plugin (services cluster) ───────────────────────
 sovereignAdminPlugin:
   enabled: true
-  chartVersion: "0.1.7"
+  chartVersion: "0.1.8"
   syncWave: "42"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/sovereign-admin-plugin
-      tag: "1.1.1"
+      tag: "1.1.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -2318,14 +2318,14 @@ sovereignAdminPlugin:
 # ─── Sovereign Tenant Console Plugin (services cluster) ──────────────────────
 sovereignTenantPlugin:
   enabled: true
-  chartVersion: "0.1.7"
+  chartVersion: "0.1.8"
   syncWave: "42"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/sovereign-tenant-plugin
-      tag: "1.1.1"
+      tag: "1.1.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
