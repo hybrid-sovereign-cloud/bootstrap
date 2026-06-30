@@ -52,16 +52,22 @@ aap-store-admin-services: check-env-services ## Read AAP services admin password
 	  exit 1; \
 	fi; \
 	$(call sovereign_login_services); \
-	AAP_PASS=$$(oc get secret sovereign-aap-controller-admin-password -n aap \
+	AAP_PASS=$$(oc get secret sovereign-aap-admin-password -n aap \
 	  -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); \
 	if [ -z "$$AAP_PASS" ]; then \
+	  printf "  $(RED)✗$(RESET)  sovereign-aap-admin-password not found in aap namespace\n"; \
+	  exit 1; \
+	fi; \
+	CTRL_PASS=$$(oc get secret sovereign-aap-controller-admin-password -n aap \
+	  -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); \
+	if [ -z "$$CTRL_PASS" ]; then \
 	  printf "  $(RED)✗$(RESET)  sovereign-aap-controller-admin-password not found in aap namespace\n"; \
 	  exit 1; \
 	fi; \
 	AAP_CTRL_URL="https://sovereign-aap-controller-aap.apps.shcservices.lab.signal9.gg"; \
 	printf "  Getting AAP services controller token...\n"; \
 	AAP_TOKEN=$$(curl -sk -X POST "$$AAP_CTRL_URL/api/v2/tokens/" \
-	  -u "admin:$$AAP_PASS" \
+	  -u "admin:$$CTRL_PASS" \
 	  -H "Content-Type: application/json" \
 	  -d '{"description":"sovereign-bootstrap","scope":"write"}' | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('token',''))" 2>/dev/null); \
 	if [ -z "$$AAP_TOKEN" ]; then \
