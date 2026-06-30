@@ -2235,7 +2235,7 @@ cloudAWSOperator:
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
   enabled: true
-  chartVersion: "0.9.15"
+  chartVersion: "0.9.16"
   syncWave: "40"
   destinationNamespace: sovereign-cloud
   values:
@@ -2243,7 +2243,7 @@ sovereignDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/sovereign-cloud-dashboard
-      tag: "1.9.0"
+      tag: "1.9.1"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -2267,7 +2267,7 @@ sovereignDashboard:
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
   enabled: true
-  chartVersion: "1.1.9"
+  chartVersion: "1.1.10"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
   values:
@@ -2275,7 +2275,7 @@ tenancyDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/tenancy-dashboard
-      tag: "4.1.0"
+      tag: "4.1.1"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -2298,14 +2298,14 @@ tenancyDashboard:
 # ─── Sovereign Admin Console Plugin (services cluster) ───────────────────────
 sovereignAdminPlugin:
   enabled: true
-  chartVersion: "0.1.6"
+  chartVersion: "0.1.7"
   syncWave: "42"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/sovereign-admin-plugin
-      tag: "1.1.0"
+      tag: "1.1.1"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -2318,14 +2318,14 @@ sovereignAdminPlugin:
 # ─── Sovereign Tenant Console Plugin (services cluster) ──────────────────────
 sovereignTenantPlugin:
   enabled: true
-  chartVersion: "0.1.6"
+  chartVersion: "0.1.7"
   syncWave: "42"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/sovereign-tenant-plugin
-      tag: "1.1.0"
+      tag: "1.1.1"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
