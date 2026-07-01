@@ -2253,7 +2253,7 @@ sovereignDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/sovereign-cloud-dashboard
-      tag: "1.9.3"
+      tag: "1.9.4"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
