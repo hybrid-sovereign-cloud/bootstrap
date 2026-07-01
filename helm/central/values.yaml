@@ -948,7 +948,7 @@ externalSecretsServices:
 # ─── Vault Central Namespace (backup copies of init secrets) ─────────────────
 vaultCentralNamespace:
   enabled: true
-  chartVersion: "0.1.7"
+  chartVersion: "0.1.8"
   syncWave: "27"
   argocdChartsRepo: false
   values:
@@ -1006,6 +1006,16 @@ vaultCentralNamespace:
           - apiGroups: [""]
             resources: ["namespaces", "secrets", "configmaps"]
             verbs: ["get", "list", "watch", "create", "update", "patch"]
+      aap-central-cluster-sa:
+        enabled: true
+        namespace: sovereign-cloud-jobs
+        clusterRoleRules:
+          - apiGroups: ["external-secrets.io"]
+            resources: ["externalsecrets"]
+            verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+          - apiGroups: [""]
+            resources: ["secrets", "namespaces"]
+            verbs: ["get", "list", "watch"]
 
 # ─── ArgoCD Repo Secret: cluster_builds (Gitea → Vault → ESO) ────────────────
 argocdClusterBuildsRepo:
@@ -2167,7 +2177,7 @@ platformOpenshiftOperator:
 # ─── CloudOSO Operator (services cluster) ──────────────────────────────────
 cloudOSOOperator:
   enabled: true
-  chartVersion: "0.5.7"
+  chartVersion: "0.5.8"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
@@ -2179,12 +2189,12 @@ cloudOSOOperator:
     imagePullSecrets:
       - name: quay-pull-secret
     centralSA:
-      secretName: osohelper-creator-sa
+      secretName: aap-central-cluster-sa
       externalSecret:
         enabled: true
         secretStoreName: vault-backend
         secretStoreKind: ClusterSecretStore
-        vaultPath: osohelper-creator-sa
+        vaultPath: aap-central-cluster-sa
         refreshInterval: "1h"
     samples:
       enabled: false  # CRs created by operatorSamples job
@@ -2235,7 +2245,7 @@ cloudAWSOperator:
 # ─── Sovereign Cloud Dashboard (services cluster) ──────────────────────────
 sovereignDashboard:
   enabled: true
-  chartVersion: "0.9.16"
+  chartVersion: "0.9.17"
   syncWave: "40"
   destinationNamespace: sovereign-cloud
   values:
@@ -2243,7 +2253,7 @@ sovereignDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/sovereign-cloud-dashboard
-      tag: "1.9.1"
+      tag: "1.9.2"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -2267,7 +2277,7 @@ sovereignDashboard:
 # ─── Tenancy Dashboard (services cluster) ────────────────────────────────
 tenancyDashboard:
   enabled: true
-  chartVersion: "1.1.11"
+  chartVersion: "1.1.12"
   syncWave: "41"
   destinationNamespace: sovereign-cloud
   values:
@@ -2275,7 +2285,7 @@ tenancyDashboard:
     clusterDomain: apps.shcservices.lab.signal9.gg
     image:
       repository: quay.signal9.gg/hybrid-sovereign/tenancy-dashboard
-      tag: "4.1.3"
+      tag: "4.1.4"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -2298,14 +2308,14 @@ tenancyDashboard:
 # ─── Sovereign Admin Console Plugin (services cluster) ───────────────────────
 sovereignAdminPlugin:
   enabled: true
-  chartVersion: "0.1.9"
+  chartVersion: "0.1.10"
   syncWave: "42"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/sovereign-admin-plugin
-      tag: "1.1.3"
+      tag: "1.1.4"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -2318,14 +2328,14 @@ sovereignAdminPlugin:
 # ─── Sovereign Tenant Console Plugin (services cluster) ──────────────────────
 sovereignTenantPlugin:
   enabled: true
-  chartVersion: "0.1.8"
+  chartVersion: "0.1.9"
   syncWave: "42"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/sovereign-tenant-plugin
-      tag: "1.1.3"
+      tag: "1.1.4"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
