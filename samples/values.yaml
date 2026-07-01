@@ -82,6 +82,8 @@ samples:
       enabled: true
     persona_auditor:
       enabled: true
+    persona_bobs_team:
+      enabled: true
     persona_cloud_viewer:
       enabled: true
     persona_entity_admin:

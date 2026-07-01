@@ -2029,14 +2029,14 @@ pluginQuay:
 # ─── Entity Operator (services cluster) ─────────────────────────────────────
 entityOperator:
   enabled: true
-  chartVersion: "0.7.5"
+  chartVersion: "0.7.6"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:
     namespace: sovereign-cloud
     image:
       repository: quay.signal9.gg/hybrid-sovereign/entity-operator
-      tag: "0.1.3"
+      tag: "0.1.4"
       pullPolicy: Always
     imagePullSecrets:
       - name: quay-pull-secret
@@ -2049,7 +2049,7 @@ entityOperator:
 # ─── Persona Operator (services cluster) ──────────────────────────────────
 personaOperator:
   enabled: true
-  chartVersion: "0.1.6"
+  chartVersion: "0.1.7"
   syncWave: "38"
   destinationNamespace: sovereign-cloud
   values:

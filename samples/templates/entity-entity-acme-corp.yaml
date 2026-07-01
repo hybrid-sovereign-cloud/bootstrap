@@ -17,6 +17,8 @@ spec:
     auditor:
       - acme-auditors
       - acme-viewers
+    BobsTeam:
+      - acme-viewers
     cloudOSOAdmin:
       - acme-infra-team
       - acme-platform-admins
