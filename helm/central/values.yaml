@@ -948,7 +948,7 @@ externalSecretsServices:
 # ─── Vault Central Namespace (backup copies of init secrets) ─────────────────
 vaultCentralNamespace:
   enabled: true
-  chartVersion: "0.1.8"
+  chartVersion: "0.1.9"
   syncWave: "27"
   argocdChartsRepo: false
   values:
